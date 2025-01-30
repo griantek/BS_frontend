@@ -1,5 +1,6 @@
 'use client'
 import React from 'react';
+import { usePathname } from 'next/navigation';  // Add this import
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -31,8 +32,10 @@ import {
 } from "@/components/icons";
 
 export const Navbar = () => {
+  const pathname = usePathname();  // Add this hook
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [isSupAdmin, setIsSupAdmin] = React.useState(false);
 
   React.useEffect(() => {
     // More comprehensive check for login status
@@ -40,7 +43,10 @@ export const Navbar = () => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       const loginStatus = localStorage.getItem('isLoggedIn');
+      const userRole = localStorage.getItem('userRole');
+      
       setIsLoggedIn(!!(token && user && loginStatus === 'true'));
+      setIsSupAdmin(userRole === 'supAdmin');
     };
 
     // Check immediately
@@ -62,6 +68,10 @@ export const Navbar = () => {
     setIsLoggedIn(false);
     // Use window.location for hard redirect
     window.location.href = '/admin';
+  };
+
+  const isActiveLink = (path: string) => {
+    return pathname === path;
   };
 
   const searchInput = (
@@ -94,39 +104,59 @@ export const Navbar = () => {
             <p className="font-bold text-inherit">ACME</p>
           </NextLink>
         </NavbarBrand>
-        {/* <ul className="hidden lg:flex gap-4 justify-start ml-2">
-          {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
-                )}
-                color="foreground"
-                href={item.href}
-              >
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul> */}
       </NavbarContent>
 
       <NavbarContent
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
+        {isSupAdmin && (
+          <NavbarItem className="hidden sm:flex gap-4">
+            <NextLink
+              className={clsx(
+                linkStyles({ color: "foreground" }),
+                "data-[active=true]:text-primary data-[active=true]:font-medium",
+                isActiveLink('/supAdmin') && "text-primary font-medium"
+              )}
+              color="foreground"
+              href="/supAdmin"
+            >
+              Dashboard
+            </NextLink>
+            <NextLink
+              className={clsx(
+                linkStyles({ color: "foreground" }),
+                "data-[active=true]:text-primary data-[active=true]:font-medium",
+                isActiveLink('/supAdmin/services') && "text-primary font-medium"
+              )}
+              color="foreground"
+              href="/supAdmin/services"
+            >
+              Services
+            </NextLink>
+            <NextLink
+              className={clsx(
+                linkStyles({ color: "foreground" }),
+                "data-[active=true]:text-primary data-[active=true]:font-medium",
+                isActiveLink('/supAdmin/executives') && "text-primary font-medium"
+              )}
+              color="foreground"
+              href="/supAdmin/executives"
+            >
+              Executives
+            </NextLink>
+          </NavbarItem>
+        )}
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
-          {isLoggedIn && (
+          {isLoggedIn && isSupAdmin && (
             <Button
-              isIconOnly
               color="danger"
               variant="light"
               onClick={handleLogout}
-              title="Logout"
+              startContent={<ArrowRightStartOnRectangleIcon className="h-5 w-5" />}
             >
-              <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
+              Logout
             </Button>
           )}
         </NavbarItem>
@@ -134,7 +164,7 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <ThemeSwitch />
-        {isLoggedIn && (
+        {isLoggedIn && isSupAdmin && (
           <Button
             isIconOnly
             color="danger"
@@ -145,7 +175,46 @@ export const Navbar = () => {
             <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
           </Button>
         )}
+        <NavbarMenuToggle />
       </NavbarContent>
+
+      {isSupAdmin && (
+        <NavbarMenu>
+          <NavbarMenuItem>
+            <NextLink 
+              className={clsx(
+                linkStyles(),
+                isActiveLink('/supAdmin') && "text-primary font-medium"
+              )} 
+              href="/supAdmin"
+            >
+              Dashboard
+            </NextLink>
+          </NavbarMenuItem>
+          <NavbarMenuItem>
+            <NextLink 
+              className={clsx(
+                linkStyles(),
+                isActiveLink('/supAdmin/services') && "text-primary font-medium"
+              )} 
+              href="/supAdmin/services"
+            >
+              Services
+            </NextLink>
+          </NavbarMenuItem>
+          <NavbarMenuItem>
+            <NextLink 
+              className={clsx(
+                linkStyles(),
+                isActiveLink('/supAdmin/executives') && "text-primary font-medium"
+              )} 
+              href="/supAdmin/executives"
+            >
+              Executives
+            </NextLink>
+          </NavbarMenuItem>
+        </NavbarMenu>
+      )}
     </HeroUINavbar>
   );
 };

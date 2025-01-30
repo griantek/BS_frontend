@@ -11,9 +11,15 @@ import {
   Divider,
   Chip,
   Avatar,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@heroui/react";
 import { format } from 'date-fns';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 
 // Define params type
@@ -58,6 +64,8 @@ function ProspectContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
   const [prospectData, setProspectData] = React.useState<ProspectData | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -93,6 +101,24 @@ function ProspectContent({ regId }: { regId: string }) {
 
     fetchProspectData();
   }, [router, regId]);
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await api.deleteProspectus([regId]);
+      toast.success('Prospect deleted successfully');
+      setTimeout(() => {
+        window.location.href = '/business';
+      }, 1500);
+    } catch (error) {
+      console.error('Delete error:', error);
+      const errorMessage = api.handleError(error);
+      toast.error(errorMessage.error || 'Failed to delete prospect');
+    } finally {
+      setIsDeleting(false);
+      onClose();
+    }
+  };
 
   if (isLoading) return <div>Loading...</div>;
   if (!prospectData) return <div>No data found</div>;
@@ -131,6 +157,14 @@ function ProspectContent({ regId }: { regId: string }) {
                 onClick={() => router.push(`/business/prospect/edit/${regId}`)}
               >
                 Edit Details
+              </Button>
+              <Button
+                color="danger"
+                variant="flat"
+                onClick={onOpen}
+                startContent={<TrashIcon className="h-5 w-5" />}
+              >
+                Delete
               </Button>
             </div>
           </CardHeader>
@@ -253,6 +287,24 @@ function ProspectContent({ regId }: { regId: string }) {
             </CardBody>
           </Card>
         </div>
+
+        {/* Add Delete Confirmation Modal */}
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <ModalContent>
+            <ModalHeader>Confirm Delete</ModalHeader>
+            <ModalBody>
+              Are you sure you want to delete this prospect? This action cannot be undone.
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={onClose} isDisabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button color="danger" onPress={handleDelete} isLoading={isDeleting}>
+                Delete
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </div>
     </>
   );

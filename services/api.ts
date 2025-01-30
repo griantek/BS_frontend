@@ -20,6 +20,15 @@ interface ExecutiveLoginResponse {
     };
 }
 
+interface SupAdminLoginResponse {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    role: string;
+  };
+}
+
 interface Prospectus {
     id: number;
     executive_id: string;
@@ -66,6 +75,26 @@ interface ApiResponse<T> {
     timestamp: string;
 }
 
+// Add new interfaces for services
+interface Service {
+  id: number;
+  service_name: string;
+  service_type: string | null;
+  description: string | null;
+  fee: number;
+  min_duration: string | null;
+  max_duration: string | null;
+}
+
+interface CreateServiceRequest {
+  service_name: string;
+  service_type?: string;
+  description?: string;
+  fee: number;
+  min_duration?: string;
+  max_duration?: string;
+}
+
 // API service
 const api = {
     axiosInstance: axios.create({
@@ -90,6 +119,15 @@ const api = {
                 error: error
             });
             throw error;
+        }
+    },
+
+    async loginSupAdmin(credentials: LoginCredentials): Promise<SupAdminLoginResponse> {
+        try {
+            const response = await this.axiosInstance.post('/superadmin/login', credentials);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
         }
     },
 
@@ -153,6 +191,36 @@ const api = {
         }
     },
 
+    // Create a new service
+    async createService(data: CreateServiceRequest): Promise<ApiResponse<Service>> {
+        try {
+            const response = await this.axiosInstance.post('/services/create', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('API createService error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                error: error
+            });
+            throw this.handleError(error);
+        }
+    },
+
+    // Get all services
+    async getAllServices(): Promise<ApiResponse<Service[]>> {
+        try {
+            const response = await this.axiosInstance.get('/services/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('API getAllServices error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                error: error
+            });
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -172,6 +240,7 @@ const api = {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
         localStorage.removeItem(LOGIN_STATUS_KEY);
+        localStorage.removeItem('userRole');
     },
 
     handleError(error: any) {
@@ -199,4 +268,5 @@ const api = {
     }
 };
 
+export type { Service, CreateServiceRequest };
 export default api;

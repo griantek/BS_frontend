@@ -17,9 +17,6 @@ import {
   Chip,
   useDisclosure,
   Pagination,
-  Selection,
-  SelectionMode,
-  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,
@@ -60,11 +57,8 @@ export default function BusinessDashboard() {
   const [filterValue, setFilterValue] = React.useState("");
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 10;
-  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [prospects, setProspects] = React.useState<Prospect[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -98,12 +92,6 @@ export default function BusinessDashboard() {
     fetchProspects();
   }, [router]);
 
-  const hasSelection = React.useMemo(() => {
-    if (selectedKeys === "all") return true;
-    if (selectedKeys instanceof Set) return selectedKeys.size > 0;
-    return false;
-  }, [selectedKeys]);
-
   const filteredItems = React.useMemo(() => {
     if (!Array.isArray(prospects)) return [];
     
@@ -114,53 +102,12 @@ export default function BusinessDashboard() {
     );
   }, [filterValue, prospects]);
 
-  const getSelectedCount = React.useMemo(() => {
-    if (selectedKeys === "all") return filteredItems.length;
-    return selectedKeys instanceof Set ? selectedKeys.size : 0;
-  }, [selectedKeys, filteredItems.length]);
-
-  const handleDeleteClick = () => {
-    onOpen();
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      setIsDeleting(true);
-      // Get reg_ids from selected items
-      const selectedRegIds = items
-        .filter(item => selectedKeys === "all" || (selectedKeys as Set<string>).has(item.id.toString()))
-        .map(item => item.reg_id);
-
-      await api.deleteProspectus(selectedRegIds);
-      
-      // Refresh the data
-      const response = await api.getProspectusByClientId(JSON.parse(localStorage.getItem('user') || '{}').id);
-      setProspects(response.data || []);
-      
-      // Clear selection
-      setSelectedKeys(new Set([]));
-      
-      toast.success('Selected prospects deleted successfully');
-    } catch (error) {
-      console.error('Delete error:', error);
-      const errorMessage = api.handleError(error);
-      toast.error(errorMessage.error || 'Failed to delete prospects');
-    } finally {
-      setIsDeleting(false);
-      onClose();
-    }
-  };
-
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
   const items = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
     return filteredItems.slice(start, end);
   }, [page, filteredItems]);
-
-  const handleRowClick = (id: string) => {
-    router.push(`/business/view/${id}`);
-  };
 
   // Stable key generation for table columns
   const columns = React.useMemo(() => [
@@ -171,7 +118,6 @@ export default function BusinessDashboard() {
     { key: "phone", label: "PHONE" },
     { key: "department", label: "DEPARTMENT" },
     { key: "state", label: "STATE" },
-    { key: "actions", label: "ACTIONS" },
   ], []);
 
   // Date formatting wrapped in useCallback
@@ -183,36 +129,19 @@ export default function BusinessDashboard() {
     }
   }, []);
 
-  const handleViewClick = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent row click
-    router.push(`/business/view/${id}`);
-  };
-
   return (
     <div className="w-full p-6">
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center px-6 py-4">
           <h1 className="text-2xl font-bold">Prospects Dashboard</h1>
-          <div className="flex gap-3">
-            <Button 
-              isIconOnly
-              color="primary" 
-              onClick={() => router.push('/business/add_prospect')}
-              title="Add Prospect"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </Button>
-            {hasSelection && (
-              <Button 
-                isIconOnly
-                color="danger" 
-                onClick={handleDeleteClick}
-                title={`Delete Selected (${getSelectedCount})`}
-              >
-                <TrashIcon className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+          <Button 
+            isIconOnly
+            color="primary" 
+            onClick={() => router.push('/business/add_prospect')}
+            title="Add Prospect"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </Button>
         </CardHeader>
       </Card>
 
@@ -236,9 +165,6 @@ export default function BusinessDashboard() {
         <CardBody>
           <Table
             aria-label="Prospects table"
-            selectionMode="multiple"
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys}
             bottomContent={
               <div className="flex w-full justify-center">
                 <Pagination
@@ -272,6 +198,7 @@ export default function BusinessDashboard() {
                 <TableRow 
                   key={item.id}
                   className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => router.push(`/business/view/${item.reg_id}`)}
                 >
                   <TableCell>{formatDate(item.date)}</TableCell>
                   <TableCell>{item.reg_id}</TableCell>
@@ -280,52 +207,12 @@ export default function BusinessDashboard() {
                   <TableCell>{item.phone}</TableCell>
                   <TableCell>{item.department}</TableCell>
                   <TableCell>{item.state}</TableCell>
-                  <TableCell>
-                    <div className="relative flex justify-center items-center">
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        color="primary"
-                        onClick={(e) => handleViewClick(e, item.reg_id)}
-                        className="min-w-[80px]"
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </CardBody>
       </Card>
-
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>Confirm Delete</ModalHeader>
-          <ModalBody>
-            Are you sure you want to delete {getSelectedCount} selected prospect(s)?
-            This action cannot be undone.
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="light"
-              onPress={onClose}
-              isDisabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              onPress={handleDeleteConfirm}
-              isLoading={isDeleting}
-            >
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }
