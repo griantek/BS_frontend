@@ -78,7 +78,7 @@ export default function BusinessDashboard() {
         // Extract data and preserve all fields
         const prospects = response.data || [];
         setProspects(prospects);
-        console.log('Prospects loaded:', prospects);
+        // console.log('Prospects loaded:', prospects);
       } catch (error) {
         console.error('Error fetching prospects:', error);
         setProspects([]); // Set empty array on error

@@ -149,11 +149,7 @@ export default function AddProspect() {
       
       await api.createProspectus(prospectusData);
       toast.success('Prospect added successfully!');
-      
-      // Disable the form and redirect after short delay
-      setTimeout(() => {
-        router.replace('/business'); // Use replace instead of push
-      }, 1500);
+      router.replace('/business'); // Immediate routing after success
       
     } catch (error: any) {
       setIsSubmitting(false); // Reset submission state on error

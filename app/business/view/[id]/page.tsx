@@ -310,10 +310,17 @@ function ProspectContent({ regId }: { regId: string }) {
   );
 }
 
-export default function ProspectView({ params }: { params: PageParams }) {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+// Main component wrapper that handles the Promise params
+export default function ProspectView({ params }: PageProps) {
+  const resolvedParams = React.use(params);
+  
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ProspectContent regId={params.id} />
+      <ProspectContent regId={resolvedParams.id} />
     </Suspense>
   );
 }

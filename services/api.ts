@@ -209,7 +209,7 @@ const api = {
 
     async createProspectus(data: ProspectusCreateRequest): Promise<Prospectus> {
         try {
-            const response = await this.axiosInstance.post('/prospectus/create', data);
+            const response = await this.axiosInstance.post('/executive/prospectus/create', data);
             return response.data;
         } catch (error: any) {
             console.error('API createProspectus error:', {
@@ -222,7 +222,7 @@ const api = {
     },
 
     async getAllProspectus(): Promise<Prospectus[]> {
-        const response = await this.axiosInstance.get('/prospectus/all');
+        const response = await this.axiosInstance.get('/executive/prospectus/all');
         return response.data;
     },
 
@@ -239,7 +239,7 @@ const api = {
     // Get prospects by executive's clientId
     async getProspectusByClientId(clientId: string): Promise<ApiResponse<Prospectus[]>> {
         try {
-            const response = await this.axiosInstance.get(`/prospectus/executive/${clientId}`);
+            const response = await this.axiosInstance.get(`/executive/prospectus/${clientId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -249,7 +249,7 @@ const api = {
     // Get single prospect by registration ID
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
-            const response = await this.axiosInstance.get(`/prospectus/register/${regId}`);
+            const response = await this.axiosInstance.get(`/executive/prospectus/register/${regId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -270,7 +270,7 @@ const api = {
     // Create a new service
     async createService(data: CreateServiceRequest): Promise<ApiResponse<Service>> {
         try {
-            const response = await this.axiosInstance.post('/services/create', data);
+            const response = await this.axiosInstance.post('/superadmin/services/create', data);
             return response.data;
         } catch (error: any) {
             // console.error('API createService error:', {
@@ -286,7 +286,7 @@ const api = {
     async getAllServices(): Promise<ApiResponse<Service[]>> {
         try {
             // console.log('Token before request:', this.getStoredToken());
-            const response = await this.axiosInstance.get('superadmin/services/all');
+            const response = await this.axiosInstance.get('/superadmin/services/all');
             return response.data;
         } catch (error: any) {
             // console.error('API getAllServices error:', {
