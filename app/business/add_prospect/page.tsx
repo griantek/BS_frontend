@@ -20,6 +20,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import type { ProspectusCreateRequest } from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
+import { withAdminAuth } from '@/components/withAdminAuth';
 
 interface FormDataType {
   clientId: string;
@@ -42,7 +43,7 @@ const departments = [
   'Mathematics', 'ECE', 'English', 'Other'
 ];
 
-export default function AddProspect() {
+function AddProspect() {
   const router = useRouter();
   const [userId, setUserId] = React.useState<string>('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -335,3 +336,5 @@ export default function AddProspect() {
     </>
   );
 }
+
+export default withAdminAuth(AddProspect);

@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
+import { withAdminAuth } from '@/components/withAdminAuth';
 
 interface Prospect {
   id: number;
@@ -52,7 +53,7 @@ interface ApiResponse {
   timestamp: string;
 }
 
-export default function BusinessDashboard() {
+function BusinessDashboard() {
   const router = useRouter();
   const [filterValue, setFilterValue] = React.useState("");
   const [page, setPage] = React.useState(1);
@@ -216,3 +217,5 @@ export default function BusinessDashboard() {
     </div>
   );
 }
+
+export default withAdminAuth(BusinessDashboard);

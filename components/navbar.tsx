@@ -36,6 +36,7 @@ export const Navbar = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const [isSupAdmin, setIsSupAdmin] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
   React.useEffect(() => {
     // More comprehensive check for login status
@@ -45,8 +46,10 @@ export const Navbar = () => {
       const loginStatus = localStorage.getItem('isLoggedIn');
       const userRole = localStorage.getItem('userRole');
       
-      setIsLoggedIn(!!(token && user && loginStatus === 'true'));
+      const loggedIn = !!(token && user && loginStatus === 'true');
+      setIsLoggedIn(loggedIn);
       setIsSupAdmin(userRole === 'supAdmin');
+      setIsAdmin(loggedIn && userRole !== 'supAdmin'); // Admin is logged in but not supAdmin
     };
 
     // Check immediately
@@ -65,7 +68,10 @@ export const Navbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
     setIsLoggedIn(false);
+    setIsSupAdmin(false);
+    setIsAdmin(false);
     // Use window.location for hard redirect
     window.location.href = '/admin';
   };
@@ -149,7 +155,7 @@ export const Navbar = () => {
         )}
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
-          {isLoggedIn && isSupAdmin && (
+          {isLoggedIn && (isSupAdmin || isAdmin) && (
             <Button
               color="danger"
               variant="light"
@@ -164,7 +170,7 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <ThemeSwitch />
-        {isLoggedIn && isSupAdmin && (
+        {isLoggedIn && (isSupAdmin || isAdmin) && (
           <Button
             isIconOnly
             color="danger"
