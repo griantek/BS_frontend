@@ -95,6 +95,20 @@ interface CreateServiceRequest {
   max_duration?: string;
 }
 
+// Add new interface for Executive
+interface Executive {
+    id: string;
+    name: string;
+    email: string;
+    status: string;
+}
+
+const PUBLIC_ENDPOINTS = [
+    '/executive/create',
+    '/executive/login',
+    '/superadmin/login'
+];
+
 // API service
 const api = {
     axiosInstance: axios.create({
@@ -104,9 +118,45 @@ const api = {
         },
     }),
 
-    setAuthToken(token: string) {
-        this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    init() {
+        // Add request interceptor
+        this.axiosInstance.interceptors.request.use(
+            (config) => {
+                // Check if the endpoint is public
+                const isPublicEndpoint = PUBLIC_ENDPOINTS.some(
+                    endpoint => config.url?.includes(endpoint)
+                );
+
+                if (!isPublicEndpoint) {
+                    const token = this.getStoredToken();
+                    if (token) {
+                        config.headers.Authorization = `Bearer ${token}`;
+                    }
+                }
+                return config;
+            },
+            (error) => {
+                return Promise.reject(error);
+            }
+        );
+
+        // Add response interceptor to handle auth errors
+        this.axiosInstance.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response?.status === 401) {
+                    this.clearStoredAuth();
+                    window.location.href = '/supAdmin/login';
+                }
+                return Promise.reject(error);
+            }
+        );
     },
+
+    // Remove setAuthToken as it's no longer needed for individual calls
+    // setAuthToken(token: string) {
+    //     this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    // },
 
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
@@ -221,6 +271,17 @@ const api = {
         }
     },
 
+    // Add new method for getting executives
+    async getAllExecutives(): Promise<ApiResponse<Executive[]>> {
+        try {
+            const response = await this.axiosInstance.get('/executives/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('API getAllExecutives error:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -268,5 +329,8 @@ const api = {
     }
 };
 
-export type { Service, CreateServiceRequest };
+// Initialize the interceptors
+api.init();
+
+export type { Service, CreateServiceRequest, Executive };
 export default api;

@@ -55,7 +55,6 @@ export default function SupAdminLogin() {
         };
         
         api.setStoredAuth(mockResponse.token, mockResponse.user);
-        api.setAuthToken(mockResponse.token);
         localStorage.setItem('userRole', 'supAdmin');
 
         toast.success('Login successful!');

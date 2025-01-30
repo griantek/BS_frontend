@@ -56,7 +56,7 @@ export default function BusinessLogin() {
       });
 
       api.setStoredAuth(response.token, response.executive);
-      api.setAuthToken(response.token);
+      // api.setAuthToken(response.token);
 
       toast.success('Login successful!');
       // Use window.location.href instead of router.push for a full page load

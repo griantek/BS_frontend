@@ -25,7 +25,7 @@ export default function AddService() {
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      api.setAuthToken(token);
+    //   api.setAuthToken(token);
     }
   }, [router]);
 

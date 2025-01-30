@@ -37,7 +37,7 @@ export default function ServicesDashboard() {
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      api.setAuthToken(token);
+    //   api.setAuthToken(token);
       fetchServices();
     }
   }, []);

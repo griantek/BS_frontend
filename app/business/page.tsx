@@ -68,7 +68,7 @@ export default function BusinessDashboard() {
     
     if (!token || !userStr) return;
     
-    api.setAuthToken(token);
+    // api.setAuthToken(token);
     const userData = JSON.parse(userStr);
     
     const fetchProspects = async () => {
