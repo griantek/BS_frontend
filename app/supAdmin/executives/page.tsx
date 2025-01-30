@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { checkAuth } from '@/utils/authCheck';
+import { withSupAdminAuth } from '@/components/withSupAdminAuth';
 import {
     Table,
     TableHeader,
@@ -14,6 +14,7 @@ import {
     CardBody,
     Button,
     Spinner,
+    Chip,
 } from "@heroui/react";
 import { toast } from 'react-toastify';
 import api, { Executive } from '@/services/api';
@@ -23,12 +24,19 @@ const ExecutivesPage: React.FC = () => {
     const [executives, setExecutives] = React.useState<Executive[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
-    React.useEffect(() => {
-        // Check authentication first
-        if (!checkAuth(router, 'supAdmin')) {
-            return;
+    const formatDate = (dateString: string) => {
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return dateString;
         }
+    };
 
+    React.useEffect(() => {
         const fetchExecutives = async () => {
             try {
                 const token = api.getStoredToken();
@@ -77,17 +85,27 @@ const ExecutivesPage: React.FC = () => {
                         }}
                     >
                         <TableHeader>
-                            <TableColumn>NAME</TableColumn>
+                            <TableColumn>USERNAME</TableColumn>
                             <TableColumn>EMAIL</TableColumn>
-                            <TableColumn>STATUS</TableColumn>
+                            <TableColumn>ROLE</TableColumn>
+                            <TableColumn>JOINED</TableColumn>
                             <TableColumn>ACTIONS</TableColumn>
                         </TableHeader>
                         <TableBody emptyContent="No executives found">
                             {executives.map((executive) => (
                                 <TableRow key={executive.id}>
-                                    <TableCell>{executive.name}</TableCell>
+                                    <TableCell>{executive.username}</TableCell>
                                     <TableCell>{executive.email}</TableCell>
-                                    <TableCell>{executive.status}</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            size="sm"
+                                            variant="flat"
+                                            color={executive.role === 'manager' ? 'primary' : 'default'}
+                                        >
+                                            {executive.role}
+                                        </Chip>
+                                    </TableCell>
+                                    <TableCell>{formatDate(executive.created_at)}</TableCell>
                                     <TableCell>
                                         <Button size="sm" color="primary" variant="light">
                                             Edit
@@ -103,4 +121,4 @@ const ExecutivesPage: React.FC = () => {
     );
 };
 
-export default ExecutivesPage;
+export default withSupAdminAuth(ExecutivesPage);

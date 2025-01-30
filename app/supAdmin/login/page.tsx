@@ -46,25 +46,30 @@ export default function SupAdminLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Hardcoded credential check
-      if (data.username === 'griantekAdmin' && data.password === 'gtk1234') {
-        // Mock successful login
-        const mockResponse = {
-          token: 'mock-token-123',
-          user: { username: 'griantekAdmin', role: 'supAdmin' }
-        };
-        
-        api.setStoredAuth(mockResponse.token, mockResponse.user);
+      const response = await api.loginSupAdmin({
+        username: data.username,
+        password: data.password
+      });
+
+      if (response.success && response.token && response.admin) {
+        // Store auth data
+        api.setStoredAuth(response.token, response.admin);
         localStorage.setItem('userRole', 'supAdmin');
+        localStorage.setItem('isLoggedIn', 'true');
+
+        console.log('Login successful:', {
+          success: response.success,
+          hasToken: !!response.token,
+          adminId: response.admin.id
+        });
 
         toast.success('Login successful!');
         setTimeout(() => window.location.href = '/supAdmin', 1500);
-        return;
+      } else {
+        throw new Error('Invalid response format');
       }
-
-      // If credentials don't match, show error
-      toast.error('Invalid credentials');
     } catch (error) {
+      console.error('Login failed:', error);
       const errorMessage = api.handleError(error);
       toast.error(errorMessage.error || 'Invalid credentials');
     } finally {

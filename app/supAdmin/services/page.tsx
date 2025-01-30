@@ -24,8 +24,10 @@ import {
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api, { Service } from '@/services/api';
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { withSupAdminAuth } from '@/components/withSupAdminAuth';
 
-export default function ServicesDashboard() {
+function ServicesDashboard() {
   const router = useRouter();
   const [services, setServices] = React.useState<Service[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -35,26 +37,34 @@ export default function ServicesDashboard() {
   const [selectedService, setSelectedService] = React.useState<Service | null>(null);
 
   React.useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-    //   api.setAuthToken(token);
-      fetchServices();
-    }
-  }, []);
+    const initializePage = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Auth state:', {
+          token: api.getStoredToken(),
+          isLoggedIn: localStorage.getItem('isLoggedIn'),
+          userRole: localStorage.getItem('userRole')
+        });
 
-  const fetchServices = async () => {
-    try {
-      setIsLoading(true);
-      const response = await api.getAllServices();
-      setServices(response.data);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      const errorMessage = api.handleError(error);
-      toast.error(errorMessage.error || 'Failed to load services');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const response = await api.getAllServices();
+        if (response?.data) {
+          setServices(response.data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching services:', error);
+        const errorMessage = api.handleError(error);
+        toast.error(errorMessage.error || 'Failed to load services');
+        
+        if (error?.response?.status === 401) {
+          router.push('/supAdmin/login');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializePage();
+  }, [router]);
 
   const columns = [
     { key: "service_name", label: "SERVICE NAME" },
@@ -188,3 +198,6 @@ export default function ServicesDashboard() {
     </div>
   );
 }
+
+export default withSupAdminAuth(ServicesDashboard);
+

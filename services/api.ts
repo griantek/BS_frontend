@@ -21,11 +21,12 @@ interface ExecutiveLoginResponse {
 }
 
 interface SupAdminLoginResponse {
+  success: boolean;
   token: string;
-  user: {
-    id: string;
+  admin: {
+    id: number;
     username: string;
-    role: string;
+    created_at: string;
   };
 }
 
@@ -98,9 +99,10 @@ interface CreateServiceRequest {
 // Add new interface for Executive
 interface Executive {
     id: string;
-    name: string;
+    username: string;
     email: string;
-    status: string;
+    role: string;
+    created_at: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -119,19 +121,31 @@ const api = {
     }),
 
     init() {
-        // Add request interceptor
         this.axiosInstance.interceptors.request.use(
             (config) => {
-                // Check if the endpoint is public
                 const isPublicEndpoint = PUBLIC_ENDPOINTS.some(
                     endpoint => config.url?.includes(endpoint)
                 );
 
                 if (!isPublicEndpoint) {
                     const token = this.getStoredToken();
-                    if (token) {
-                        config.headers.Authorization = `Bearer ${token}`;
+                    const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
+                    
+                    // console.log('Request Config:', {
+                    //     url: config.url,
+                    //     token: token,
+                    //     isLoggedIn: isLoggedIn
+                    // });
+
+                    if (!token || isLoggedIn !== 'true') {
+                        // Reject the request if not authenticated
+                        return Promise.reject(new Error('Not authenticated'));
                     }
+
+                    // Ensure token has Bearer prefix
+                    const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                    config.headers.Authorization = finalToken;
+                    // console.log('Final headers:', config.headers);
                 }
                 return config;
             },
@@ -140,43 +154,55 @@ const api = {
             }
         );
 
-        // Add response interceptor to handle auth errors
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
-                if (error.response?.status === 401) {
+                // Handle 401 and other auth errors
+                if (error?.response?.status === 401 || error?.message === 'Not authenticated') {
                     this.clearStoredAuth();
-                    window.location.href = '/supAdmin/login';
+                    const currentPath = window.location.pathname;
+                    window.location.href = currentPath.startsWith('/supAdmin') 
+                        ? '/supAdmin/login' 
+                        : '/admin';
                 }
                 return Promise.reject(error);
             }
         );
     },
 
-    // Remove setAuthToken as it's no longer needed for individual calls
-    // setAuthToken(token: string) {
-    //     this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    // },
-
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/executive/login', credentials);
             return response.data;
         } catch (error: any) {
-            console.error('API createProspectus error:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                error: error
-            });
+            // console.error('API createProspectus error:', {
+            //     status: error.response?.status,
+            //     data: error.response?.data,
+            //     error: error
+            // });
             throw error;
         }
     },
 
     async loginSupAdmin(credentials: LoginCredentials): Promise<SupAdminLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/login', credentials);
+            const response = await this.axiosInstance.post('/superadmin/login', {
+                username: credentials.username,
+                password: credentials.password
+            });
+
+            // console.log('Login response:', {
+            //     success: response.data.success,
+            //     hasToken: !!response.data.token,
+            //     hasAdmin: !!response.data.admin
+            // });
+
             return response.data;
         } catch (error: any) {
+            console.error('Login error:', {
+                status: error.response?.status,
+                data: error.response?.data
+            });
             throw this.handleError(error);
         }
     },
@@ -247,11 +273,11 @@ const api = {
             const response = await this.axiosInstance.post('/services/create', data);
             return response.data;
         } catch (error: any) {
-            console.error('API createService error:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                error: error
-            });
+            // console.error('API createService error:', {
+            //     status: error.response?.status,
+            //     data: error.response?.data,
+            //     error: error
+            // });
             throw this.handleError(error);
         }
     },
@@ -259,14 +285,16 @@ const api = {
     // Get all services
     async getAllServices(): Promise<ApiResponse<Service[]>> {
         try {
-            const response = await this.axiosInstance.get('/services/all');
+            // console.log('Token before request:', this.getStoredToken());
+            const response = await this.axiosInstance.get('superadmin/services/all');
             return response.data;
         } catch (error: any) {
-            console.error('API getAllServices error:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                error: error
-            });
+            // console.error('API getAllServices error:', {
+            //     status: error.response?.status,
+            //     data: error.response?.data,
+            //     error: error,
+            //     token: this.getStoredToken()
+            // });
             throw this.handleError(error);
         }
     },
@@ -274,7 +302,13 @@ const api = {
     // Add new method for getting executives
     async getAllExecutives(): Promise<ApiResponse<Executive[]>> {
         try {
-            const response = await this.axiosInstance.get('/executives/all');
+            // Try one of these endpoints based on your backend structure:
+            const response = await this.axiosInstance.get('/executive/all');
+            // OR
+            // const response = await this.axiosInstance.get('/superadmin/executives');
+            // OR
+            // const response = await this.axiosInstance.get('/executives');
+            
             return response.data;
         } catch (error: any) {
             console.error('API getAllExecutives error:', error);
@@ -292,9 +326,11 @@ const api = {
     },
 
     setStoredAuth(token: string, user: any) {
-        localStorage.setItem(TOKEN_KEY, token);
+        const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
+        localStorage.setItem('isLoggedIn', 'true'); // Add this for consistency
     },
 
     clearStoredAuth() {
@@ -302,14 +338,15 @@ const api = {
         localStorage.removeItem(USER_KEY);
         localStorage.removeItem(LOGIN_STATUS_KEY);
         localStorage.removeItem('userRole');
+        localStorage.removeItem('isLoggedIn');
     },
 
     handleError(error: any) {
-        console.error('Full error details:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message
-        });
+        // console.error('Full error details:', {
+        //     status: error.response?.status,
+        //     data: error.response?.data,
+        //     message: error.message
+        // });
 
         if (error.response) {
             return {
