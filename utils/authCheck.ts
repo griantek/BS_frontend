@@ -13,7 +13,8 @@ export const checkAuth = (router: Router) => {
 
   if (!token || !user || isLoggedIn !== 'true') {
     console.log('Auth check failed:', { token, isLoggedIn, user });
-    router.replace('/admin');
+    // Don't use router.replace here as it can cause loops
+    window.location.href = '/admin';
     return false;
   }
   return true;

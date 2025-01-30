@@ -28,13 +28,16 @@ export default function BusinessLogin() {
   const router = useRouter();
 
   React.useEffect(() => {
+    // Clear any existing auth data on mount of login page
+    api.clearStoredAuth();
+    
     const token = api.getStoredToken();
     const user = api.getStoredUser();
     
     if (token && user) {
-      router.replace('/business');
+      window.location.href = '/business';
     }
-  }, [router]);
+  }, []);
 
   const {
     register,
@@ -56,7 +59,8 @@ export default function BusinessLogin() {
       api.setAuthToken(response.token);
 
       toast.success('Login successful!');
-      setTimeout(() => router.push('/business'), 1500);
+      // Use window.location.href instead of router.push for a full page load
+      setTimeout(() => window.location.href = '/business', 1500);
     } catch (error) {
       const errorMessage = api.handleError(error);
       toast.error(errorMessage.error || 'Invalid credentials', {

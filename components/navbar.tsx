@@ -35,15 +35,33 @@ export const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
 
   React.useEffect(() => {
-    // Check login status when component mounts
-    const loginStatus = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(loginStatus);
+    // More comprehensive check for login status
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      const loginStatus = localStorage.getItem('isLoggedIn');
+      setIsLoggedIn(!!(token && user && loginStatus === 'true'));
+    };
+
+    // Check immediately
+    checkLoginStatus();
+
+    // Also listen for storage events to handle changes
+    window.addEventListener('storage', checkLoginStatus);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+    };
   }, []);
 
   const handleLogout = () => {
+    // Clear all auth data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
-    router.push('/admin');
+    // Use window.location for hard redirect
+    window.location.href = '/admin';
   };
 
   const searchInput = (
