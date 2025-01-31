@@ -148,21 +148,28 @@ function ProspectContent({ regId }: { regId: string }) {
               <Button
                 color="secondary"
                 variant="flat"
-                onClick={() => {/* Add quotation logic */}}
+                onClick={() => router.push(`/business/quotation/${regId}`)}
               >
                 Send Quotation
               </Button>
               <Button
+                color="success"
+                variant="flat"
+                onPress={() => router.push(`/business/register/${regId}`)}
+              >
+                Register
+              </Button>
+              <Button
                 color="primary"
                 variant="flat"
-                onClick={() => router.push(`/business/prospect/edit/${regId}`)}
+                onPress={() => router.push(`/business/prospect/edit/${regId}`)}
               >
                 Edit Details
               </Button>
               <Button
                 color="danger"
                 variant="flat"
-                onClick={onOpen}
+                onPress={onOpen}
                 startContent={<TrashIcon className="h-5 w-5" />}
               >
                 Delete

@@ -39,8 +39,18 @@ interface FormDataType {
 }
 
 const departments = [
-  'Accountancy', 'Civil', 'Mechanical', 'EEE',
-  'Mathematics', 'ECE', 'English', 'Other'
+  'CSE',
+  'ECE',
+  'EEE',
+  'CIVIL',
+  'MECH',
+  'Maths',
+  'English',
+  'Physics',
+  'Chemistry',
+  'Commerce',
+  'Accountancy',
+  'Others'
 ];
 
 function AddProspect() {

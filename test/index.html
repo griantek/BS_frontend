@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Invoice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="invoice-container">
+        <header class="header">
+            <img src="logo.jpg" height="100px" alt="Logo" class="logo">
+            <h1 class="invoice-title">Invoice</h1>
+            <div class="invoice-info">
+                <p><strong>Invoice No:</strong> 004</p>
+                <p><strong>Invoice Date:</strong> JUN 19, 2019</p>
+                <p><strong>Due Date:</strong> JUN 28, 2019</p>
+            </div>
+        </header>
+
+        <section class="details-section">
+            <div class="company-details">
+                <h3>Billed by</h3>
+                <p><strong>Company:</strong> Foobar Labs</p>
+                <span class="address-line">46, Raghuvirngham Society,</span>
+                <span class="address-line">Bengaluru, Karnataka,</span>
+                <span class="address-line">India - 560054</span>
+            </div>
+            <div class="client-details">
+                <h3>Billed to</h3>
+                <p><strong>Company:</strong> Vox Studio</p>
+                <span class="address-line">305, 3rd Floor, Orion mall,</span>
+                <span class="address-line">Bengaluru, Karnataka,</span>
+                <span class="address-line">India - 560055</span>
+            </div>
+        </section>
+
+        <section class="supply-details">
+            <div class="place-of-supply">
+                <p><strong>Place of Supply:</strong>{state}</p>
+            </div>
+            <div class="country-of-supply">
+                <p><strong>Country of Supply:</strong>{country}</p>
+            </div>
+        </section>
+
+        <section class="items-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item #/Item description</th>
+                        <th>HSN</th>
+                        <th>Qty.</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1. Basic Web Development</td>
+                        <td>02</td>
+                        <td>10</td>
+                        <td>₹ 10,000.00</td>
+                    </tr>
+                    <!-- Add more rows as needed -->
+                </tbody>
+            </table>
+        </section>
+
+        <div class="two-column-layout">
+            <div class="left-column">
+                <div class="bank-payment-details">
+                    <h3>Bank & Payment Details</h3>
+                    <p>Account Holder Name: Foobar Labs</p>
+                    <p>Account Number: 45356287987</p>
+                    <p>IFSC: SBIN0018159</p>
+                    <p>Account Type: Savings</p>
+                    <p>Bank: State Bank of India</p>
+                    <p>UPI: foobarlabs@oksbi</p>
+                    <img src="path/to/qrcode.png" alt="QR Code" class="qrcode">
+                </div>
+                <div class="terms-conditions">
+                    <h3>Terms and Conditions</h3>
+                    <ol>
+                        <li>Please pay within 15 days from the date of invoice, overdue interest @ 14% will be charged on delayed payments.</li>
+                        <li>Please quote invoice number when remitting funds.</li>
+                    </ol>
+                </div>
+                <div class="additional-notes">
+                    <h3>Additional Notes</h3>
+                    <p>It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout...</p>
+                </div>
+            </div>
+            
+            <div class="right-column">
+                <div class="price-summary">
+                    <div class="summary-row">
+                        <span>Sub Total</span>
+                        <span>₹ 40,000</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Discount (10%)</span>
+                        <span>- ₹ 4,000</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Net Amount</span>
+                        <span>₹ 36,000</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total Amount</span>
+                        <span>₹ 36,000</span>
+                    </div>
+                    <div class="summary-row amount-words">
+                        <span>Amount in words:</span>
+                        <span>Thirty Six Thousand Rupees Only</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
