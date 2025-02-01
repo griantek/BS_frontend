@@ -25,6 +25,7 @@ import html2canvas from 'html2canvas';
 import api from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
 import type { ServiceType, BankType, PeriodUnit } from '@/constants/quotation';
+import type { BankAccount } from '@/services/api';
 
 // Add interface for better type safety
 interface ProspectData {
@@ -61,6 +62,7 @@ function QuotationContent({ regId }: { regId: string }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [prospectData, setProspectData] = React.useState<ProspectData | null>(null);
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
 
   const {
     register,
@@ -71,7 +73,6 @@ function QuotationContent({ regId }: { regId: string }) {
   } = useForm<QuotationFormData>({
     defaultValues: {
       initialAmount: undefined,
-      writingAmount: undefined,
       acceptanceAmount: undefined,
       discountPercentage: undefined,
       discountAmount: 0,
@@ -126,22 +127,36 @@ function QuotationContent({ regId }: { regId: string }) {
     fetchProspectData();
   }, [router, regId, setValue]);
 
+  // Add bank accounts fetch
+  React.useEffect(() => {
+    const fetchBankAccounts = async () => {
+      try {
+        const response = await api.getAllBankAccounts();
+        setBankAccounts(response.data);
+      } catch (error) {
+        console.error('Error fetching bank accounts:', error);
+        toast.error('Failed to load bank accounts');
+      }
+    };
+
+    fetchBankAccounts();
+  }, []);
+
   // Watch all amount fields to calculate total
   const getNumericValue = (value: number | undefined) => Number(value || 0);
   const initialAmount = getNumericValue(watch('initialAmount'));
-  const writingAmount = getNumericValue(watch('writingAmount'));
   const acceptanceAmount = getNumericValue(watch('acceptanceAmount'));
   const discountPercentage = getNumericValue(watch('discountPercentage'));
 
   React.useEffect(() => {
-    const subTotal = initialAmount + writingAmount + acceptanceAmount;
+    const subTotal = initialAmount + acceptanceAmount;
     const discountAmount = (subTotal * discountPercentage) / 100;
     const total = subTotal - discountAmount;
 
     setValue('subTotal', subTotal);
     setValue('discountAmount', discountAmount);
     setValue('totalAmount', total);
-  }, [initialAmount, writingAmount, acceptanceAmount, discountPercentage, setValue]);
+  }, [initialAmount, acceptanceAmount, discountPercentage, setValue]);
 
   const generatePDF = async () => {
     try {
@@ -289,6 +304,11 @@ function QuotationContent({ regId }: { regId: string }) {
     .map(id => SERVICES.find(s => s.id === id))
     .filter((service): service is ServiceType => service !== undefined);
 
+  // Add bank change handler
+  const handleBankChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setValue('selectedBank', event.target.value);
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (!prospectData) return <div>No data found</div>;
 
@@ -388,15 +408,9 @@ function QuotationContent({ regId }: { regId: string }) {
                 type="number"
                 label="Initial Amount (INR)"
                 placeholder="Enter amount"
-                value={watch('initialAmount')}
+                value={watch('initialAmount')?.toString()}
                 onChange={(e) => setValue('initialAmount', Number(e.target.value))}
                 readOnly
-              />
-              <Input
-                type="number"
-                label="Writing Amount (INR)"
-                placeholder="Enter amount"
-                onChange={(e) => setValue('writingAmount', Number(e.target.value))}
               />
               <Input
                 type="number"
@@ -525,18 +539,18 @@ function QuotationContent({ regId }: { regId: string }) {
             </div>
           </div>
 
-          {/* Bank Selection - Fixed */}
+          {/* Bank Selection - Updated */}
           <div className="w-full space-y-2">
-            <label className="text-sm font-medium">Select Bank</label>
+            <label className="text-sm font-medium">Select Bank Account</label>
             <select
               className="w-full p-2 rounded-lg border border-gray-300"
               value={watch('selectedBank')}
-              onChange={(e) => handleBankChange(e.target.value)}
+              onChange={handleBankChange}
             >
-              <option value="">Choose a bank</option>
-              {BANKS.map((bank) => (
-                <SelectOption key={bank.id} value={bank.id}>
-                  {bank.name} - XXXX{bank.accountNumber}
+              <option value="">Choose a bank account</option>
+              {bankAccounts.map((account) => (
+                <SelectOption key={account.id} value={account.id}>
+                  {account.account_name} - {account.bank}
                 </SelectOption>
               ))}
             </select>
@@ -570,7 +584,6 @@ function QuotationContent({ regId }: { regId: string }) {
         quotationData={{
           ...watch(), // Pass the selected services array
           initialAmount: watch('initialAmount') || 0,
-          writingAmount: watch('writingAmount') || 0,
           acceptanceAmount: watch('acceptanceAmount') || 0,
           discountPercentage: watch('discountPercentage') || 0,
           selectedServicesData: selectedServiceData

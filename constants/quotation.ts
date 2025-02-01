@@ -14,7 +14,7 @@ export const SERVICES: ServiceType[] = [
   { id: 'research_paper', name: 'Research Paper Writing', price: 20000 },
   { id: 'thesis', name: 'Thesis Writing', price: 30000 },
   { id: 'documentation', name: 'Project Documentation', price: 15000 },
-  { id: 'technical', name: 'Technical Writing', price: 25000 }
+  { id: 'technical_writing', name: 'Technical Writing', price: 25000 } // Changed ID to be unique
 ];
 
 export const BANKS: BankType[] = [

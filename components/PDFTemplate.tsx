@@ -4,6 +4,8 @@ import { SERVICES, BANKS } from '@/constants/quotation';
 import { invoiceStyles } from '@/constants/invoiceStyles';
 import type { QuotationFormData } from '@/types/quotation';
 import Image from 'next/image';
+import type { BankAccount } from '@/services/api';
+import api from '@/services/api';
 
 interface PDFTemplateProps {
   id: string;
@@ -12,10 +14,26 @@ interface PDFTemplateProps {
 }
 
 const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationData }) => {
+  const [bankDetails, setBankDetails] = React.useState<BankAccount | null>(null);
+
+  React.useEffect(() => {
+    const fetchBankDetails = async () => {
+      if (quotationData.selectedBank) {
+        try {
+          const response = await api.getBankAccountById(quotationData.selectedBank);
+          setBankDetails(response.data);
+        } catch (error) {
+          console.error('Error fetching bank details:', error);
+        }
+      }
+    };
+
+    fetchBankDetails();
+  }, [quotationData.selectedBank]);
+
   // Add default values for amounts
   const {
     initialAmount = 0,
-    writingAmount = 0,
     acceptanceAmount = 0,
     totalAmount = 0,
     discountAmount = 0,
@@ -105,11 +123,16 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
         <div className="left-column">
           <div style={invoiceStyles.boxContent}>
             <h3 style={invoiceStyles.boxHeading}>Bank & Payment Details</h3>
-            {selectedBank && (
+            {bankDetails && (
               <>
-                <p style={invoiceStyles.detailsParagraph}>Account Holder Name: Graintek Solutions</p>
-                <p style={invoiceStyles.detailsParagraph}>Account Number: XXXX XXXX {selectedBank.accountNumber}</p>
-                <p style={invoiceStyles.detailsParagraph}>Bank: {selectedBank.name}</p>
+                <p style={invoiceStyles.detailsParagraph}>Bank: {bankDetails.bank}</p>
+                <p style={invoiceStyles.detailsParagraph}>Account Name: {bankDetails.account_name}</p>
+                <p style={invoiceStyles.detailsParagraph}>Account Holder: {bankDetails.account_holder_name}</p>
+                <p style={invoiceStyles.detailsParagraph}>Account Number: {bankDetails.account_number}</p>
+                <p style={invoiceStyles.detailsParagraph}>IFSC Code: {bankDetails.ifsc_code}</p>
+                {bankDetails.upi_id && (
+                  <p style={invoiceStyles.detailsParagraph}>UPI: {bankDetails.upi_id}</p>
+                )}
               </>
             )}
           </div>
@@ -132,10 +155,10 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
               <span>Initial Amount</span>
               <span>₹ {initialAmount.toLocaleString()}</span>
             </div>
-            <div style={invoiceStyles.summaryRow}>
+            {/* <div style={invoiceStyles.summaryRow}>
               <span>Writing Amount</span>
               <span>₹ {writingAmount.toLocaleString()}</span>
-            </div>
+            </div> */}
             <div style={invoiceStyles.summaryRow}>
               <span>Acceptance Amount</span>
               <span>₹ {acceptanceAmount.toLocaleString()}</span>

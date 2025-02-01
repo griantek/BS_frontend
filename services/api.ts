@@ -105,6 +105,19 @@ interface Executive {
     created_at: string;
 }
 
+// Add new interface for BankAccount
+interface BankAccount {
+  id: string;
+  account_name: string;
+  account_holder_name: string;
+  account_number: string;
+  ifsc_code: string;
+  account_type: string;
+  bank: string;
+  upi_id: string;
+  created_at: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -268,9 +281,9 @@ const api = {
     },
 
     // Create a new service
-    async createService(data: CreateServiceRequest): Promise<ApiResponse<Service>> {
+    async createService(data: Omit<Service, 'id'>): Promise<ApiResponse<Service>> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/services/create', data);
+            const response = await this.axiosInstance.post('/common/services/create', data);
             return response.data;
         } catch (error: any) {
             // console.error('API createService error:', {
@@ -286,7 +299,7 @@ const api = {
     async getAllServices(): Promise<ApiResponse<Service[]>> {
         try {
             // console.log('Token before request:', this.getStoredToken());
-            const response = await this.axiosInstance.get('/superadmin/services/all');
+            const response = await this.axiosInstance.get('/common/services/all');
             return response.data;
         } catch (error: any) {
             // console.error('API getAllServices error:', {
@@ -295,6 +308,16 @@ const api = {
             //     error: error,
             //     token: this.getStoredToken()
             // });
+            throw this.handleError(error);
+        }
+    },
+
+    // Get service by ID
+    async getServiceById(id: number): Promise<ApiResponse<Service>> {
+        try {
+            const response = await this.axiosInstance.get(`/common/services/${id}`);
+            return response.data;
+        } catch (error: any) {
             throw this.handleError(error);
         }
     },
@@ -314,6 +337,17 @@ const api = {
             console.error('API getAllExecutives error:', error);
             throw this.handleError(error);
         }
+    },
+
+    // Add new methods for getting bank accounts
+    async getAllBankAccounts(): Promise<ApiResponse<BankAccount[]>> {
+        const response = await this.axiosInstance.get('/common/bank-accounts/all');
+        return response.data;
+    },
+
+    async getBankAccountById(id: string): Promise<ApiResponse<BankAccount>> {
+        const response = await this.axiosInstance.get(`/common/bank-accounts/${id}`);
+        return response.data;
     },
 
     getStoredToken() {
@@ -369,5 +403,5 @@ const api = {
 // Initialize the interceptors
 api.init();
 
-export type { Service, CreateServiceRequest, Executive };
+export type { Service, CreateServiceRequest, Executive, BankAccount };
 export default api;
