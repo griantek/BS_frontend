@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import { useForm } from 'react-hook-form';
 import PDFTemplate from '@/components/PDFTemplate';
-import {  BANKS, PERIOD_UNITS } from '@/constants/quotation';
+import {  BANKS, PERIOD_UNITS,PeriodUnit } from '@/constants/quotation';
 import type { QuotationFormData } from '@/types/quotation';
 import { withAdminAuth } from '@/components/withAdminAuth';
 import { toast } from 'react-toastify';
@@ -24,9 +24,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import api from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
-import type {  BankType, PeriodUnit } from '@/constants/quotation';
-import type { BankAccount } from '@/services/api';
-import type { Service } from '@/services/api';
+import type { CreateRegistrationRequest,BankAccount,Service } from '@/services/api';
 
 // Add interface for better type safety
 interface ProspectData {
@@ -86,7 +84,8 @@ function QuotationContent({ regId }: { regId: string }) {
       publicationPeriod: undefined,
       publicationPeriodUnit: 'months',
       selectedBank: '',
-      selectedServicesData: []
+      selectedServicesData: [],
+      transactionDate: new Date().toISOString().split('T')[0], // Add default date
     }
   });
 
@@ -265,10 +264,61 @@ function QuotationContent({ regId }: { regId: string }) {
   const onSubmit = async (data: QuotationFormData) => {
     try {
       setIsGenerating(true);
-      await generatePDF();
-      toast.success('Quotation generated successfully!');
-      router.push('/business');
+
+      // Get user data for executive ID
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      if (!user?.id) {
+        throw new Error("Executive ID not found");
+      }
+
+      if (!prospectData) {
+        throw new Error("Prospect data not found");
+      }
+
+      // Prepare registration data
+      const registrationData: CreateRegistrationRequest = {
+        // Transaction details (minimal for pending status)
+        transaction_type: 'Cash', // Default type
+        transaction_id: '', // Will be updated later
+        amount: 0, // Will be updated later
+        transaction_date: data.transactionDate || new Date().toISOString().split('T')[0],
+        additional_info: {},
+
+        // Executive and prospect details
+        exec_id: user.id,
+        client_id: user.client_id || user.clientId,
+        prospectus_id: prospectData.id,
+        services: data.selectedServices
+          .map(id => services.find(s => s.id === parseInt(id))?.service_name)
+          .filter(Boolean)
+          .join(", "),
+        init_amount: data.initialAmount || 0,
+        accept_amount: data.acceptanceAmount || 0,
+        discount: data.discountAmount || 0,
+        total_amount: data.totalAmount || 0,
+        accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
+        pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
+        bank_id: data.selectedBank,
+        status: 'pending', // Set status as pending for quotation
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      };
+
+      // Submit registration with pending status
+      const response = await api.createRegistration(registrationData);
+      
+      if (response.success) {
+        // Generate PDF after successful registration
+        await generatePDF();
+        toast.success('Quotation generated and saved successfully!');
+        router.push('/business');
+      } else {
+        throw new Error('Failed to create registration');
+      }
     } catch (error) {
+      console.error('Submission error:', error);
       toast.error('Failed to generate quotation');
     } finally {
       setIsGenerating(false);

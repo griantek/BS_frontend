@@ -24,4 +24,5 @@ export interface QuotationFormData {
   publicationPeriod: number;
   publicationPeriodUnit: 'days' | 'months';
   selectedBank: string;
+  transactionDate:string;
 }

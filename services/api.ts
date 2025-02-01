@@ -165,7 +165,7 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'registered' | 'not_registered';  // Explicitly define literal types
+  status: 'registered' | 'pending';  // Explicitly define literal types
   month: number;
   year: number;
 }
