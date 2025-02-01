@@ -118,7 +118,7 @@ interface BankAccount {
   created_at: string;
 }
 
-// Add new interface for Registration
+// Update Registration interface
 interface Registration {
   id: number;
   prospectus_id: number;
@@ -130,14 +130,32 @@ interface Registration {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'registered' | 'not_registered';  // Updated status types
   month: number;
   year: number;
   created_at: string;
 }
 
 // Add interface for registration creation
+interface TransactionInfo {
+  transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
+  transaction_id: string;
+  amount: number;
+  transaction_date: string;
+  additional_info: Record<string, any>;
+}
+
 interface CreateRegistrationRequest {
+  // Transaction details
+  transaction_type: TransactionInfo['transaction_type'];
+  transaction_id: string;
+  amount: number;
+  transaction_date: string;
+  additional_info: Record<string, any>;
+  
+  // Executive and prospect details
+  exec_id: string;
+  client_id: string;
   prospectus_id: number;
   services: string;
   init_amount: number;
@@ -147,7 +165,7 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'registered' | 'not_registered';  // Explicitly define literal types
   month: number;
   year: number;
 }
@@ -477,5 +495,13 @@ const api = {
 // Initialize the interceptors
 api.init();
 
-export type { Service, CreateServiceRequest, Executive, BankAccount, Registration, CreateRegistrationRequest };
+export type { 
+    Service, 
+    CreateServiceRequest, 
+    Executive, 
+    BankAccount, 
+    Registration, 
+    CreateRegistrationRequest,
+    TransactionInfo
+};
 export default api;
