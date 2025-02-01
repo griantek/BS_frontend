@@ -26,6 +26,7 @@ import api from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
 import type { ServiceType, BankType, PeriodUnit } from '@/constants/quotation';
 import type { BankAccount } from '@/services/api';
+import type { Service } from '@/services/api';
 
 // Add interface for better type safety
 interface ProspectData {
@@ -299,10 +300,24 @@ function QuotationContent({ regId }: { regId: string }) {
     SERVICES.find(s => s.id === serviceId)
   ).filter(Boolean);
 
-  // Update the service data handling
+  // Update the service data handling with correct type mapping
   const selectedServiceData = watch('selectedServices')
-    .map(id => SERVICES.find(s => s.id === id))
-    .filter((service): service is ServiceType => service !== undefined);
+    .map(id => {
+      const service = SERVICES.find(s => s.id === id);
+      if (service) {
+        return {
+          id: parseInt(service.id), // Convert string id to number
+          service_name: service.name,
+          service_type: null,
+          description: null,
+          fee: service.price,
+          min_duration: null,
+          max_duration: null
+        } as Service;
+      }
+      return undefined;
+    })
+    .filter((service): service is Service => service !== undefined);
 
   // Add bank change handler
   const handleBankChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

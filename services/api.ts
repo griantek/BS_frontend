@@ -118,6 +118,40 @@ interface BankAccount {
   created_at: string;
 }
 
+// Add new interface for Registration
+interface Registration {
+  id: number;
+  prospectus_id: number;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  bank_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  month: number;
+  year: number;
+  created_at: string;
+}
+
+// Add interface for registration creation
+interface CreateRegistrationRequest {
+  prospectus_id: number;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  bank_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  month: number;
+  year: number;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -350,6 +384,46 @@ const api = {
         return response.data;
     },
 
+    // Get all registrations
+    async getAllRegistrations(): Promise<ApiResponse<Registration[]>> {
+        try {
+            const response = await this.axiosInstance.get('/common/registration/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Get registration by ID
+    async getRegistrationById(id: number): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.get(`/common/registration/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Create new registration
+    async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.post('/common/registration/create', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Delete registration by ID
+    async deleteRegistration(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/common/registration/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -403,5 +477,5 @@ const api = {
 // Initialize the interceptors
 api.init();
 
-export type { Service, CreateServiceRequest, Executive, BankAccount };
+export type { Service, CreateServiceRequest, Executive, BankAccount, Registration, CreateRegistrationRequest };
 export default api;

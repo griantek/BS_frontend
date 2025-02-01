@@ -6,6 +6,7 @@ import type { QuotationFormData } from '@/types/quotation';
 import Image from 'next/image';
 import type { BankAccount } from '@/services/api';
 import api from '@/services/api';
+import { convertAmountToWords } from '@/utils/numberToWords';
 
 interface PDFTemplateProps {
   id: string;
@@ -106,7 +107,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
           <tbody>
             {selectedServices.map((service) => (
               <tr key={service.id}>
-                <td style={invoiceStyles.tableCell}>{service.name}</td>
+                <td style={invoiceStyles.tableCell}>{service.service_name}</td>
                 <td style={invoiceStyles.tableCell}>
                   {quotationData.acceptancePeriod} {quotationData.acceptancePeriodUnit}
                 </td>
@@ -169,7 +170,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
             </div>
             <div style={{ ...invoiceStyles.summaryRow, ...invoiceStyles.amountWords }}>
               <span>Amount in words:</span>
-              <span>{/* Add number to words conversion here */}</span>
+              <span>{convertAmountToWords(totalAmount)}</span>
             </div>
           </div>
         </div>
