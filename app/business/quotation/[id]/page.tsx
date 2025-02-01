@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import { useForm } from 'react-hook-form';
 import PDFTemplate from '@/components/PDFTemplate';
-import { SERVICES, BANKS, PERIOD_UNITS } from '@/constants/quotation';
+import {  BANKS, PERIOD_UNITS } from '@/constants/quotation';
 import type { QuotationFormData } from '@/types/quotation';
 import { withAdminAuth } from '@/components/withAdminAuth';
 import { toast } from 'react-toastify';
@@ -24,7 +24,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import api from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
-import type { ServiceType, BankType, PeriodUnit } from '@/constants/quotation';
+import type {  BankType, PeriodUnit } from '@/constants/quotation';
 import type { BankAccount } from '@/services/api';
 import type { Service } from '@/services/api';
 
@@ -64,6 +64,7 @@ function QuotationContent({ regId }: { regId: string }) {
   const [prospectData, setProspectData] = React.useState<ProspectData | null>(null);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
+  const [services, setServices] = React.useState<Service[]>([]);
 
   const {
     register,
@@ -103,17 +104,17 @@ function QuotationContent({ regId }: { regId: string }) {
         setProspectData(response.data);
 
         // Pre-fill form with service data if available
-        const serviceMatch = SERVICES.find(s => s.name === response.data.services);
-        if (serviceMatch) {
-          setValue('selectedServices', [serviceMatch.id]); // Changed from selectedService
-        }
+        // const serviceMatch = SERVICES.find(s => s.name === response.data.services);
+        // if (serviceMatch) {
+        //   setValue('selectedServices', [serviceMatch.id]); // Changed from selectedService
+        // }
 
         // Pre-fill period if available
-        const periodMatch = response.data.proposed_service_period?.match(/(\d+)\s*(days|months)/i);
-        if (periodMatch) {
-          setValue('acceptancePeriod', parseInt(periodMatch[1]));
-          setValue('acceptancePeriodUnit', periodMatch[2].toLowerCase() as 'days' | 'months');
-        }
+        // const periodMatch = response.data.proposed_service_period?.match(/(\d+)\s*(days|months)/i);
+        // if (periodMatch) {
+        //   setValue('acceptancePeriod', parseInt(periodMatch[1]));
+        //   setValue('acceptancePeriodUnit', periodMatch[2].toLowerCase() as 'days' | 'months');
+        // }
 
       } catch (error) {
         console.error('Error fetching prospect:', error);
@@ -141,6 +142,21 @@ function QuotationContent({ regId }: { regId: string }) {
     };
 
     fetchBankAccounts();
+  }, []);
+
+  // Add useEffect to fetch services
+  React.useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await api.getAllServices();
+        setServices(response.data);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+        toast.error('Failed to load services');
+      }
+    };
+
+    fetchServices();
   }, []);
 
   // Watch all amount fields to calculate total
@@ -261,21 +277,18 @@ function QuotationContent({ regId }: { regId: string }) {
 
   // Add these handlers for Select changes
   const handleServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const service = SERVICES.find(s => s.id === event.target.value);
+    const service = services.find(s => s.id === parseInt(event.target.value));
     if (service) {
-      const updatedServices = [...watch('selectedServices'), event.target.value];
+      const updatedServices = [...watch('selectedServices'), service.id.toString()];
       setValue('selectedServices', updatedServices);
       
       // Calculate initial amount as sum of all service prices
       const initialAmount = updatedServices.reduce((sum, serviceId) => {
-        const selectedService = SERVICES.find(s => s.id === serviceId);
-        return sum + (selectedService?.price || 0);
+        const selectedService = services.find(s => s.id === parseInt(serviceId));
+        return sum + (selectedService?.fee || 0);
       }, 0);
 
-      // Set initial amount and calculate others
       setValue('initialAmount', initialAmount);
-      // setValue('writingAmount', initialAmount); // Same as initial
-      // setValue('acceptanceAmount', initialAmount); // Same as initial
     }
   };
 
@@ -285,8 +298,8 @@ function QuotationContent({ regId }: { regId: string }) {
     
     // Recalculate initial amount
     const initialAmount = updatedServices.reduce((sum, id) => {
-      const service = SERVICES.find(s => s.id === id);
-      return sum + (service?.price || 0);
+      const service = services.find(s => s.id === parseInt(id));
+      return sum + (service?.fee || 0);
     }, 0);
 
     // Update all amounts
@@ -297,22 +310,22 @@ function QuotationContent({ regId }: { regId: string }) {
 
   // Update PDFTemplate to handle multiple services
   const selectedServices = watch('selectedServices').map(serviceId => 
-    SERVICES.find(s => s.id === serviceId)
+    services.find(s => s.id === parseInt(serviceId))
   ).filter(Boolean);
 
-  // Update the service data handling with correct type mapping
+  // Update the service data handling to include duration fields
   const selectedServiceData = watch('selectedServices')
     .map(id => {
-      const service = SERVICES.find(s => s.id === id);
+      const service = services.find(s => s.id === parseInt(id));
       if (service) {
         return {
-          id: parseInt(service.id), // Convert string id to number
-          service_name: service.name,
-          service_type: null,
-          description: null,
-          fee: service.price,
-          min_duration: null,
-          max_duration: null
+          id: service.id,
+          service_name: service.service_name,
+          service_type: service.service_type,
+          description: service.description,
+          fee: service.fee,
+          min_duration: service.min_duration,
+          max_duration: service.max_duration
         } as Service;
       }
       return undefined;
@@ -385,9 +398,9 @@ function QuotationContent({ regId }: { regId: string }) {
                 value=""
               >
                 <option value="">Add a service</option>
-                {SERVICES.map((service) => (
+                {services.map((service) => (
                   <option key={service.id} value={service.id}>
-                    {service.name} - ₹{service.price.toLocaleString()}
+                    {service.service_name} - ₹{service.fee.toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -399,15 +412,15 @@ function QuotationContent({ regId }: { regId: string }) {
                 <h4 className="text-sm font-medium">Selected Services</h4>
                 <div className="flex flex-wrap gap-2">
                   {watch('selectedServices').map((serviceId) => {
-                    const service = SERVICES.find(s => s.id === serviceId);
+                    const service = services.find(s => s.id === parseInt(serviceId));
                     return service && (
                       <Chip
                         key={service.id}
-                        onClose={() => removeService(service.id)}
+                        onClose={() => removeService(serviceId)}
                         variant="flat"
                         color="primary"
                       >
-                        {service.name} - ₹{service.price.toLocaleString()}
+                        {service.service_name} - ₹{service.fee.toLocaleString()}
                       </Chip>
                     );
                   })}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { SERVICES, BANKS } from '@/constants/quotation';
+import { BANKS } from '@/constants/quotation';
 import { invoiceStyles } from '@/constants/invoiceStyles';
 import type { QuotationFormData } from '@/types/quotation';
 import Image from 'next/image';
@@ -38,6 +38,11 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
     acceptanceAmount = 0,
     totalAmount = 0,
     discountAmount = 0,
+    discountPercentage = 0, // Add this to destructure discountPercentage
+    acceptancePeriod = 0,
+    acceptancePeriodUnit = 'days',
+    publicationPeriod = 0,
+    publicationPeriodUnit = 'days',
     selectedServicesData = []
   } = quotationData;
 
@@ -47,14 +52,55 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
   const currentDate = format(new Date(), 'MMM dd, yyyy').toUpperCase();
   const dueDate = format(new Date(new Date().setDate(new Date().getDate() + 15)), 'MMM dd, yyyy').toUpperCase();
 
-  const supplyStyle = {
-    backgroundColor: '#e6ffe6',
-    padding: '20px',
-    width: '48%',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#2c3e50', // Darker text color
-    fontWeight: 500 // Make text bolder
+  // Add helper functions for period calculations
+  const convertToDays = (duration: string): number => {
+    const [amount, unit] = duration.split(' ');
+    const value = parseInt(amount);
+    
+    if (isNaN(value)) return 0;
+    
+    switch(unit.toLowerCase()) {
+      case 'weeks':
+        return value * 7;
+      case 'days':
+        return value;
+      default:
+        return value;
+    }
+  };
+
+  const formatDuration = (days: number): string => {
+    if (days % 7 === 0 && days >= 7) {
+      return `${days / 7} weeks`;
+    }
+    return `${days} days`;
+  };
+
+  // Update service period display to show both original and normalized duration
+  const getServicePeriod = (service: any) => {
+    if (!service.min_duration || !service.max_duration) return 'N/A';
+
+    const minDuration = service.min_duration;
+    const maxDuration = service.max_duration;
+    const minDays = convertToDays(minDuration);
+    const maxDays = convertToDays(maxDuration);
+
+    const formattedMin = formatDuration(minDays);
+    const formattedMax = formatDuration(maxDays);
+
+    return `${minDuration} (${formattedMin}) (Max: ${maxDuration})`;
+  };
+
+  // Update total period calculation to normalize and sum durations
+  const getTotalPeriod = () => {
+    if (!selectedServices.length) return '0 days';
+    
+    const totalDays = selectedServices.reduce((total, service) => {
+      if (!service.min_duration) return total;
+      return Math.max(total, convertToDays(service.min_duration));
+    }, 0);
+
+    return formatDuration(totalDays);
   };
 
   return (
@@ -86,14 +132,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
         </div>
       </section>
 
-      <section style={invoiceStyles.supplyDetails}>
-        <div style={supplyStyle}>
-          <p style={{ margin: 0 }}><strong>Place of Supply:</strong> {prospectData.state || 'N/A'}</p>
-        </div>
-        <div style={supplyStyle}>
-          <p style={{ margin: 0 }}><strong>Country of Supply:</strong> India</p>
-        </div>
-      </section>
+      {/* Removed supply details section */}
 
       <section className="items-table">
         <table style={invoiceStyles.table}>
@@ -109,10 +148,10 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
               <tr key={service.id}>
                 <td style={invoiceStyles.tableCell}>{service.service_name}</td>
                 <td style={invoiceStyles.tableCell}>
-                  {quotationData.acceptancePeriod} {quotationData.acceptancePeriodUnit}
+                  {getServicePeriod(service)}
                 </td>
                 <td style={invoiceStyles.tableCell}>
-                  ₹ {(quotationData.totalAmount / selectedServices.length).toLocaleString()}
+                  ₹ {service.fee.toLocaleString()}
                 </td>
               </tr>
             ))}
@@ -144,26 +183,59 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
               <li>Please quote invoice number when remitting funds.</li>
             </ol>
           </div>
-          <div style={invoiceStyles.boxContent}>
+          {/* <div style={invoiceStyles.boxContent}>
             <h3 style={invoiceStyles.boxHeading}>Additional Notes</h3>
             <p style={{ color: invoiceStyles.text.normal }}>Timeline starts after receiving initial payment. Please ensure timely payments for uninterrupted service.</p>
-          </div>
+          </div> */}
         </div>
         
         <div className="right-column">
           <div style={invoiceStyles.boxContent}>
+            {/* Period Details Box */}
+            <div style={{
+              marginBottom: '20px',
+              padding: '12px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #e9ecef'
+            }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0',
+                fontSize: '14px',
+                color: '#495057',
+                fontWeight: 600
+              }}>
+                Project Timeline
+              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: '#6c757d', fontSize: '13px' }}>Acceptance Period:</span>
+                <span style={{ fontWeight: 500, fontSize: '13px' }}>
+                  {acceptancePeriod} {acceptancePeriodUnit}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6c757d', fontSize: '13px' }}>Publication Period:</span>
+                <span style={{ fontWeight: 500, fontSize: '13px' }}>
+                  {publicationPeriod} {publicationPeriodUnit}
+                </span>
+              </div>
+            </div>
+
+            {/* Existing Amount Details */}
             <div style={invoiceStyles.summaryRow}>
               <span>Initial Amount</span>
               <span>₹ {initialAmount.toLocaleString()}</span>
             </div>
-            {/* <div style={invoiceStyles.summaryRow}>
-              <span>Writing Amount</span>
-              <span>₹ {writingAmount.toLocaleString()}</span>
-            </div> */}
             <div style={invoiceStyles.summaryRow}>
               <span>Acceptance Amount</span>
               <span>₹ {acceptanceAmount.toLocaleString()}</span>
             </div>
+            {discountPercentage > 0 && (
+              <div style={invoiceStyles.summaryRow}>
+                <span>Discount ({discountPercentage}%)</span>
+                <span>- ₹ {discountAmount.toLocaleString()}</span>
+              </div>
+            )}
             <div style={{ ...invoiceStyles.summaryRow, ...invoiceStyles.totalRow }}>
               <span>Total Amount</span>
               <span>₹ {totalAmount.toLocaleString()}</span>
