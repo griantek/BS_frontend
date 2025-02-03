@@ -122,6 +122,17 @@ interface BankAccount {
   created_at: string;
 }
 
+// Add new interface for Department
+interface Department {
+    id: number;
+    name: string;
+    created_at: string;
+}
+
+interface CreateDepartmentRequest {
+    name: string;
+}
+
 // Update Registration interface
 interface Registration {
   id: number;
@@ -554,6 +565,43 @@ const api = {
         }
     },
 
+    // Department management methods
+    async getAllDepartments(): Promise<ApiResponse<Department[]>> {
+        try {
+            const response = await this.axiosInstance.get('/common/departments/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
+        try {
+            const response = await this.axiosInstance.post('/common/departments/create', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async updateDepartment(id: number, data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
+        try {
+            const response = await this.axiosInstance.put(`/common/departments/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async deleteDepartment(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/common/departments/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -614,6 +662,8 @@ export type {
     BankAccount, 
     Registration, 
     CreateRegistrationRequest,
-    TransactionInfo
+    TransactionInfo,
+    Department,
+    CreateDepartmentRequest
 };
 export default api;

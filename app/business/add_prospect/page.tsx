@@ -18,7 +18,7 @@ import {
 } from "@heroui/react";
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
-import type { ProspectusCreateRequest } from '@/services/api';
+import type { ProspectusCreateRequest, Department } from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
 import { withAdminAuth } from '@/components/withAdminAuth';
 
@@ -40,25 +40,12 @@ interface FormDataType {
   nextFollowUp: string;
 }
 
-const departments = [
-  'CSE',
-  'ECE',
-  'EEE',
-  'CIVIL',
-  'MECH',
-  'Maths',
-  'English',
-  'Physics',
-  'Chemistry',
-  'Commerce',
-  'Accountancy',
-  'Others'
-];
-
 function AddProspect() {
   const router = useRouter();
   const [userId, setUserId] = React.useState<string>('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [departments, setDepartments] = React.useState<Department[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = React.useState(true);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -70,6 +57,23 @@ function AddProspect() {
       setUserId(userData.id || 'Unknown');
     }
   }, [router]);
+
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setIsLoadingDepartments(true);
+        const response = await api.getAllDepartments();
+        setDepartments(response.data);
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+        toast.error('Failed to load departments');
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   const generateRegId = () => {
     const now = new Date();
@@ -267,16 +271,19 @@ function AddProspect() {
                 <h3 className={sectionHeaderClass}>Technical Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Select
-                      label="Department"
-                      placeholder="Select department"
-                      isRequired
+                    <select
+                      className="w-full p-2 rounded-lg border border-gray-300"
                       {...register('department')}
+                      disabled={isLoadingDepartments}
                     >
-                      {departments.map(dept => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      <option value="">Select department</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
                       ))}
-                    </Select>
+                      <option key="other" value="Other">Other</option>
+                    </select>
                     
                     {selectedDepartment === 'Other' && (
                       <Input
