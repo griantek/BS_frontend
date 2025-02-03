@@ -45,6 +45,8 @@ interface Prospectus {
     proposed_service_period: string;
     created_at: string;
     services: string;
+    notes:string;
+    next_follow_up:string;
 }
 
 export interface ProspectusCreateRequest {
@@ -61,6 +63,8 @@ export interface ProspectusCreateRequest {
     requirement: string;
     proposedService: string;
     period: string;
+    notes?: string;           // Add this field
+    nextFollowUp?: string;    // Add this field
 }
 
 interface CreateExecutiveRequest {

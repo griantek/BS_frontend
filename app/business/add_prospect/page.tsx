@@ -36,6 +36,8 @@ interface FormDataType {
   requirement: string;
   proposedService: string;
   period: string;
+  notes: string;
+  nextFollowUp: string;
 }
 
 const departments = [
@@ -100,7 +102,9 @@ function AddProspect() {
       techPerson: '',
       requirement: '',
       proposedService: '',
-      period: ''
+      period: '',
+      notes: '',
+      nextFollowUp: '', // Will be filled with current date in the form
     },
     mode: 'onSubmit',
     reValidateMode: 'onChange'
@@ -152,7 +156,9 @@ function AddProspect() {
         techPerson: data.techPerson?.trim() || '',
         requirement: data.requirement.trim(),
         proposedService: data.proposedService.trim(),
-        period: data.period.trim()
+        period: data.period.trim(),
+        notes: data.notes.trim(),
+        nextFollowUp: data.nextFollowUp ? format(new Date(data.nextFollowUp), 'yyyy-MM-dd') : undefined,
       };
 
       // Log request data for debugging
@@ -319,6 +325,26 @@ function AddProspect() {
                     {...register('period')}
                   />                
                 </div>              
+              </div>
+
+              {/* Follow-up Details */}
+              <div className="space-y-4">
+                <h3 className={sectionHeaderClass}>Follow-up Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Textarea
+                    label="Notes"
+                    placeholder="Add any additional notes here"
+                    {...register('notes')}
+                    minRows={3}
+                  />
+                  <Input
+                    type="date"
+                    label="Next Follow-up Date"
+                    placeholder="Select date"
+                    {...register('nextFollowUp')}
+                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3">

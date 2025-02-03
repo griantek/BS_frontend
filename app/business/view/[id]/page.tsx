@@ -51,7 +51,7 @@ interface ProspectData {
   period?: string;          // Map to proposed_service_period if needed
   notes?: string;
   lastContact?: string;
-  nextFollowUp?: string;
+  next_follow_up?: string;
   status?: string;
 }
 
@@ -84,9 +84,9 @@ function ProspectContent({ regId }: { regId: string }) {
           address: '',
           city: '',
           pincode: '',
-          notes: '',
+          notes:  response.data.notes,
           lastContact: response.data.created_at, // Fallback to created_at
-          nextFollowUp: '',
+          next_follow_up: response.data.next_follow_up, 
           status: 'Active' // Default status
         };
         setProspectData(mappedData);
@@ -210,48 +210,22 @@ function ProspectContent({ regId }: { regId: string }) {
                   {prospectData.status}
                 </Chip>
               </div>
-            </CardBody>
-          </Card>
-
-          {/* Location Information */}
-          <Card className="w-full">
-            <CardHeader className="flex gap-3">
-              <div className="flex flex-col">
-                <p className="text-md font-semibold">Location Details</p>
-              </div>
-            </CardHeader>
-            <Divider/>
-            <CardBody className="space-y-4">
               <div className="space-y-1">
-                <p className="text-small text-default-500">Address</p>
-                <p className="font-medium">{prospectData.address}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-small text-default-500">City</p>
-                  <p className="font-medium">{prospectData.city}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-small text-default-500">State</p>
-                  <p className="font-medium">{prospectData.state}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-small text-default-500">Pincode</p>
-                  <p className="font-medium">{prospectData.pincode}</p>
-                </div>
+                <p className="text-small text-default-500">Location</p>
+                <p className="font-medium">{prospectData.state}</p>
               </div>
             </CardBody>
           </Card>
 
           {/* Service Information */}
-          <Card className="w-full md:col-span-2">
+          <Card className="w-full">
             <CardHeader className="flex gap-3">
               <div className="flex flex-col">
                 <p className="text-md font-semibold">Service Details</p>
               </div>
             </CardHeader>
             <Divider/>
-            <CardBody className="grid md:grid-cols-2 gap-6">
+            <CardBody className="space-y-4">
               <div className="space-y-1">
                 <p className="text-small text-default-500">Proposed Service</p>
                 <p className="font-medium">{prospectData.proposedService}</p>
@@ -289,7 +263,7 @@ function ProspectContent({ regId }: { regId: string }) {
                 </div>
                 <div className="space-y-1">
                   <p className="text-small text-default-500">Next Follow-up</p>
-                  <p className="font-medium">{prospectData.nextFollowUp ? format(new Date(prospectData.nextFollowUp), 'dd/MM/yyyy') : 'N/A'}</p>
+                  <p className="font-medium">{prospectData.next_follow_up ? format(new Date(prospectData.next_follow_up), 'dd/MM/yyyy') : 'N/A'}</p>
                 </div>
               </div>
             </CardBody>
