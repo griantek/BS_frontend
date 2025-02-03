@@ -323,7 +323,7 @@ function BusinessDashboard() {
                     <TableRow 
                       key={item.id}
                       className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => router.push(`/business/view/${item.reg_id}`)}
+                      onClick={() => router.push(`/business/view/prospect/${item.reg_id}`)}
                     >
                       <TableCell>{formatDate(item.date)}</TableCell>
                       <TableCell>{item.reg_id}</TableCell>
@@ -435,7 +435,7 @@ function BusinessDashboard() {
                           variant="light"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Add view logic here later
+                            router.push(`/business/view/registration/${registration.id}`);
                           }}
                         >
                           View
