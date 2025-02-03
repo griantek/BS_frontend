@@ -7,16 +7,6 @@ import { Navbar } from "@/components/navbar";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
 
-export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
 
 export const viewport: Viewport = {
   themeColor: [
@@ -30,6 +20,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Get the current pathname
+  const isHomePage = typeof window !== 'undefined' ? window.location.pathname === '/' : false;
+
   return (
     <html suppressHydrationWarning lang="en">
       <head />
@@ -39,8 +32,11 @@ export default function RootLayout({
             "relative flex flex-col h-screen min-h-screen bg-background font-sans antialiased",
             fontSans.variable,
           )}>
-            <Navbar />
-            <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
+            {!isHomePage && <Navbar />}
+            <main className={clsx(
+              "container mx-auto flex-grow",
+              isHomePage ? "" : "max-w-7xl pt-16 px-6"
+            )}>
               {children}
             </main>
           </div>

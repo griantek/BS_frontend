@@ -1,56 +1,133 @@
-import { Link } from "@heroui/link";
-import { Snippet } from "@heroui/snippet";
-import { Code } from "@heroui/code";
-import { button as buttonStyles } from "@heroui/theme";
-
-import { siteConfig } from "@/config/site";
-import { title, subtitle } from "@/components/primitives";
-import { GithubIcon } from "@/components/icons";
+'use client'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Button, Card, CardBody } from "@nextui-org/react";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { motion } from "framer-motion";
 
 export default function Home() {
+  const router = useRouter();
+  const [hoveredCard, setHoveredCard] = useState<'admin' | 'executive' | null>(null);
+
   return (
-    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-      <div className="inline-block max-w-xl text-center justify-center">
-        <span className={title()}>Make&nbsp;</span>
-        <span className={title({ color: "violet" })}>beautiful&nbsp;</span>
-        <br />
-        <span className={title()}>
-          websites regardless of your design experience.
-        </span>
-        <div className={subtitle({ class: "mt-4" })}>
-          Beautiful, fast and modern React UI library.
+    <div className=" w-full relative overflow-hidden">
+      {/* Background with gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background/90 to-background">
+        {/* Optional: Add subtle grid pattern or texture here */}
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10  flex flex-col items-center justify-center p-4">
+        {/* Logo and Title Section */}
+        <div className="text-center mb-12">
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6"
+          >
+            {/* Replace with your company logo */}
+            <Image
+              src="/logo.png"
+              alt="Company Logo"
+              width={120}
+              height={120}
+              className="mx-auto"
+            />
+          </motion.div>
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
+          >
+            Business Suite
+          </motion.h1>
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-default-500 max-w-md mx-auto"
+          >
+            Streamline your business operations with our comprehensive management suite
+          </motion.p>
         </div>
-      </div>
 
-      <div className="flex gap-3">
-        <Link
-          isExternal
-          className={buttonStyles({
-            color: "primary",
-            radius: "full",
-            variant: "shadow",
-          })}
-          href={siteConfig.links.docs}
+        {/* Login Options */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="grid md:grid-cols-2 gap-6 w-full max-w-3xl px-4"
         >
-          Documentation
-        </Link>
-        <Link
-          isExternal
-          className={buttonStyles({ variant: "bordered", radius: "full" })}
-          href={siteConfig.links.github}
-        >
-          <GithubIcon size={20} />
-          GitHub
-        </Link>
-      </div>
+          {/* Executive Login Card */}
+          <Card
+            className={`transform transition-all duration-300 hover:scale-105 cursor-pointer ${
+              hoveredCard === 'executive' ? 'border-primary' : ''
+            }`}
+            onMouseEnter={() => setHoveredCard('executive')}
+            onMouseLeave={() => setHoveredCard(null)}
+          >
+            <CardBody className="text-center p-8">
+              <h2 className="text-2xl font-semibold mb-4">Executive Portal</h2>
+              <p className="text-default-500 mb-6">
+                Access your executive dashboard and manage daily operations
+              </p>
+              <Button
+                color="primary"
+                variant="ghost"
+                size="lg"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  router.push('/admin');
+                }}
+              >
+                Login as Executive
+              </Button>
+            </CardBody>
+          </Card>
 
-      <div className="mt-8">
-        <Snippet hideCopyButton hideSymbol variant="bordered">
-          <span>
-            Get started by editing <Code color="primary">app/page.tsx</Code>
-          </span>
-        </Snippet>
+          {/* Admin Login Card */}
+          <Card
+            className={`transform transition-all duration-300 hover:scale-105 cursor-pointer ${
+              hoveredCard === 'admin' ? 'border-primary' : ''
+            }`}
+            onMouseEnter={() => setHoveredCard('admin')}
+            onMouseLeave={() => setHoveredCard(null)}
+          >
+            <CardBody className="text-center p-8">
+              <h2 className="text-2xl font-semibold mb-4">Admin Portal</h2>
+              <p className="text-default-500 mb-6">
+                Manage system settings and administrative tasks
+              </p>
+              <Button
+                color="primary"
+                variant="ghost"
+                size="lg"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  router.push('/supAdmin');
+                }}
+              >
+                Login as Admin
+              </Button>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        {/* Footer */}
+        {/* <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="absolute bottom-4 text-center text-default-400"
+        >
+          <p>© 2024 Your Company Name. All rights reserved.</p>
+        </motion.footer> */}
       </div>
-    </section>
+    </div>
   );
 }

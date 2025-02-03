@@ -27,9 +27,9 @@ import { withAdminAuth } from '@/components/withAdminAuth';
 import { useForm } from "react-hook-form";
 import type { Registration, BankAccount, TransactionInfo } from '@/services/api';
 
-interface ExtendedRegistration extends Omit<Registration, 'bank_accounts' | 'transactions'> {
+interface ExtendedRegistration extends Registration {
   date: string;
-  notes: string;  // Make it required to match base Registration interface
+  notes?: string;
   bank_accounts: {
     id: string;
     bank: string;
@@ -464,33 +464,20 @@ function RegistrationContent({ regId }: { regId: string }) {
                   <p className="text-2xl font-bold">₹{registrationData.total_amount.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">Inclusive of all charges</p>
                 </div>
-                {registrationData.status === 'registered' ? (
+                {registrationData.status === 'registered' && (
                   <>
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl">
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                       <p className="text-sm text-gray-600 mb-1">Amount Paid</p>
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        ₹{registrationData.transactions.amount.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Paid on {formatDate(registrationData.transactions.transaction_date)}
-                      </p>
+                      <p className="text-2xl font-bold text-success">₹{registrationData.transactions.amount.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 mt-1">Payment completed</p>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl">
-                      <p className="text-sm text-gray-600 mb-1">Balance Due</p>
-                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                        ₹{(registrationData.total_amount - registrationData.transactions.amount).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">Pending payment</p>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
+                      <p className="text-sm text-gray-600 mb-1">Payment Status</p>
+                      <Chip color="success" variant="flat" className="text-lg">
+                        Paid
+                      </Chip>
                     </div>
                   </>
-                ) : (
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl col-span-2">
-                    <p className="text-sm text-gray-600 mb-1">Payment Status</p>
-                    <div className="flex items-center gap-2">
-                      <Chip color="warning" variant="flat">Pending</Chip>
-                      <p className="text-sm text-gray-500">Registration approval required</p>
-                    </div>
-                  </div>
                 )}
               </div>
 
