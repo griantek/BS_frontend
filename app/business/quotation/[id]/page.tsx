@@ -1,6 +1,6 @@
-'use client'
-import React, { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+"use client";
+import React, { Suspense } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -12,19 +12,23 @@ import {
   Chip, // Add this import
   Listbox,
   ListboxItem,
-  ScrollShadow
+  ScrollShadow,
 } from "@heroui/react";
-import { useForm } from 'react-hook-form';
-import PDFTemplate from '@/components/PDFTemplate';
-import {  BANKS, PERIOD_UNITS,PeriodUnit } from '@/constants/quotation';
-import type { QuotationFormData } from '@/types/quotation';
-import { withAdminAuth } from '@/components/withAdminAuth';
-import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import api from '@/services/api';
-import { checkAuth } from '@/utils/authCheck';
-import type { CreateRegistrationRequest,BankAccount,Service } from '@/services/api';
+import { useForm } from "react-hook-form";
+import PDFTemplate from "@/components/PDFTemplate";
+import { BANKS, PERIOD_UNITS, PeriodUnit } from "@/constants/quotation";
+import type { QuotationFormData } from "@/types/quotation";
+import { withAdminAuth } from "@/components/withAdminAuth";
+import { toast } from "react-toastify";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import api from "@/services/api";
+import { checkAuth } from "@/utils/authCheck";
+import type {
+  CreateRegistrationRequest,
+  BankAccount,
+  Service,
+} from "@/services/api";
 
 // Add interface for better type safety
 interface ProspectData {
@@ -59,7 +63,9 @@ const SelectOption: React.FC<SelectOptionProps> = ({ children, ...props }) => (
 function QuotationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
-  const [prospectData, setProspectData] = React.useState<ProspectData | null>(null);
+  const [prospectData, setProspectData] = React.useState<ProspectData | null>(
+    null
+  );
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
@@ -69,7 +75,7 @@ function QuotationContent({ regId }: { regId: string }) {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors }
+    formState: { errors },
   } = useForm<QuotationFormData>({
     defaultValues: {
       initialAmount: undefined,
@@ -80,13 +86,13 @@ function QuotationContent({ regId }: { regId: string }) {
       totalAmount: 0,
       selectedServices: [],
       acceptancePeriod: undefined,
-      acceptancePeriodUnit: 'months',
+      acceptancePeriodUnit: "months",
       publicationPeriod: undefined,
-      publicationPeriodUnit: 'months',
-      selectedBank: '',
+      publicationPeriodUnit: "months",
+      selectedBank: "",
       selectedServicesData: [],
-      transactionDate: new Date().toISOString().split('T')[0], // Add default date
-    }
+      transactionDate: new Date().toISOString().split("T")[0], // Add default date
+    },
   });
 
   React.useEffect(() => {
@@ -97,8 +103,8 @@ function QuotationContent({ regId }: { regId: string }) {
         setIsLoading(true);
         const response = await api.getProspectusByRegId(regId);
         // Add console.log to debug the response
-        console.log('API Response:', response);
-        
+        console.log("API Response:", response);
+
         // Ensure we're setting the complete data object
         setProspectData(response.data);
 
@@ -114,12 +120,11 @@ function QuotationContent({ regId }: { regId: string }) {
         //   setValue('acceptancePeriod', parseInt(periodMatch[1]));
         //   setValue('acceptancePeriodUnit', periodMatch[2].toLowerCase() as 'days' | 'months');
         // }
-
       } catch (error) {
-        console.error('Error fetching prospect:', error);
+        console.error("Error fetching prospect:", error);
         const errorMessage = api.handleError(error);
-        toast.error(errorMessage.error || 'Failed to load prospect data');
-        router.push('/business');
+        toast.error(errorMessage.error || "Failed to load prospect data");
+        router.push("/business");
       } finally {
         setIsLoading(false);
       }
@@ -135,8 +140,8 @@ function QuotationContent({ regId }: { regId: string }) {
         const response = await api.getAllBankAccounts();
         setBankAccounts(response.data);
       } catch (error) {
-        console.error('Error fetching bank accounts:', error);
-        toast.error('Failed to load bank accounts');
+        console.error("Error fetching bank accounts:", error);
+        toast.error("Failed to load bank accounts");
       }
     };
 
@@ -150,8 +155,8 @@ function QuotationContent({ regId }: { regId: string }) {
         const response = await api.getAllServices();
         setServices(response.data);
       } catch (error) {
-        console.error('Error fetching services:', error);
-        toast.error('Failed to load services');
+        console.error("Error fetching services:", error);
+        toast.error("Failed to load services");
       }
     };
 
@@ -160,46 +165,46 @@ function QuotationContent({ regId }: { regId: string }) {
 
   // Watch all amount fields to calculate total
   const getNumericValue = (value: number | undefined) => Number(value || 0);
-  const initialAmount = getNumericValue(watch('initialAmount'));
-  const acceptanceAmount = getNumericValue(watch('acceptanceAmount'));
-  const discountPercentage = getNumericValue(watch('discountPercentage'));
+  const initialAmount = getNumericValue(watch("initialAmount"));
+  const acceptanceAmount = getNumericValue(watch("acceptanceAmount"));
+  const discountPercentage = getNumericValue(watch("discountPercentage"));
 
   React.useEffect(() => {
     const subTotal = initialAmount + acceptanceAmount;
     const discountAmount = (subTotal * discountPercentage) / 100;
     const total = subTotal - discountAmount;
 
-    setValue('subTotal', subTotal);
-    setValue('discountAmount', discountAmount);
-    setValue('totalAmount', total);
+    setValue("subTotal", subTotal);
+    setValue("discountAmount", discountAmount);
+    setValue("totalAmount", total);
   }, [initialAmount, acceptanceAmount, discountPercentage, setValue]);
 
   const generatePDF = async () => {
     try {
-      const element = document.getElementById('pdf-template');
-      if (!element) throw new Error('PDF template not found');
+      const element = document.getElementById("pdf-template");
+      if (!element) throw new Error("PDF template not found");
 
       // Remove hidden style temporarily
-      element.style.visibility = 'visible';
-      element.style.position = 'absolute';
-      element.style.top = '0';
-      element.style.left = '0';
-      
+      element.style.visibility = "visible";
+      element.style.position = "absolute";
+      element.style.top = "0";
+      element.style.left = "0";
+
       // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Create canvas
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
       });
 
       // Reset element style
-      element.style.visibility = 'hidden';
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
+      element.style.visibility = "hidden";
+      element.style.position = "absolute";
+      element.style.left = "-9999px";
 
       // PDF dimensions (A4)
       const imgWidth = 210;
@@ -207,8 +212,8 @@ function QuotationContent({ regId }: { regId: string }) {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
+      const pdf = new jsPDF("p", "mm", "a4");
+
       // Handle multi-page
       let heightLeft = imgHeight;
       let position = 0;
@@ -216,8 +221,8 @@ function QuotationContent({ regId }: { regId: string }) {
 
       // Add first page
       pdf.addImage(
-        canvas.toDataURL('image/jpeg', 1.0),
-        'JPEG',
+        canvas.toDataURL("image/jpeg", 1.0),
+        "JPEG",
         0,
         position,
         imgWidth,
@@ -230,8 +235,8 @@ function QuotationContent({ regId }: { regId: string }) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(
-          canvas.toDataURL('image/jpeg', 1.0),
-          'JPEG',
+          canvas.toDataURL("image/jpeg", 1.0),
+          "JPEG",
           0,
           position,
           imgWidth,
@@ -245,18 +250,15 @@ function QuotationContent({ regId }: { regId: string }) {
       for (let i = 1; i <= pageNumber; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
-        pdf.text(
-          `Page ${i} of ${pageNumber}`,
-          imgWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
+        pdf.text(`Page ${i} of ${pageNumber}`, imgWidth / 2, pageHeight - 10, {
+          align: "center",
+        });
       }
 
       pdf.save(`quotation_${prospectData?.reg_id}.pdf`);
       return true;
     } catch (error) {
-      console.error('PDF generation error:', error);
+      console.error("PDF generation error:", error);
       throw error;
     }
   };
@@ -280,10 +282,11 @@ function QuotationContent({ regId }: { regId: string }) {
       // Prepare registration data
       const registrationData: CreateRegistrationRequest = {
         // Transaction details (minimal for pending status)
-        transaction_type: 'Cash', // Default type
-        transaction_id: '', // Will be updated later
+        transaction_type: "Cash", // Default type
+        transaction_id: "", // Will be updated later
         amount: 0, // Will be updated later
-        transaction_date: data.transactionDate || new Date().toISOString().split('T')[0],
+        transaction_date:
+          data.transactionDate || new Date().toISOString().split("T")[0],
         additional_info: {},
 
         // Executive and prospect details
@@ -291,7 +294,9 @@ function QuotationContent({ regId }: { regId: string }) {
         client_id: user.client_id || user.clientId,
         prospectus_id: prospectData.id,
         services: data.selectedServices
-          .map(id => services.find(s => s.id === parseInt(id))?.service_name)
+          .map(
+            (id) => services.find((s) => s.id === parseInt(id))?.service_name
+          )
           .filter(Boolean)
           .join(", "),
         init_amount: data.initialAmount || 0,
@@ -301,25 +306,25 @@ function QuotationContent({ regId }: { regId: string }) {
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        status: 'pending', // Set status as pending for quotation
+        status: "pending", // Set status as pending for quotation
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
       };
 
       // Submit registration with pending status
       const response = await api.createRegistration(registrationData);
-      
+
       if (response.success) {
         // Generate PDF after successful registration
         await generatePDF();
-        toast.success('Quotation generated and saved successfully!');
-        router.push('/business');
+        toast.success("Quotation generated and saved successfully!");
+        router.push("/business");
       } else {
-        throw new Error('Failed to create registration');
+        throw new Error("Failed to create registration");
       }
     } catch (error) {
-      console.error('Submission error:', error);
-      toast.error('Failed to generate quotation');
+      console.error("Submission error:", error);
+      toast.error("Failed to generate quotation");
     } finally {
       setIsGenerating(false);
     }
@@ -327,46 +332,53 @@ function QuotationContent({ regId }: { regId: string }) {
 
   // Add these handlers for Select changes
   const handleServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const service = services.find(s => s.id === parseInt(event.target.value));
+    const service = services.find((s) => s.id === parseInt(event.target.value));
     if (service) {
-      const updatedServices = [...watch('selectedServices'), service.id.toString()];
-      setValue('selectedServices', updatedServices);
-      
+      const updatedServices = [
+        ...watch("selectedServices"),
+        service.id.toString(),
+      ];
+      setValue("selectedServices", updatedServices);
+
       // Calculate initial amount as sum of all service prices
       const initialAmount = updatedServices.reduce((sum, serviceId) => {
-        const selectedService = services.find(s => s.id === parseInt(serviceId));
+        const selectedService = services.find(
+          (s) => s.id === parseInt(serviceId)
+        );
         return sum + (selectedService?.fee || 0);
       }, 0);
 
-      setValue('initialAmount', initialAmount);
+      setValue("initialAmount", initialAmount);
     }
   };
 
   const removeService = (serviceId: string) => {
-    const updatedServices = watch('selectedServices').filter(id => id !== serviceId);
-    setValue('selectedServices', updatedServices);
-    
+    const updatedServices = watch("selectedServices").filter(
+      (id) => id !== serviceId
+    );
+    setValue("selectedServices", updatedServices);
+
     // Recalculate initial amount
     const initialAmount = updatedServices.reduce((sum, id) => {
-      const service = services.find(s => s.id === parseInt(id));
+      const service = services.find((s) => s.id === parseInt(id));
       return sum + (service?.fee || 0);
     }, 0);
 
     // Update all amounts
-    setValue('initialAmount', initialAmount);
+    setValue("initialAmount", initialAmount);
     // setValue('writingAmount', initialAmount);
     // setValue('acceptanceAmount', initialAmount);
   };
 
   // Update PDFTemplate to handle multiple services
-  const selectedServices = watch('selectedServices').map(serviceId => 
-    services.find(s => s.id === parseInt(serviceId))
-  ).filter(Boolean);
+  const selectedServices = watch("selectedServices")
+    .map((serviceId) => services.find((s) => s.id === parseInt(serviceId)))
+    .filter(Boolean);
 
   // Update the service data handling to include duration fields
-  const selectedServiceData = watch('selectedServices')
-    .map(id => {
-      const service = services.find(s => s.id === parseInt(id));
+  const selectedServiceData = watch("selectedServices")
+    .map((id) => {
+      const service = services.find((s) => s.id === parseInt(id));
       if (service) {
         return {
           id: service.id,
@@ -375,7 +387,7 @@ function QuotationContent({ regId }: { regId: string }) {
           description: service.description,
           fee: service.fee,
           min_duration: service.min_duration,
-          max_duration: service.max_duration
+          max_duration: service.max_duration,
         } as Service;
       }
       return undefined;
@@ -384,7 +396,7 @@ function QuotationContent({ regId }: { regId: string }) {
 
   // Add bank change handler
   const handleBankChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setValue('selectedBank', event.target.value);
+    setValue("selectedBank", event.target.value);
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -398,7 +410,9 @@ function QuotationContent({ regId }: { regId: string }) {
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
-              <h2 className="text-xl md:text-2xl font-bold">Prospect Details</h2>
+              <h2 className="text-xl md:text-2xl font-bold">
+                Prospect Details
+              </h2>
             </CardHeader>
             <Divider />
             <CardBody className="space-y-4">
@@ -434,7 +448,9 @@ function QuotationContent({ regId }: { regId: string }) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Proposed Period</p>
-                  <p className="font-medium">{prospectData.proposed_service_period}</p>
+                  <p className="font-medium">
+                    {prospectData.proposed_service_period}
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -445,11 +461,16 @@ function QuotationContent({ regId }: { regId: string }) {
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
-              <h2 className="text-xl md:text-2xl font-bold">Generate Quotation</h2>
+              <h2 className="text-xl md:text-2xl font-bold">
+                Generate Quotation
+              </h2>
             </CardHeader>
             <Divider />
             <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4 md:space-y-6"
+              >
                 {/* Move existing form contents here */}
                 {/* Service Selection */}
                 <div className="space-y-4">
@@ -461,29 +482,46 @@ function QuotationContent({ regId }: { regId: string }) {
                     >
                       <option value="">Add a service</option>
                       {services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.service_name} - ₹{service.fee.toLocaleString()}
+                        <option
+                          key={service.id}
+                          value={service.id}
+                          disabled={watch("selectedServices").includes(
+                            service.id.toString()
+                          )}
+                        >
+                          {service.service_name} - ₹
+                          {service.fee.toLocaleString()}
+                          {watch("selectedServices").includes(
+                            service.id.toString()
+                          )
+                            ? " (Selected)"
+                            : ""}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   {/* Selected Services Display */}
-                  {watch('selectedServices').length > 0 && (
+                  {watch("selectedServices").length > 0 && (
                     <div className="bg-default-100 p-4 rounded-lg space-y-2">
                       <h4 className="text-sm font-medium">Selected Services</h4>
                       <div className="flex flex-wrap gap-2">
-                        {watch('selectedServices').map((serviceId) => {
-                          const service = services.find(s => s.id === parseInt(serviceId));
-                          return service && (
-                            <Chip
-                              key={service.id}
-                              onClose={() => removeService(serviceId)}
-                              variant="flat"
-                              color="primary"
-                            >
-                              {service.service_name} - ₹{service.fee.toLocaleString()}
-                            </Chip>
+                        {watch("selectedServices").map((serviceId) => {
+                          const service = services.find(
+                            (s) => s.id === parseInt(serviceId)
+                          );
+                          return (
+                            service && (
+                              <Chip
+                                key={service.id}
+                                onClose={() => removeService(serviceId)}
+                                variant="flat"
+                                color="primary"
+                              >
+                                {service.service_name} - ₹
+                                {service.fee.toLocaleString()}
+                              </Chip>
+                            )
                           );
                         })}
                       </div>
@@ -498,15 +536,19 @@ function QuotationContent({ regId }: { regId: string }) {
                       type="number"
                       label="Initial Amount (INR)"
                       placeholder="Enter amount"
-                      value={watch('initialAmount')?.toString()}
-                      onChange={(e) => setValue('initialAmount', Number(e.target.value))}
+                      value={watch("initialAmount")?.toString()}
+                      onChange={(e) =>
+                        setValue("initialAmount", Number(e.target.value))
+                      }
                       readOnly
                     />
                     <Input
                       type="number"
                       label="Acceptance Amount (INR)"
                       placeholder="Enter amount"
-                      onChange={(e) => setValue('acceptanceAmount', Number(e.target.value))}
+                      onChange={(e) =>
+                        setValue("acceptanceAmount", Number(e.target.value))
+                      }
                     />
                     <Input
                       type="number"
@@ -514,15 +556,15 @@ function QuotationContent({ regId }: { regId: string }) {
                       min="0"
                       max="100"
                       placeholder="Enter discount"
-                      {...register('discountPercentage')}
+                      {...register("discountPercentage")}
                     />
                   </div>
 
                   {/* Total Amount Summary - Refined Design */}
-                  <Card 
+                  <Card
                     className="relative overflow-hidden"
                     classNames={{
-                      base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50"
+                      base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50",
                     }}
                   >
                     <CardBody className="p-6">
@@ -534,15 +576,16 @@ function QuotationContent({ regId }: { regId: string }) {
                             variant="flat"
                             classNames={{
                               base: "bg-default-100 border-default-200",
-                              content: "text-default-600 font-semibold text-medium"
+                              content:
+                                "text-default-600 font-semibold text-medium",
                             }}
                           >
-                            ₹ {watch('subTotal').toLocaleString()}
+                            ₹ {watch("subTotal").toLocaleString()}
                           </Chip>
                         </div>
 
                         {/* Discount Row */}
-                        {watch('discountPercentage') > 0 && (
+                        {watch("discountPercentage") > 0 && (
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <span className="text-danger-600">Discount</span>
@@ -552,35 +595,40 @@ function QuotationContent({ regId }: { regId: string }) {
                                 color="danger"
                                 classNames={{
                                   base: "h-5 bg-danger-50 dark:bg-danger-100",
-                                  content: "text-tiny font-medium px-2 text-danger"
+                                  content:
+                                    "text-tiny font-medium px-2 text-danger",
                                 }}
                               >
-                                {watch('discountPercentage')}% off
+                                {watch("discountPercentage")}% off
                               </Chip>
                             </div>
                             <span className="text-danger font-medium">
-                              - ₹ {watch('discountAmount').toLocaleString()}
+                              - ₹ {watch("discountAmount").toLocaleString()}
                             </span>
                           </div>
                         )}
 
-                        <Divider className="my-4 bg-default-200/50"/>
+                        <Divider className="my-4 bg-default-200/50" />
 
                         {/* Total Amount Row */}
                         <div className="flex justify-between items-center">
-                          <span className="text-xl font-semibold text-default-900">Total Amount</span>
+                          <span className="text-xl font-semibold text-default-900">
+                            Total Amount
+                          </span>
                           <div className="flex flex-col items-end gap-1">
                             <Chip
                               size="lg"
                               classNames={{
                                 base: "bg-primary/10 border-primary/20 px-4",
-                                content: "text-xl font-bold text-primary"
+                                content: "text-xl font-bold text-primary",
                               }}
                             >
-                              ₹ {watch('totalAmount').toLocaleString()}
+                              ₹ {watch("totalAmount").toLocaleString()}
                             </Chip>
                             <span className="text-tiny text-default-500">
-                              {watch('discountPercentage') > 0 ? 'After discount applied' : 'No discount applied'}
+                              {watch("discountPercentage") > 0
+                                ? "After discount applied"
+                                : "No discount applied"}
                             </span>
                           </div>
                         </div>
@@ -595,12 +643,17 @@ function QuotationContent({ regId }: { regId: string }) {
                     <Input
                       type="number"
                       label="Acceptance Period"
-                      {...register('acceptancePeriod')}
+                      {...register("acceptancePeriod")}
                     />
                     <select
                       className="w-1/2 p-2 rounded-lg border border-gray-300"
-                      value={watch('acceptancePeriodUnit')}
-                      onChange={(e) => setValue('acceptancePeriodUnit', e.target.value as PeriodUnit)}
+                      value={watch("acceptancePeriodUnit")}
+                      onChange={(e) =>
+                        setValue(
+                          "acceptancePeriodUnit",
+                          e.target.value as PeriodUnit
+                        )
+                      }
                     >
                       {PERIOD_UNITS.map((unit) => (
                         <option key={unit} value={unit}>
@@ -613,12 +666,17 @@ function QuotationContent({ regId }: { regId: string }) {
                     <Input
                       type="number"
                       label="Publication Period"
-                      {...register('publicationPeriod')}
+                      {...register("publicationPeriod")}
                     />
                     <select
                       className="w-1/2 p-2 rounded-lg border border-gray-300"
-                      value={watch('publicationPeriodUnit')}
-                      onChange={(e) => setValue('publicationPeriodUnit', e.target.value as PeriodUnit)}
+                      value={watch("publicationPeriodUnit")}
+                      onChange={(e) =>
+                        setValue(
+                          "publicationPeriodUnit",
+                          e.target.value as PeriodUnit
+                        )
+                      }
                     >
                       {PERIOD_UNITS.map((unit) => (
                         <option key={unit} value={unit}>
@@ -631,10 +689,12 @@ function QuotationContent({ regId }: { regId: string }) {
 
                 {/* Bank Selection - Updated */}
                 <div className="w-full space-y-2">
-                  <label className="text-sm font-medium">Select Bank Account</label>
+                  <label className="text-sm font-medium">
+                    Select Bank Account
+                  </label>
                   <select
                     className="w-full p-2 rounded-lg border border-gray-300"
-                    value={watch('selectedBank')}
+                    value={watch("selectedBank")}
                     onChange={handleBankChange}
                   >
                     <option value="">Choose a bank account</option>
@@ -669,16 +729,19 @@ function QuotationContent({ regId }: { regId: string }) {
       </div>
 
       {/* Hidden PDF Template */}
-      <div id="pdf-template" style={{ position: 'absolute', left: '-9999px', visibility: 'hidden' }}>
+      <div
+        id="pdf-template"
+        style={{ position: "absolute", left: "-9999px", visibility: "hidden" }}
+      >
         <PDFTemplate
           id="pdf-content"
           prospectData={prospectData}
           quotationData={{
             ...watch(), // Pass the selected services array
-            initialAmount: watch('initialAmount') || 0,
-            acceptanceAmount: watch('acceptanceAmount') || 0,
-            discountPercentage: watch('discountPercentage') || 0,
-            selectedServicesData: selectedServiceData
+            initialAmount: watch("initialAmount") || 0,
+            acceptanceAmount: watch("acceptanceAmount") || 0,
+            discountPercentage: watch("discountPercentage") || 0,
+            selectedServicesData: selectedServiceData,
           }}
         />
       </div>
@@ -693,7 +756,7 @@ interface PageProps {
 
 function QuotationPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
-  
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <QuotationContent regId={resolvedParams.id} />

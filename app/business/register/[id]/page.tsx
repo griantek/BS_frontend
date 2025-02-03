@@ -587,9 +587,14 @@ function RegistrationContent({ regId }: { regId: string }) {
                   >
                     <option value="">Add a service</option>
                     {services.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.service_name} - ₹{service.fee.toLocaleString()}
-                      </option>
+                      <option 
+                      key={service.id} 
+                      value={service.id}
+                      disabled={watch('selectedServices').includes(service.id.toString())}
+                    >
+                      {service.service_name} - ₹{service.fee.toLocaleString()}
+                      {watch('selectedServices').includes(service.id.toString()) ? ' (Selected)' : ''}
+                    </option>
                     ))}
                   </select>
 
