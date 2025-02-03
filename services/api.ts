@@ -499,6 +499,16 @@ const api = {
         }
     },
 
+    // Add new method for updating registration
+    async updateRegistration(id: number, data: Partial<CreateRegistrationRequest>): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.put(`/common/registration/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     // Delete registration by ID
     async deleteRegistration(id: number): Promise<ApiResponse<void>> {
         try {

@@ -10,12 +10,22 @@ import {
   Button,
   Divider,
   Chip,
-} from "@heroui/react";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Input,
+  Select,
+  SelectItem
+} from "@nextui-org/react";  // Correct import
 import { format } from 'date-fns';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import { withAdminAuth } from '@/components/withAdminAuth';
-import type { Registration } from '@/services/api';
+import { useForm } from "react-hook-form";
+import type { Registration, BankAccount, TransactionInfo } from '@/services/api';
 
 interface ExtendedRegistration extends Registration {
   date: string;
@@ -45,10 +55,58 @@ interface ExtendedRegistration extends Registration {
   };
 }
 
+// Add payment form interface
+interface PaymentFormData {
+  paymentMode: 'cash' | 'upi' | 'netbanking' | 'card' | 'cheque' | 'wallet' | 'gateway' | 'crypto';
+  amount: number;
+  transactionDate: string;
+  transactionId?: string;
+  upiId?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  cardLastFourDigits?: string;
+  receiptNumber?: string;
+  chequeNumber?: string;
+  walletProvider?: 'paytm' | 'phonepe' | 'other';
+  gatewayProvider?: 'razorpay' | 'stripe' | 'other';
+  transactionHash?: string;
+  cryptoCurrency?: string;
+}
+
+// Add PAYMENT_MODE_MAP constant
+const PAYMENT_MODE_MAP: Record<string, TransactionInfo['transaction_type']> = {
+  cash: 'Cash',
+  upi: 'UPI',
+  netbanking: 'Bank Transfer',
+  card: 'Card',
+  cheque: 'Cheque',
+  wallet: 'Wallet',
+  gateway: 'Online Payment',
+  crypto: 'Crypto',
+} as const;
+
 function RegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
+  const { isOpen: isPaymentModalOpen, onOpen: onPaymentModalOpen, onClose: onPaymentModalClose } = useDisclosure();
+  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [registrationData, setRegistrationData] = React.useState<ExtendedRegistration | null>(null);
+  const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset
+  } = useForm<PaymentFormData>({
+    defaultValues: {
+      paymentMode: 'cash',
+      amount: 0,
+      transactionDate: new Date().toISOString().split('T')[0],
+    }
+  });
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -56,8 +114,12 @@ function RegistrationContent({ regId }: { regId: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await api.getRegistrationById(parseInt(regId));
-        setRegistrationData(response.data as ExtendedRegistration);
+        const [registrationResponse, bankResponse] = await Promise.all([
+          api.getRegistrationById(parseInt(regId)),
+          api.getAllBankAccounts(),
+        ]);
+        setRegistrationData(registrationResponse.data as ExtendedRegistration);
+        setBankAccounts(bankResponse.data);
       } catch (error) {
         console.error('Error fetching registration:', error);
         toast.error('Failed to load registration data');
@@ -74,6 +136,236 @@ function RegistrationContent({ regId }: { regId: string }) {
   if (!registrationData) return <div>No data found</div>;
 
   const formatDate = (date: string) => format(new Date(date), 'dd/MM/yyyy');
+
+  const renderPaymentFields = () => {
+    const paymentMode = watch("paymentMode");
+
+    switch (paymentMode) {
+      case "upi":
+        return (
+          <>
+            <Input
+              type="text"
+              label="UPI ID"
+              placeholder="example@upi"
+              {...register("upiId")}
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("transactionId")}
+            />
+          </>
+        );
+
+      case "netbanking":
+        return (
+          <>
+            <Input
+              type="text"
+              label="Account Number"
+              {...register("accountNumber")}
+            />
+            <Input 
+              type="text" 
+              label="IFSC Code" 
+              {...register("ifscCode")} 
+            />
+            <Input
+              type="text"
+              label="Transaction Reference"
+              {...register("transactionId")}
+            />
+          </>
+        );
+
+      case "card":
+        return (
+          <>
+            <Input
+              type="text"
+              label="Last 4 Digits"
+              maxLength={4}
+              {...register("cardLastFourDigits")}
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("transactionId")}
+            />
+          </>
+        );
+
+      case "cash":
+        return (
+          <Input
+            type="text"
+            label="Receipt Number"
+            {...register("receiptNumber")}
+          />
+        );
+
+      case "cheque":
+        return (
+          <Input
+            type="text"
+            label="Cheque Number"
+            {...register("chequeNumber")}
+          />
+        );
+
+      case "wallet":
+        return (
+          <>
+            <Select
+              label="Wallet Provider"
+              {...register("walletProvider")}
+            >
+              <SelectItem key="paytm" value="paytm">Paytm</SelectItem>
+              <SelectItem key="phonepe" value="phonepe">PhonePe</SelectItem>
+              <SelectItem key="other" value="other">Other</SelectItem>
+            </Select>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("transactionId")}
+            />
+          </>
+        );
+
+      case "gateway":
+        return (
+          <>
+            <Select
+              label="Payment Gateway"
+              {...register("gatewayProvider")}
+            >
+              <SelectItem key="razorpay" value="razorpay">Razorpay</SelectItem>
+              <SelectItem key="stripe" value="stripe">Stripe</SelectItem>
+              <SelectItem key="other" value="other">Other</SelectItem>
+            </Select>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("transactionId")}
+            />
+          </>
+        );
+
+      case "crypto":
+        return (
+          <>
+            <Input
+              type="text"
+              label="Transaction Hash"
+              {...register("transactionHash")}
+            />
+            <Input
+              type="text"
+              label="Cryptocurrency"
+              {...register("cryptoCurrency")}
+            />
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const handleApprove = async (data: PaymentFormData) => {
+    try {
+      if (!registrationData) return;
+
+      // Get user data for exec_id
+      const user = api.getStoredUser();
+      if (!user?.id) {
+        toast.error('User data not found');
+        return;
+      }
+
+      // Prepare additional info based on payment mode
+      const additionalInfo: Record<string, any> = {};
+      switch (data.paymentMode) {
+        case 'upi':
+          additionalInfo.upi_id = data.upiId;
+          break;
+        case 'netbanking':
+          additionalInfo.account_number = data.accountNumber;
+          additionalInfo.ifsc_code = data.ifscCode;
+          break;
+        case 'card':
+          additionalInfo.card_last_four = data.cardLastFourDigits;
+          break;
+        case 'cash':
+          additionalInfo.receipt_number = data.receiptNumber;
+          break;
+        case 'cheque':
+          additionalInfo.cheque_number = data.chequeNumber;
+          break;
+        case 'wallet':
+          additionalInfo.wallet_provider = data.walletProvider;
+          break;
+        case 'gateway':
+          additionalInfo.gateway_provider = data.gatewayProvider;
+          break;
+        case 'crypto':
+          additionalInfo.transaction_hash = data.transactionHash;
+          additionalInfo.crypto_currency = data.cryptoCurrency;
+          break;
+      }
+
+      // Prepare update data
+      const updateData = {
+        status: 'registered' as const,
+        transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
+        transaction_id: data.transactionId || '',
+        amount: data.amount,
+        transaction_date: data.transactionDate,
+        additional_info: additionalInfo,
+        exec_id: user.id,
+      };
+
+      // Send update request
+      const response = await api.updateRegistration(registrationData.id, updateData);
+      
+      if (response.success) {
+        toast.success('Registration approved successfully');
+        // Refresh the page data
+        window.location.reload();
+      } else {
+        toast.error('Failed to approve registration');
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      toast.error('Failed to approve registration');
+    } finally {
+      onPaymentModalClose();
+    }
+  };
+
+  // Add delete handler
+  const handleDelete = async () => {
+    try {
+      if (!registrationData) return;
+      
+      setIsDeleting(true);
+      const response = await api.deleteRegistration(registrationData.id);
+      
+      if (response.success) {
+        toast.success('Registration deleted successfully');
+        router.push('/business');
+      } else {
+        toast.error('Failed to delete registration');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete registration');
+    } finally {
+      setIsDeleting(false);
+      onDeleteModalClose();
+    }
+  };
 
   return (
     <>
@@ -99,6 +391,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 <Button
                   color="success"
                   variant="flat"
+                  onPress={onPaymentModalOpen}
                 >
                   Approve Registration
                 </Button>
@@ -106,6 +399,7 @@ function RegistrationContent({ regId }: { regId: string }) {
               <Button
                 color="danger"
                 variant="flat"
+                onPress={onDeleteModalOpen}
               >
                 Delete Registration
               </Button>
@@ -297,6 +591,85 @@ function RegistrationContent({ regId }: { regId: string }) {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <Modal 
+        isOpen={isPaymentModalOpen} 
+        onClose={() => {
+          onPaymentModalClose();
+          reset();
+        }}
+        size="2xl"
+      >
+        <ModalContent>
+          <form onSubmit={handleSubmit(handleApprove)}>
+            <ModalHeader>Payment Details</ModalHeader>
+            <ModalBody className="space-y-4">
+              {/* Payment Mode */}
+              <Select
+                label="Payment Mode"
+                {...register("paymentMode")}
+              >
+                <SelectItem key="cash" value="cash">Cash</SelectItem>
+                <SelectItem key="upi" value="upi">UPI</SelectItem>
+                <SelectItem key="netbanking" value="netbanking">Net Banking</SelectItem>
+                <SelectItem key="card" value="card">Card</SelectItem>
+                <SelectItem key="cheque" value="cheque">Cheque</SelectItem>
+                <SelectItem key="wallet" value="wallet">Wallet</SelectItem>
+                <SelectItem key="gateway" value="gateway">Payment Gateway</SelectItem>
+                <SelectItem key="crypto" value="crypto">Cryptocurrency</SelectItem>
+              </Select>
+
+              {/* Amount and Date */}
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="Amount"
+                  {...register("amount", { required: true })}
+                />
+                <Input
+                  type="date"
+                  label="Transaction Date"
+                  {...register("transactionDate", { required: true })}
+                />
+              </div>
+
+              {/* Dynamic Payment Fields */}
+              {renderPaymentFields()}
+            </ModalBody>
+            <ModalFooter>
+              <Button color="danger" variant="light" onPress={onPaymentModalClose}>
+                Cancel
+              </Button>
+              <Button color="primary" type="submit">
+                Complete Approval
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
+        <ModalContent>
+          <ModalHeader>Confirm Delete</ModalHeader>
+          <ModalBody>
+            Are you sure you want to delete this registration? This action cannot be undone.
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" variant="light" onPress={onDeleteModalClose}>
+              Cancel
+            </Button>
+            <Button 
+              color="danger" 
+              onPress={handleDelete}
+              isLoading={isDeleting}
+            >
+              Delete Registration
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
