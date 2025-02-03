@@ -519,17 +519,17 @@ function RegistrationContent({ regId }: { regId: string }) {
   if (!prospectData) return <div>No data found</div>;
 
   return (
-    <div className="w-full p-6">
-      <div className="grid grid-cols-2 gap-6">
+    <div className="w-full p-4 md:p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Left side - Prospect Details */}
-        <div className="space-y-6">
-          <Card>
+        <div className="space-y-4 md:space-y-6">
+          <Card className="w-full">
             <CardHeader>
-              <h2 className="text-2xl font-bold">Prospect Details</h2>
+              <h2 className="text-xl md:text-2xl font-bold">Prospect Details</h2>
             </CardHeader>
             <Divider />
             <CardBody className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Client Name</p>
                   <p className="font-medium">{prospectData.client_name}</p>
@@ -570,14 +570,14 @@ function RegistrationContent({ regId }: { regId: string }) {
         </div>
 
         {/* Right side - Registration Form */}
-        <div className="space-y-6">
-          <Card>
+        <div className="space-y-4 md:space-y-6">
+          <Card className="w-full">
             <CardHeader>
-              <h2 className="text-2xl font-bold">Registration Form</h2>
+              <h2 className="text-xl md:text-2xl font-bold">Registration Form</h2>
             </CardHeader>
             <Divider />
             <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
                 {/* Service Selection */}
                 <div className="space-y-4">
                   <select
@@ -622,7 +622,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 </div>
 
                 {/* Amount Details */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     type="number"
                     label="Initial Amount (₹)"
@@ -648,7 +648,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 </div>
 
                 {/* Period Settings */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex gap-2">
                     <Input
                       type="number"
@@ -713,7 +713,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                     <option value="crypto">Cryptocurrency</option>
                   </select>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                       type="date"
                       label="Transaction Date"

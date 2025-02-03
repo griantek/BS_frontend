@@ -391,284 +391,298 @@ function QuotationContent({ regId }: { regId: string }) {
   if (!prospectData) return <div>No data found</div>;
 
   return (
-    <div className="w-full p-6">
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <h2 className="text-2xl font-bold">Generate Quotation</h2>
-      </CardHeader>
-      <Divider/>
-      <CardBody>
-        {/* Prospect Summary */}
-        <div className=" p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold mb-3">Prospect Details</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Client Name</p>
-              <p className="font-medium">{prospectData.client_name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Registration ID</p>
-              <p className="font-medium">{prospectData.reg_id}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Department</p>
-              <p className="font-medium">{prospectData.department}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Service</p>
-              <p className="font-medium">{prospectData.services}</p>
-            </div>
-            {/* Add more details */}
-            <div>
-              <p className="text-sm text-gray-600">Email</p>
-              <p className="font-medium">{prospectData.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Phone</p>
-              <p className="font-medium">{prospectData.phone}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">State</p>
-              <p className="font-medium">{prospectData.state}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Proposed Period</p>
-              <p className="font-medium">{prospectData.proposed_service_period}</p>
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Service Selection - Moved to top */}
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <select
-                className="w-full p-2 rounded-lg border border-gray-300"
-                onChange={handleServiceChange}
-                value=""
-              >
-                <option value="">Add a service</option>
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.service_name} - ₹{service.fee.toLocaleString()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Selected Services Display */}
-            {watch('selectedServices').length > 0 && (
-              <div className="bg-default-100 p-4 rounded-lg space-y-2">
-                <h4 className="text-sm font-medium">Selected Services</h4>
-                <div className="flex flex-wrap gap-2">
-                  {watch('selectedServices').map((serviceId) => {
-                    const service = services.find(s => s.id === parseInt(serviceId));
-                    return service && (
-                      <Chip
-                        key={service.id}
-                        onClose={() => removeService(serviceId)}
-                        variant="flat"
-                        color="primary"
-                      >
-                        {service.service_name} - ₹{service.fee.toLocaleString()}
-                      </Chip>
-                    );
-                  })}
+    <div className="w-full p-4 md:p-6">
+      {/* Change grid-cols-2 to grid-cols-1 on mobile and grid-cols-2 on medium screens and up */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        {/* Left side - Prospect Details */}
+        <div className="space-y-4 md:space-y-6">
+          <Card className="w-full">
+            <CardHeader>
+              <h2 className="text-xl md:text-2xl font-bold">Prospect Details</h2>
+            </CardHeader>
+            <Divider />
+            <CardBody className="space-y-4">
+              {/* Make the inner grid responsive too */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Client Name</p>
+                  <p className="font-medium">{prospectData.client_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Registration ID</p>
+                  <p className="font-medium">{prospectData.reg_id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="font-medium">{prospectData.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Phone</p>
+                  <p className="font-medium">{prospectData.phone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Department</p>
+                  <p className="font-medium">{prospectData.department}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">State</p>
+                  <p className="font-medium">{prospectData.state}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Proposed Service</p>
+                  <p className="font-medium">{prospectData.services}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Proposed Period</p>
+                  <p className="font-medium">{prospectData.proposed_service_period}</p>
                 </div>
               </div>
-            )}
-          </div>
+            </CardBody>
+          </Card>
+        </div>
 
-          {/* Amount Details */}
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="number"
-                label="Initial Amount (INR)"
-                placeholder="Enter amount"
-                value={watch('initialAmount')?.toString()}
-                onChange={(e) => setValue('initialAmount', Number(e.target.value))}
-                readOnly
-              />
-              <Input
-                type="number"
-                label="Acceptance Amount (INR)"
-                placeholder="Enter amount"
-                onChange={(e) => setValue('acceptanceAmount', Number(e.target.value))}
-              />
-              <Input
-                type="number"
-                label="Discount (%)"
-                min="0"
-                max="100"
-                placeholder="Enter discount"
-                {...register('discountPercentage')}
-              />
-            </div>
-
-            {/* Total Amount Summary - Refined Design */}
-            <Card 
-              className="relative overflow-hidden"
-              classNames={{
-                base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50"
-              }}
-            >
-              <CardBody className="p-6">
+        {/* Right side - Quotation Form */}
+        <div className="space-y-4 md:space-y-6">
+          <Card className="w-full">
+            <CardHeader>
+              <h2 className="text-xl md:text-2xl font-bold">Generate Quotation</h2>
+            </CardHeader>
+            <Divider />
+            <CardBody>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+                {/* Move existing form contents here */}
+                {/* Service Selection */}
                 <div className="space-y-4">
-                  {/* Sub Total Row */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-default-600">Sub Total</span>
-                    <Chip
-                      variant="flat"
-                      classNames={{
-                        base: "bg-default-100 border-default-200",
-                        content: "text-default-600 font-semibold text-medium"
-                      }}
+                  <div className="flex gap-2">
+                    <select
+                      className="w-full p-2 rounded-lg border border-gray-300"
+                      onChange={handleServiceChange}
+                      value=""
                     >
-                      ₹ {watch('subTotal').toLocaleString()}
-                    </Chip>
+                      <option value="">Add a service</option>
+                      {services.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.service_name} - ₹{service.fee.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Discount Row */}
-                  {watch('discountPercentage') > 0 && (
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-danger-600">Discount</span>
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          color="danger"
-                          classNames={{
-                            base: "h-5 bg-danger-50 dark:bg-danger-100",
-                            content: "text-tiny font-medium px-2 text-danger"
-                          }}
-                        >
-                          {watch('discountPercentage')}% off
-                        </Chip>
+                  {/* Selected Services Display */}
+                  {watch('selectedServices').length > 0 && (
+                    <div className="bg-default-100 p-4 rounded-lg space-y-2">
+                      <h4 className="text-sm font-medium">Selected Services</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {watch('selectedServices').map((serviceId) => {
+                          const service = services.find(s => s.id === parseInt(serviceId));
+                          return service && (
+                            <Chip
+                              key={service.id}
+                              onClose={() => removeService(serviceId)}
+                              variant="flat"
+                              color="primary"
+                            >
+                              {service.service_name} - ₹{service.fee.toLocaleString()}
+                            </Chip>
+                          );
+                        })}
                       </div>
-                      <span className="text-danger font-medium">
-                        - ₹ {watch('discountAmount').toLocaleString()}
-                      </span>
                     </div>
                   )}
+                </div>
 
-                  <Divider className="my-4 bg-default-200/50"/>
+                {/* Amount Details */}
+                <div className="space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Initial Amount (INR)"
+                      placeholder="Enter amount"
+                      value={watch('initialAmount')?.toString()}
+                      onChange={(e) => setValue('initialAmount', Number(e.target.value))}
+                      readOnly
+                    />
+                    <Input
+                      type="number"
+                      label="Acceptance Amount (INR)"
+                      placeholder="Enter amount"
+                      onChange={(e) => setValue('acceptanceAmount', Number(e.target.value))}
+                    />
+                    <Input
+                      type="number"
+                      label="Discount (%)"
+                      min="0"
+                      max="100"
+                      placeholder="Enter discount"
+                      {...register('discountPercentage')}
+                    />
+                  </div>
 
-                  {/* Total Amount Row */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-semibold text-default-900">Total Amount</span>
-                    <div className="flex flex-col items-end gap-1">
-                      <Chip
-                        size="lg"
-                        classNames={{
-                          base: "bg-primary/10 border-primary/20 px-4",
-                          content: "text-xl font-bold text-primary"
-                        }}
-                      >
-                        ₹ {watch('totalAmount').toLocaleString()}
-                      </Chip>
-                      <span className="text-tiny text-default-500">
-                        {watch('discountPercentage') > 0 ? 'After discount applied' : 'No discount applied'}
-                      </span>
-                    </div>
+                  {/* Total Amount Summary - Refined Design */}
+                  <Card 
+                    className="relative overflow-hidden"
+                    classNames={{
+                      base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50"
+                    }}
+                  >
+                    <CardBody className="p-6">
+                      <div className="space-y-4">
+                        {/* Sub Total Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-default-600">Sub Total</span>
+                          <Chip
+                            variant="flat"
+                            classNames={{
+                              base: "bg-default-100 border-default-200",
+                              content: "text-default-600 font-semibold text-medium"
+                            }}
+                          >
+                            ₹ {watch('subTotal').toLocaleString()}
+                          </Chip>
+                        </div>
+
+                        {/* Discount Row */}
+                        {watch('discountPercentage') > 0 && (
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-danger-600">Discount</span>
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                classNames={{
+                                  base: "h-5 bg-danger-50 dark:bg-danger-100",
+                                  content: "text-tiny font-medium px-2 text-danger"
+                                }}
+                              >
+                                {watch('discountPercentage')}% off
+                              </Chip>
+                            </div>
+                            <span className="text-danger font-medium">
+                              - ₹ {watch('discountAmount').toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+
+                        <Divider className="my-4 bg-default-200/50"/>
+
+                        {/* Total Amount Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xl font-semibold text-default-900">Total Amount</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <Chip
+                              size="lg"
+                              classNames={{
+                                base: "bg-primary/10 border-primary/20 px-4",
+                                content: "text-xl font-bold text-primary"
+                              }}
+                            >
+                              ₹ {watch('totalAmount').toLocaleString()}
+                            </Chip>
+                            <span className="text-tiny text-default-500">
+                              {watch('discountPercentage') > 0 ? 'After discount applied' : 'No discount applied'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
+
+                {/* Period Settings */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      label="Acceptance Period"
+                      {...register('acceptancePeriod')}
+                    />
+                    <select
+                      className="w-1/2 p-2 rounded-lg border border-gray-300"
+                      value={watch('acceptancePeriodUnit')}
+                      onChange={(e) => setValue('acceptancePeriodUnit', e.target.value as PeriodUnit)}
+                    >
+                      {PERIOD_UNITS.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      label="Publication Period"
+                      {...register('publicationPeriod')}
+                    />
+                    <select
+                      className="w-1/2 p-2 rounded-lg border border-gray-300"
+                      value={watch('publicationPeriodUnit')}
+                      onChange={(e) => setValue('publicationPeriodUnit', e.target.value as PeriodUnit)}
+                    >
+                      {PERIOD_UNITS.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              </CardBody>
-            </Card>
-          </div>
 
-          {/* Period Settings */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                label="Acceptance Period"
-                {...register('acceptancePeriod')}
-              />
-              <select
-                className="w-1/2 p-2 rounded-lg border border-gray-300"
-                value={watch('acceptancePeriodUnit')}
-                onChange={(e) => setValue('acceptancePeriodUnit', e.target.value as PeriodUnit)}
-              >
-                {PERIOD_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                label="Publication Period"
-                {...register('publicationPeriod')}
-              />
-              <select
-                className="w-1/2 p-2 rounded-lg border border-gray-300"
-                value={watch('publicationPeriodUnit')}
-                onChange={(e) => setValue('publicationPeriodUnit', e.target.value as PeriodUnit)}
-              >
-                {PERIOD_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                {/* Bank Selection - Updated */}
+                <div className="w-full space-y-2">
+                  <label className="text-sm font-medium">Select Bank Account</label>
+                  <select
+                    className="w-full p-2 rounded-lg border border-gray-300"
+                    value={watch('selectedBank')}
+                    onChange={handleBankChange}
+                  >
+                    <option value="">Choose a bank account</option>
+                    {bankAccounts.map((account) => (
+                      <SelectOption key={account.id} value={account.id}>
+                        {account.account_name} - {account.bank}
+                      </SelectOption>
+                    ))}
+                  </select>
+                </div>
 
-          {/* Bank Selection - Updated */}
-          <div className="w-full space-y-2">
-            <label className="text-sm font-medium">Select Bank Account</label>
-            <select
-              className="w-full p-2 rounded-lg border border-gray-300"
-              value={watch('selectedBank')}
-              onChange={handleBankChange}
-            >
-              <option value="">Choose a bank account</option>
-              {bankAccounts.map((account) => (
-                <SelectOption key={account.id} value={account.id}>
-                  {account.account_name} - {account.bank}
-                </SelectOption>
-              ))}
-            </select>
-          </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <Button
+                    color="danger"
+                    variant="light"
+                    onClick={() => router.back()}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    color="primary"
+                    type="submit"
+                    isLoading={isGenerating}
+                  >
+                    Generate PDF
+                  </Button>
+                </div>
+              </form>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              color="danger"
-              variant="light"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              type="submit"
-              isLoading={isGenerating}
-            >
-              Generate PDF
-            </Button>
-          </div>
-        </form>
-      </CardBody>
-    </Card>
-
-    {/* Hidden PDF Template */}
-    <div id="pdf-template" style={{ position: 'absolute', left: '-9999px', visibility: 'hidden' }}>
-      <PDFTemplate
-        id="pdf-content"
-        prospectData={prospectData}
-        quotationData={{
-          ...watch(), // Pass the selected services array
-          initialAmount: watch('initialAmount') || 0,
-          acceptanceAmount: watch('acceptanceAmount') || 0,
-          discountPercentage: watch('discountPercentage') || 0,
-          selectedServicesData: selectedServiceData
-        }}
-      />
+      {/* Hidden PDF Template */}
+      <div id="pdf-template" style={{ position: 'absolute', left: '-9999px', visibility: 'hidden' }}>
+        <PDFTemplate
+          id="pdf-content"
+          prospectData={prospectData}
+          quotationData={{
+            ...watch(), // Pass the selected services array
+            initialAmount: watch('initialAmount') || 0,
+            acceptanceAmount: watch('acceptanceAmount') || 0,
+            discountPercentage: watch('discountPercentage') || 0,
+            selectedServicesData: selectedServiceData
+          }}
+        />
+      </div>
     </div>
-  </div>
   );
 }
 
