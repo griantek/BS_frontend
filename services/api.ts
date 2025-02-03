@@ -126,6 +126,7 @@ interface BankAccount {
 interface Registration {
   id: number;
   prospectus_id: number;
+  date: string;  // Added
   services: string;
   init_amount: number;
   accept_amount: number;
@@ -133,29 +134,53 @@ interface Registration {
   total_amount: number;
   accept_period: string;
   pub_period: string;
+  bank_id: string;  // Added
   status: 'pending' | 'registered';
   month: number;
   year: number;
   created_at: string;
+  transaction_id: number;  // Added
+  notes?: string;  // Make notes optional in the base interface
   prospectus: {
     id: number;
+    date: string;
+    email: string;
+    notes: string;
+    phone: string;
+    state: string;
+    reg_id: string;
+    services: string;
+    created_at: string;
+    department: string;
     client_name: string;
-    [key: string]: any;
+    requirement: string;
+    tech_person: string;
+    executive_id: string;
+    isregistered: boolean;
+    next_follow_up: string;
+    proposed_service_period: string;
   };
-  bank_account: {
+  bank_accounts: {  // Changed from bank_account to bank_accounts
     id: string;
-    bank_name: string;
+    bank: string;
+    branch: string;
+    upi_id: string;
+    ifsc_code: string;
+    created_at: string;
+    account_name: string;
+    account_type: string;
     account_number: string;
-    [key: string]: any;
+    account_holder_name: string;
   };
-  transaction: {
+  transactions: {  // Changed from transaction to transactions
     id: number;
-    transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
     amount: number;
-    executive: {
-      id: string;
-      username: string;
-    };
+    exec_id: string;
+    executive: object;
+    transaction_id: string;
+    additional_info: object;
+    transaction_date: string;
+    transaction_type: string;
   };
 }
 
@@ -513,6 +538,16 @@ const api = {
     async deleteRegistration(id: number): Promise<ApiResponse<void>> {
         try {
             const response = await this.axiosInstance.delete(`/common/registration/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for getting registrations by executive ID
+    async getRegistrationsByExecutive(executiveId: string): Promise<ApiResponse<Registration[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/executive/registrations/${executiveId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);

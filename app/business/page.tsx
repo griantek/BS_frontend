@@ -81,14 +81,11 @@ function BusinessDashboard() {
         setIsLoading(true);
         const [prospectsResponse, registrationsResponse] = await Promise.all([
           api.getProspectusByClientId(userData.id),
-          api.getAllRegistrations()
+          api.getRegistrationsByExecutive(userData.id)  // Changed this line
         ]);
         
-        console.log('Registration Data from API:', registrationsResponse);
-        
         setProspects(prospectsResponse.data || []);
-        // Now TypeScript knows about the items property
-        setRegistrations(registrationsResponse.data?.items || []);
+        setRegistrations(registrationsResponse.data || []); // Remove .items since the response structure is different
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load data');
@@ -243,10 +240,10 @@ function BusinessDashboard() {
     }
   }, []);
 
-  const formatBankDetails = (bankAccount: Registration['bank_account']) => {
+  const formatBankDetails = (bankAccount: Registration['bank_accounts']) => {
     if (!bankAccount) return 'N/A';
     const lastFourDigits = bankAccount.account_number.slice(-4);
-    return `${bankAccount.bank_name} (*${lastFourDigits})`;
+    return `${bankAccount.bank} (*${lastFourDigits})`;
   };
 
   return (
@@ -410,13 +407,10 @@ function BusinessDashboard() {
                           total={registration.total_amount}
                         />
                       </TableCell>
-                      {/* <TableCell>
-                        {formatPeriods(registration.accept_period, registration.pub_period)}
-                      </TableCell> */}
                       <TableCell>
                         <PaymentTooltip
-                          type={registration.transaction.transaction_type}
-                          amount={registration.transaction.amount}
+                          type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
+                          amount={registration.transactions?.amount || 0}
                           status={registration.status}
                         />
                       </TableCell>

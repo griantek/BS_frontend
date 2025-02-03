@@ -27,9 +27,9 @@ import { withAdminAuth } from '@/components/withAdminAuth';
 import { useForm } from "react-hook-form";
 import type { Registration, BankAccount, TransactionInfo } from '@/services/api';
 
-interface ExtendedRegistration extends Registration {
+interface ExtendedRegistration extends Omit<Registration, 'bank_accounts' | 'transactions'> {
   date: string;
-  notes?: string;
+  notes: string;  // Make it required to match base Registration interface
   bank_accounts: {
     id: string;
     bank: string;
