@@ -22,6 +22,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Tabs,
+  Tab,
 } from "@heroui/react";
 import { SearchIcon } from './SearchIcon';
 import { format } from 'date-fns';
@@ -29,6 +31,7 @@ import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
 import { withAdminAuth } from '@/components/withAdminAuth';
+import type { Registration } from '@/services/api';
 
 interface Prospect {
   id: number;
@@ -60,6 +63,8 @@ function BusinessDashboard() {
   const rowsPerPage = 10;
   const [prospects, setProspects] = React.useState<Prospect[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [registrations, setRegistrations] = React.useState<Registration[]>([]);
+  const [selectedTab, setSelectedTab] = React.useState("prospects");
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -69,28 +74,30 @@ function BusinessDashboard() {
     
     if (!token || !userStr) return;
     
-    // api.setAuthToken(token);
     const userData = JSON.parse(userStr);
     
-    const fetchProspects = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await api.getProspectusByClientId(userData.id);
-        // Extract data and preserve all fields
-        const prospects = response.data || [];
-        setProspects(prospects);
-        // console.log('Prospects loaded:', prospects);
+        const [prospectsResponse, registrationsResponse] = await Promise.all([
+          api.getProspectusByClientId(userData.id),
+          api.getAllRegistrations()
+        ]);
+        
+        console.log('Registration Data from API:', registrationsResponse);
+        
+        setProspects(prospectsResponse.data || []);
+        // Now TypeScript knows about the items property
+        setRegistrations(registrationsResponse.data?.items || []);
       } catch (error) {
-        console.error('Error fetching prospects:', error);
-        setProspects([]); // Set empty array on error
-        const errorMessage = api.handleError(error);
-        // You might want to show an error toast here
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProspects();
+    fetchData();
   }, [router]);
 
   const filteredItems = React.useMemo(() => {
@@ -110,7 +117,114 @@ function BusinessDashboard() {
     return filteredItems.slice(start, end);
   }, [page, filteredItems]);
 
-  // Stable key generation for table columns
+  const registrationColumns = React.useMemo(() => [
+    { key: "created_at", label: "DATE" },
+    { key: "reg_id", label: "REG ID" }, // Add registration ID
+    { key: "client", label: "CLIENT" },
+    { key: "services", label: "SERVICES" },
+    { key: "amounts", label: "AMOUNT" }, // Changed label
+    // { key: "periods", label: "PERIODS" }, // Combined column for periods
+    { key: "payment", label: "PAYMENT" }, // Combined payment info
+    { key: "status", label: "STATUS" },
+    { key: "actions", label: "ACTIONS" }, // Added actions column
+  ], []);
+
+  // Add a tooltip component for amount details
+  const AmountTooltip = ({ 
+    initial, 
+    accept, 
+    discount, 
+    total 
+  }: { 
+    initial: number, 
+    accept: number, 
+    discount: number, 
+    total: number 
+  }) => (
+    <div className="group relative">
+      <div className="text-sm">₹{total.toLocaleString()}</div>
+      <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
+        <div className="space-y-1 text-xs">
+          <div>Initial: ₹{initial.toLocaleString()}</div>
+          <div>Accept: ₹{accept.toLocaleString()}</div>
+          {discount > 0 && <div>Discount: ₹{discount.toLocaleString()}</div>}
+          <div className="font-bold border-t border-gray-600 mt-1 pt-1">
+            Total: ₹{total.toLocaleString()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Add a tooltip component for payment details
+  const PaymentTooltip = ({ 
+    type, 
+    amount, 
+    status 
+  }: { 
+    type: string, 
+    amount: number,
+    status: string 
+  }) => (
+    <div className="group relative">
+      <div className="text-sm">
+        {status === 'pending' ? (
+          '-'
+        ) : (
+          <Chip
+            color={type === 'Cash' ? 'warning' : 'primary'}
+            variant="flat"
+            size="sm"
+          >
+            {type}
+          </Chip>
+        )}
+      </div>
+      {status !== 'pending' && amount > 0 && (
+        <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
+          <div className="text-xs">
+            Amount Paid: ₹{amount.toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const formatAmount = (initial: number, accept: number, discount: number, total: number) => {
+    return (
+      <div className="space-y-1 text-sm">
+        <div>Initial: ₹{initial.toLocaleString()}</div>
+        <div>Accept: ₹{accept.toLocaleString()}</div>
+        {discount > 0 && <div>Discount: ₹{discount.toLocaleString()}</div>}
+        <div className="font-bold">Total: ₹{total.toLocaleString()}</div>
+      </div>
+    );
+  };
+
+  const formatPeriods = (accept: string, pub: string) => {
+    return (
+      <div className="space-y-1 text-sm">
+        <div>Accept: {accept}</div>
+        <div>Publish: {pub}</div>
+      </div>
+    );
+  };
+
+  const filteredRegistrations = React.useMemo(() => {
+    // Add null check before filtering
+    if (!Array.isArray(registrations)) return [];
+    
+    const filtered = registrations.filter((reg) =>
+      reg.prospectus?.client_name?.toLowerCase().includes(filterValue.toLowerCase()) ||
+      reg.prospectus?.reg_id?.toLowerCase().includes(filterValue.toLowerCase()) ||
+      reg.services?.toLowerCase().includes(filterValue.toLowerCase()) ||
+      reg.status?.toLowerCase().includes(filterValue.toLowerCase()) ||
+      reg.prospectus?.department?.toLowerCase().includes(filterValue.toLowerCase())
+    );
+    console.log('Filtered Registrations:', filtered);
+    return filtered;
+  }, [filterValue, registrations]);
+
   const columns = React.useMemo(() => [
     { key: "date", label: "DATE" },
     { key: "reg_id", label: "REG ID" },
@@ -121,7 +235,6 @@ function BusinessDashboard() {
     { key: "state", label: "STATE" },
   ], []);
 
-  // Date formatting wrapped in useCallback
   const formatDate = React.useCallback((dateString: string) => {
     try {
       return format(new Date(dateString), 'dd/MM/yyyy');
@@ -129,6 +242,12 @@ function BusinessDashboard() {
       return dateString;
     }
   }, []);
+
+  const formatBankDetails = (bankAccount: Registration['bank_account']) => {
+    if (!bankAccount) return 'N/A';
+    const lastFourDigits = bankAccount.account_number.slice(-4);
+    return `${bankAccount.bank_name} (*${lastFourDigits})`;
+  };
 
   return (
     <div className="w-full p-6">
@@ -146,74 +265,190 @@ function BusinessDashboard() {
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader className="flex justify-between items-center px-6 py-4">
-          <div className="flex-1 max-w-md">
-            <Input
-              isClearable
-              classNames={{
-                base: "w-full",
-                inputWrapper: "border-1",
-              }}
-              placeholder="Search by name, email, or registration ID..."
-              startContent={<SearchIcon />}
-              value={filterValue}
-              onClear={() => setFilterValue("")}
-              onValueChange={setFilterValue}
-            />
-          </div>
-        </CardHeader>
-        <CardBody>
-          <Table
-            aria-label="Prospects table"
-            bottomContent={
-              <div className="flex w-full justify-center">
-                <Pagination
-                  isCompact
-                  showControls
-                  showShadow
-                  color="primary"
-                  page={page}
-                  total={pages}
-                  onChange={setPage}
+      <Tabs 
+        selectedKey={selectedTab} 
+        onSelectionChange={setSelectedTab as any}
+      >
+        <Tab key="prospects" title="Prospects">
+          <Card>
+            <CardHeader className="flex justify-between items-center px-6 py-4">
+              <div className="flex-1 max-w-md">
+                <Input
+                  isClearable
+                  classNames={{
+                    base: "w-full",
+                    inputWrapper: "border-1",
+                  }}
+                  placeholder="Search by name, email, or registration ID..."
+                  startContent={<SearchIcon />}
+                  value={filterValue}
+                  onClear={() => setFilterValue("")}
+                  onValueChange={setFilterValue}
                 />
               </div>
-            }
-            className="min-h-[400px]"
-          >
-            <TableHeader>
-              {columns.map((column) => (
-                <TableColumn 
-                  key={column.key}
-                  align={column.key === "actions" ? "center" : "start"}
+            </CardHeader>
+            <CardBody>
+              <Table
+                aria-label="Prospects table"
+                bottomContent={
+                  <div className="flex w-full justify-center">
+                    <Pagination
+                      isCompact
+                      showControls
+                      showShadow
+                      color="primary"
+                      page={page}
+                      total={pages}
+                      onChange={setPage}
+                    />
+                  </div>
+                }
+                className="min-h-[400px]"
+              >
+                <TableHeader>
+                  {columns.map((column) => (
+                    <TableColumn 
+                      key={column.key}
+                      align={column.key === "actions" ? "center" : "start"}
+                    >
+                      {column.label}
+                    </TableColumn>
+                  ))}
+                </TableHeader>
+                <TableBody
+                  items={items}
+                  emptyContent="No prospects found"
                 >
-                  {column.label}
-                </TableColumn>
-              ))}
-            </TableHeader>
-            <TableBody
-              items={items}
-              emptyContent="No prospects found"
-            >
-              {(item) => (
-                <TableRow 
-                  key={item.id}
-                  className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() => router.push(`/business/view/${item.reg_id}`)}
+                  {(item) => (
+                    <TableRow 
+                      key={item.id}
+                      className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => router.push(`/business/view/${item.reg_id}`)}
+                    >
+                      <TableCell>{formatDate(item.date)}</TableCell>
+                      <TableCell>{item.reg_id}</TableCell>
+                      <TableCell>{item.client_name}</TableCell>
+                      <TableCell>{item.email}</TableCell>
+                      <TableCell>{item.phone}</TableCell>
+                      <TableCell>{item.department}</TableCell>
+                      <TableCell>{item.state}</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardBody>
+          </Card>
+        </Tab>
+        <Tab key="registrations" title="Registrations">
+          <Card>
+            <CardHeader className="flex justify-between items-center px-6 py-4">
+              <div className="flex-1 max-w-md">
+                <Input
+                  isClearable
+                  classNames={{
+                    base: "w-full",
+                    inputWrapper: "border-1",
+                  }}
+                  placeholder="Search registrations..."
+                  startContent={<SearchIcon />}
+                  value={filterValue}
+                  onClear={() => setFilterValue("")}
+                  onValueChange={setFilterValue}
+                />
+              </div>
+            </CardHeader>
+            <CardBody>
+              <Table
+                aria-label="Registrations table"
+                bottomContent={
+                  <div className="flex w-full justify-center">
+                    <Pagination
+                      isCompact
+                      showControls
+                      showShadow
+                      color="primary"
+                      page={page}
+                      total={Math.ceil(filteredRegistrations.length / rowsPerPage)}
+                      onChange={setPage}
+                    />
+                  </div>
+                }
+              >
+                <TableHeader>
+                  {registrationColumns.map((column) => (
+                    <TableColumn key={column.key}>
+                      {column.label}
+                    </TableColumn>
+                  ))}
+                </TableHeader>
+                <TableBody
+                  items={filteredRegistrations.slice(
+                    (page - 1) * rowsPerPage,
+                    page * rowsPerPage
+                  )}
+                  emptyContent="No registrations found"
                 >
-                  <TableCell>{formatDate(item.date)}</TableCell>
-                  <TableCell>{item.reg_id}</TableCell>
-                  <TableCell>{item.client_name}</TableCell>
-                  <TableCell>{item.email}</TableCell>
-                  <TableCell>{item.phone}</TableCell>
-                  <TableCell>{item.department}</TableCell>
-                  <TableCell>{item.state}</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+                  {(registration) => (
+                    <TableRow 
+                      key={registration.id}
+                      className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <TableCell>{formatDate(registration.created_at)}</TableCell>
+                      <TableCell>{registration.prospectus.reg_id}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{registration.prospectus.client_name}</div>
+                          <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{registration.services}</TableCell>
+                      <TableCell>
+                        <AmountTooltip
+                          initial={registration.init_amount}
+                          accept={registration.accept_amount}
+                          discount={registration.discount}
+                          total={registration.total_amount}
+                        />
+                      </TableCell>
+                      {/* <TableCell>
+                        {formatPeriods(registration.accept_period, registration.pub_period)}
+                      </TableCell> */}
+                      <TableCell>
+                        <PaymentTooltip
+                          type={registration.transaction.transaction_type}
+                          amount={registration.transaction.amount}
+                          status={registration.status}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          color={registration.status === 'registered' ? 'success' : 'warning'}
+                          variant="flat"
+                        >
+                          {registration.status}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="light"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add view logic here later
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardBody>
+          </Card>
+        </Tab>
+      </Tabs>
     </div>
   );
 }

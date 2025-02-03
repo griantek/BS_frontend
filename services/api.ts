@@ -129,11 +129,30 @@ interface Registration {
   total_amount: number;
   accept_period: string;
   pub_period: string;
-  bank_id: string;
-  status: 'registered' | 'not_registered';  // Updated status types
+  status: 'pending' | 'registered';
   month: number;
   year: number;
   created_at: string;
+  prospectus: {
+    id: number;
+    client_name: string;
+    [key: string]: any;
+  };
+  bank_account: {
+    id: string;
+    bank_name: string;
+    account_number: string;
+    [key: string]: any;
+  };
+  transaction: {
+    id: number;
+    transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
+    amount: number;
+    executive: {
+      id: string;
+      username: string;
+    };
+  };
 }
 
 // Add interface for registration creation
@@ -168,6 +187,50 @@ interface CreateRegistrationRequest {
   status: 'registered' | 'pending';  // Explicitly define literal types
   month: number;
   year: number;
+}
+
+// Add new interface for database registration
+interface RegistrationRecord {
+  id: number;
+  prospectus_id: number;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  status: 'pending' | 'registered';
+  month: number;
+  year: number;
+  created_at: string;
+  prospectus: {
+    id: number;
+    client_name: string;
+    [key: string]: any;
+  };
+  bank_account: {
+    id: string;
+    bank_name: string;
+    account_number: string;
+    [key: string]: any;
+  };
+  transaction: {
+    id: number;
+    transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
+    amount: number;
+    executive: {
+      id: string;
+      username: string;
+    };
+  };
+}
+
+// Add new interface for paginated response
+interface PaginatedResponse<T> {
+  total: number;
+  filtered: number;
+  items: T[];
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -403,7 +466,7 @@ const api = {
     },
 
     // Get all registrations
-    async getAllRegistrations(): Promise<ApiResponse<Registration[]>> {
+    async getAllRegistrations(): Promise<ApiResponse<PaginatedResponse<Registration>>> {
         try {
             const response = await this.axiosInstance.get('/common/registration/all');
             return response.data;

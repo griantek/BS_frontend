@@ -106,7 +106,13 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({ id, prospectData, quotationDa
   return (
     <div id={id} style={invoiceStyles.invoiceContainer}>
       <header style={invoiceStyles.header}>
-        <Image src="/logo.png" alt="Logo" width={100} height={100} className="logo" />
+        <Image
+          src="/logo.png" // Update this path
+          alt="Company Logo"
+          width={128}
+          height={75}
+          priority // Add this to prioritize logo loading
+        />
         <h1 style={invoiceStyles.invoiceTitle}>INVOICE</h1>
         <div style={invoiceStyles.invoiceInfo}>
           <p><strong>Invoice No:</strong> {invoiceNumber}</p>
