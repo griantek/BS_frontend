@@ -10,5 +10,6 @@ export const BANKS: BankType[] = [
   { id: 'icici', name: 'ICICI Bank', accountNumber: '9012' }
 ];
 
-export const PERIOD_UNITS = ['days', 'months'] as const;
-export type PeriodUnit = typeof PERIOD_UNITS[number];
+export type PeriodUnit = "days" | "weeks" | "months" | "years";
+
+export const PERIOD_UNITS: PeriodUnit[] = ["days", "weeks", "months", "years"];

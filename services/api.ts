@@ -452,19 +452,10 @@ const api = {
 
     // Get all services
     async getAllServices(): Promise<ApiResponse<Service[]>> {
-        try {
-            // console.log('Token before request:', this.getStoredToken());
-            const response = await this.axiosInstance.get('/common/services/all');
-            return response.data;
-        } catch (error: any) {
-            // console.error('API getAllServices error:', {
-            //     status: error.response?.status,
-            //     data: error.response?.data,
-            //     error: error,
-            //     token: this.getStoredToken()
-            // });
-            throw this.handleError(error);
-        }
+        return withCache('services', () => 
+            this.axiosInstance.get('/common/services/all')
+                .then(response => response.data)
+        );
     },
 
     // Get service by ID
@@ -660,6 +651,23 @@ const api = {
         }
     }
 };
+
+// Add caching to your API methods
+
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function withCache<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return Promise.resolve(cached.data);
+  }
+
+  return fetchFn().then(data => {
+    cache.set(key, { data, timestamp: Date.now() });
+    return data;
+  });
+}
 
 // Initialize the interceptors
 api.init();

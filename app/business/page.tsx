@@ -123,7 +123,7 @@ function BusinessDashboard() {
     // { key: "periods", label: "PERIODS" }, // Combined column for periods
     { key: "payment", label: "PAYMENT" }, // Combined payment info
     { key: "status", label: "STATUS" },
-    { key: "actions", label: "ACTIONS" }, // Added actions column
+    // Removed actions column
   ], []);
 
   // Add a tooltip component for amount details
@@ -389,6 +389,7 @@ function BusinessDashboard() {
                     <TableRow 
                       key={registration.id}
                       className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => router.push(`/business/view/registration/${registration.id}`)}
                     >
                       <TableCell>{formatDate(registration.created_at)}</TableCell>
                       <TableCell>{registration.prospectus.reg_id}</TableCell>
@@ -421,19 +422,6 @@ function BusinessDashboard() {
                         >
                           {registration.status}
                         </Chip>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="light"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/business/view/registration/${registration.id}`);
-                          }}
-                        >
-                          View
-                        </Button>
                       </TableCell>
                     </TableRow>
                   )}

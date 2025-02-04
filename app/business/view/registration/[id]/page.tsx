@@ -36,6 +36,7 @@ interface ExtendedRegistration extends Registration {
     branch: string;
     upi_id: string;
     ifsc_code: string;
+    created_at: string;  // Add this property
     account_name: string;
     account_type: string;
     account_number: string;
@@ -45,6 +46,7 @@ interface ExtendedRegistration extends Registration {
     id: number;
     amount: number;
     exec_id: string;
+    executive: object;  // Add this property
     transaction_id: string;
     transaction_date: string;
     transaction_type: string;
@@ -397,6 +399,13 @@ function RegistrationContent({ regId }: { regId: string }) {
                 </Button>
               )}
               <Button
+                color="primary"
+                variant="flat"
+                onPress={() => router.push(`/business/edit/registration/${regId}`)}
+              >
+                Edit Registration
+              </Button>
+              <Button
                 color="danger"
                 variant="flat"
                 onPress={onDeleteModalOpen}
@@ -473,8 +482,8 @@ function RegistrationContent({ regId }: { regId: string }) {
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                       <p className="text-sm text-gray-600 mb-1">Payment Status</p>
-                      <Chip color="success" variant="flat" className="text-lg">
-                        Paid
+                      <Chip color={registrationData.transactions.amount === registrationData.total_amount ? 'success' : 'warning'} variant="flat" className="text-lg">
+                        {registrationData.transactions.amount === registrationData.total_amount ? 'Paid' : 'Partially Paid'}
                       </Chip>
                     </div>
                   </>
