@@ -16,7 +16,15 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api, { CreateServiceRequest } from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
 
-interface FormData extends CreateServiceRequest {}
+// Update FormData interface to match Service type
+interface FormData {
+  service_name: string;
+  service_type: string | null;
+  description: string | null;
+  fee: number;
+  min_duration: string | null;
+  max_duration: string | null;
+}
 
 export default function AddService() {
   const router = useRouter();
@@ -41,8 +49,12 @@ export default function AddService() {
     try {
       setIsSubmitting(true);
       await api.createService({
-        ...data,
-        fee: Number(data.fee)
+        service_name: data.service_name,
+        service_type: data.service_type || null,
+        description: data.description || null,
+        fee: Number(data.fee),
+        min_duration: data.min_duration || null,
+        max_duration: data.max_duration || null
       });
       
       toast.success('Service added successfully!');
