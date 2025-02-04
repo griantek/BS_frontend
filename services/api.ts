@@ -601,6 +601,15 @@ const api = {
             throw this.handleError(error);
         }
     },
+    
+    async updateProspectus(id: number, data: Partial<ProspectusCreateRequest>): Promise<ApiResponse<Prospectus>> {
+        try {
+            const response = await this.axiosInstance.put(`/executive/prospectus/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
 
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);

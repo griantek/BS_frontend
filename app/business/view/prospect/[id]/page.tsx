@@ -162,7 +162,7 @@ function ProspectContent({ regId }: { regId: string }) {
               <Button
                 color="primary"
                 variant="flat"
-                onPress={() => router.push(`/business/prospect/edit/${regId}`)}
+                onPress={() => router.push(`/business/edit_prospect/${regId}`)}
               >
                 Edit Details
               </Button>
