@@ -204,12 +204,12 @@ function ProspectContent({ regId }: { regId: string }) {
                 <p className="text-small text-default-500">Department</p>
                 <p className="font-medium">{prospectData.department}</p>
               </div>
-              <div className="space-y-1">
+              {/* <div className="space-y-1">
                 <p className="text-small text-default-500">Status</p>
                 <Chip color="success" variant="flat" size="sm">
                   {prospectData.status}
                 </Chip>
-              </div>
+              </div> */}
               <div className="space-y-1">
                 <p className="text-small text-default-500">Location</p>
                 <p className="font-medium">{prospectData.state}</p>

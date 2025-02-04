@@ -136,7 +136,7 @@ function EditProspectContent({ regId }: { regId: string }) {
 
       await api.updateProspectus(prospectData.id, updateData);
       toast.success('Prospect updated successfully!');
-      router.replace('/business');
+    router.replace(`/business/view/prospect/${regId}`);
       
     } catch (error: any) {
       setIsSubmitting(false);
