@@ -535,6 +535,15 @@ const api = {
             throw this.handleError(error);
         }
     },
+    
+    async approveRegistration(id: number, data: Partial<CreateRegistrationRequest>): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.put(`/common/registration/approve/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
 
     // Delete registration by ID
     async deleteRegistration(id: number): Promise<ApiResponse<void>> {
