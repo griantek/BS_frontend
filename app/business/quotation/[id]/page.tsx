@@ -649,13 +649,7 @@ function QuotationContent({ regId }: { regId: string }) {
                     />
                     <select
                       className="w-1/2 p-2 rounded-lg border border-gray-300"
-                      value={watch("acceptancePeriodUnit")}
-                      onChange={(e) =>
-                        setValue(
-                          "acceptancePeriodUnit",
-                          e.target.value as PeriodUnit
-                        )
-                      }
+                      {...register("acceptancePeriodUnit")}
                       aria-label="Acceptance Period Unit"
                     >
                       {PERIOD_UNITS.map((unit) => (
@@ -673,13 +667,7 @@ function QuotationContent({ regId }: { regId: string }) {
                     />
                     <select
                       className="w-1/2 p-2 rounded-lg border border-gray-300"
-                      value={watch("publicationPeriodUnit")}
-                      onChange={(e) =>
-                        setValue(
-                          "publicationPeriodUnit",
-                          e.target.value as PeriodUnit
-                        )
-                      }
+                      {...register("publicationPeriodUnit")}
                       aria-label="Publication Period Unit"
                     >
                       {PERIOD_UNITS.map((unit) => (
