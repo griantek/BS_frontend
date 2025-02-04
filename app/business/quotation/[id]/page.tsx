@@ -585,7 +585,7 @@ function QuotationContent({ regId }: { regId: string }) {
                         </div>
 
                         {/* Discount Row */}
-                        {watch("discountPercentage") > 0 && (
+                        {getNumericValue(watch("discountPercentage")) > 0 && (
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <span className="text-danger-600">Discount</span>
@@ -599,7 +599,9 @@ function QuotationContent({ regId }: { regId: string }) {
                                     "text-tiny font-medium px-2 text-danger",
                                 }}
                               >
-                                {watch("discountPercentage")}% off
+                                {getNumericValue(
+                                  watch("discountPercentage")
+                                )}% off
                               </Chip>
                             </div>
                             <span className="text-danger font-medium">
@@ -626,7 +628,7 @@ function QuotationContent({ regId }: { regId: string }) {
                               ₹ {watch("totalAmount").toLocaleString()}
                             </Chip>
                             <span className="text-tiny text-default-500">
-                              {watch("discountPercentage") > 0
+                              {getNumericValue(watch("discountPercentage")) > 0
                                 ? "After discount applied"
                                 : "No discount applied"}
                             </span>
@@ -654,6 +656,7 @@ function QuotationContent({ regId }: { regId: string }) {
                           e.target.value as PeriodUnit
                         )
                       }
+                      aria-label="Acceptance Period Unit"
                     >
                       {PERIOD_UNITS.map((unit) => (
                         <option key={unit} value={unit}>
@@ -677,6 +680,7 @@ function QuotationContent({ regId }: { regId: string }) {
                           e.target.value as PeriodUnit
                         )
                       }
+                      aria-label="Publication Period Unit"
                     >
                       {PERIOD_UNITS.map((unit) => (
                         <option key={unit} value={unit}>
@@ -689,13 +693,12 @@ function QuotationContent({ regId }: { regId: string }) {
 
                 {/* Bank Selection - Updated */}
                 <div className="w-full space-y-2">
-                  <label className="text-sm font-medium">
-                    Select Bank Account
-                  </label>
                   <select
+                    id="bank-select"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     value={watch("selectedBank")}
                     onChange={handleBankChange}
+                    aria-label="Select Bank Account"
                   >
                     <option value="">Choose a bank account</option>
                     {bankAccounts.map((account) => (

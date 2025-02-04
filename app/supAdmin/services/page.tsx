@@ -143,12 +143,13 @@ function ServicesDashboard() {
                   <TableCell>{item.service_name}</TableCell>
                   <TableCell>{item.service_type || '-'}</TableCell>
                   <TableCell>
-                    <span
-                      className="cursor-pointer text-primary hover:text-primary-600"
+                    <Button
+                      variant="light"
+                      className="p-0 m-0 h-auto min-w-0 text-left"
                       onClick={() => handleDescriptionClick(item)}
                     >
                       {truncateText(item.description)}
-                    </span>
+                    </Button>
                   </TableCell>
                   <TableCell>₹{item.fee.toLocaleString()}</TableCell>
                   <TableCell>
