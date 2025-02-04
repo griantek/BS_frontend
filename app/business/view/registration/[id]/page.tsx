@@ -491,20 +491,20 @@ function RegistrationContent({ regId }: { regId: string }) {
               </div>
 
               {/* Cost Breakdown - Detailed List */}
-              <div className="bg-default-50 dark:bg-default-900/20 p-6 rounded-xl">
+              <div className="bg-default-50 dark:bg-default-300/20 p-6 rounded-xl">
                 <h3 className="text-md font-semibold mb-4">Cost Breakdown</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-600">Initial Amount</span>
+                    <span className="text-gray-400">Initial Amount</span>
                     <span className="font-medium">₹{registrationData.init_amount.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-600">Acceptance Amount</span>
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-400">
+                    <span className="text-gray-400">Acceptance Amount</span>
                     <span className="font-medium">₹{registrationData.accept_amount.toLocaleString()}</span>
                   </div>
                   {registrationData.discount > 0 && (
                     <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
-                      <span className="text-gray-600">Discount Applied</span>
+                      <span className="text-gray-400">Discount Applied</span>
                       <span className="font-medium text-green-600">- ₹{registrationData.discount.toLocaleString()}</span>
                     </div>
                   )}
