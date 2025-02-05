@@ -274,6 +274,21 @@ interface PaginatedResponse<T> {
   items: T[];
 }
 
+// Add new Role interface
+interface Role {
+    id: number;
+    name: string;
+    description: string;
+    permissions: {
+        read: boolean;
+        create: boolean;
+        delete: boolean;
+        update: boolean;
+    };
+    created_at: string;
+    updated_at: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -612,6 +627,16 @@ const api = {
         }
     },
 
+    // Add new method for getting all roles
+    async getAllRoles(): Promise<ApiResponse<Role[]>> {
+        try {
+            const response = await this.axiosInstance.get('/superadmin/roles/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -696,6 +721,7 @@ export type {
     CreateRegistrationRequest,
     TransactionInfo,
     Department,
-    CreateDepartmentRequest
+    CreateDepartmentRequest,
+    Role,
 };
 export default api;

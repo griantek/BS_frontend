@@ -19,6 +19,15 @@ import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'; // Updated import
+import {
+  ChartBarIcon,
+  UsersIcon,
+  WrenchScrewdriverIcon,
+  UserGroupIcon,
+  BanknotesIcon,
+  BuildingOfficeIcon,
+  ChartPieIcon
+} from '@heroicons/react/24/outline';
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -32,6 +41,52 @@ import {
 } from "@/components/icons";
 import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<any>;
+  isActive: boolean;
+}
+
+const navLinks: NavItem[] = [
+  {
+    label: "Dashboard",
+    href: "/supAdmin",
+    icon: ChartBarIcon,
+    isActive: false,
+  },
+  {
+    label: "Users",
+    href: "/supAdmin/users/executives",
+    icon: UsersIcon,
+    isActive: false,
+  },
+  {
+    label: "Services",
+    href: "/supAdmin/services",
+    icon: WrenchScrewdriverIcon,
+    isActive: false,
+  },
+  {
+    label: "Clients",
+    href: "/supAdmin/clients",
+    icon: UserGroupIcon,
+    isActive: false,
+  },
+  {
+    label: "Finance",
+    href: "/supAdmin/finance",
+    icon: BanknotesIcon,
+    isActive: false,
+  },
+  {
+    label: "Departments",
+    href: "/supAdmin/departments",
+    icon: BuildingOfficeIcon,
+    isActive: false,
+  }
+];
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -62,6 +117,10 @@ export const Navbar = () => {
 
   const isActiveLink = (path: string) => {
     return pathname === path;
+  };
+
+  const isActiveMainPath = (path: string) => {
+    return pathname.startsWith(path);
   };
 
   const searchInput = (
@@ -106,39 +165,21 @@ export const Navbar = () => {
       >
         {isLoggedIn && isSupAdmin && (
           <NavbarItem className="hidden sm:flex gap-4">
-            <NextLink
-              className={clsx(
-                linkStyles({ color: "foreground" }),
-                "data-[active=true]:text-primary data-[active=true]:font-medium",
-                isActiveLink('/supAdmin') && "text-primary font-medium"
-              )}
-              color="foreground"
-              href="/supAdmin"
-            >
-              Dashboard
-            </NextLink>
-            <NextLink
-              className={clsx(
-                linkStyles({ color: "foreground" }),
-                "data-[active=true]:text-primary data-[active=true]:font-medium",
-                isActiveLink('/supAdmin/services') && "text-primary font-medium"
-              )}
-              color="foreground"
-              href="/supAdmin/services"
-            >
-              Services
-            </NextLink>
-            <NextLink
-              className={clsx(
-                linkStyles({ color: "foreground" }),
-                "data-[active=true]:text-primary data-[active=true]:font-medium",
-                isActiveLink('/supAdmin/executives') && "text-primary font-medium"
-              )}
-              color="foreground"
-              href="/supAdmin/executives"
-            >
-              Executives
-            </NextLink>
+            {navLinks.map((link) => (
+              <NextLink
+                key={link.href}
+                className={clsx(
+                  linkStyles({ color: "foreground" }),
+                  "data-[active=true]:text-primary data-[active=true]:font-medium flex items-center gap-2",
+                  isActiveMainPath(link.href) && "text-primary font-medium"
+                )}
+                color="foreground"
+                href={link.href}
+              >
+                <link.icon className="w-4 h-4" />
+                {link.label}
+              </NextLink>
+            ))}
           </NavbarItem>
         )}
         {isLoggedIn && isExecutive && (
@@ -190,39 +231,21 @@ export const Navbar = () => {
 
       {isSupAdmin && (
         <NavbarMenu>
-          <NavbarMenuItem>
-            <NextLink 
-              className={clsx(
-                linkStyles(),
-                isActiveLink('/supAdmin') && "text-primary font-medium"
-              )} 
-              href="/supAdmin"
-            >
-              Dashboard
-            </NextLink>
-          </NavbarMenuItem>
-          <NavbarMenuItem>
-            <NextLink 
-              className={clsx(
-                linkStyles(),
-                isActiveLink('/supAdmin/services') && "text-primary font-medium"
-              )} 
-              href="/supAdmin/services"
-            >
-              Services
-            </NextLink>
-          </NavbarMenuItem>
-          <NavbarMenuItem>
-            <NextLink 
-              className={clsx(
-                linkStyles(),
-                isActiveLink('/supAdmin/executives') && "text-primary font-medium"
-              )} 
-              href="/supAdmin/executives"
-            >
-              Executives
-            </NextLink>
-          </NavbarMenuItem>
+          {navLinks.map((link) => (
+            <NavbarMenuItem key={link.href}>
+              <NextLink 
+                className={clsx(
+                  linkStyles(),
+                  "flex items-center gap-2",
+                  isActiveMainPath(link.href) && "text-primary font-medium"
+                )} 
+                href={link.href}
+              >
+                <link.icon className="w-4 h-4" />
+                {link.label}
+              </NextLink>
+            </NavbarMenuItem>
+          ))}
         </NavbarMenu>
       )}
     </HeroUINavbar>

@@ -4,7 +4,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import api from '../../../../services/api';
+import api from '../../../../../services/api';
 import { useRouter } from 'next/navigation';
 import {
   Input,
