@@ -679,10 +679,11 @@ function QuotationContent({ regId }: { regId: string }) {
 
                 {/* Bank Selection - Updated */}
                 <div className="w-full space-y-2">
-                  <label className="text-sm font-medium">
+                  <label htmlFor="bank-select" className="text-sm font-medium">
                     Select Bank Account
                   </label>
                   <select
+                    id="bank-select"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     value={watch("selectedBank")}
                     onChange={handleBankChange}

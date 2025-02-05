@@ -1,3 +1,4 @@
+import type { PeriodUnit } from '@/constants/quotation';
 import type { Service } from '@/services/api';
 
 export interface SelectedServiceType {
@@ -11,18 +12,18 @@ export interface SelectedServiceType {
 }
 
 export interface QuotationFormData {
-  initialAmount: number;
-  acceptanceAmount: number;
-  discountPercentage: number;
+  initialAmount?: number;
+  acceptanceAmount?: number;
+  discountPercentage?: number;
   discountAmount: number;
   subTotal: number;
   totalAmount: number;
   selectedServices: string[];
   selectedServicesData: Service[]; // Changed to use API Service type
-  acceptancePeriod: number;
-  acceptancePeriodUnit: 'days' | 'months';
-  publicationPeriod: number;
-  publicationPeriodUnit: 'days' | 'months';
+  acceptancePeriod?: number;
+  acceptancePeriodUnit: PeriodUnit;  // Updated to use PeriodUnit type
+  publicationPeriod?: number;
+  publicationPeriodUnit: PeriodUnit;  // Updated to use PeriodUnit type
   selectedBank: string;
   transactionDate:string;
 }

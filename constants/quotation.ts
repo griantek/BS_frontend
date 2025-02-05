@@ -12,4 +12,4 @@ export const BANKS: BankType[] = [
 
 export type PeriodUnit = "days" | "weeks" | "months" | "years";
 
-export const PERIOD_UNITS: PeriodUnit[] = ["days", "weeks", "months", "years"];
+export const PERIOD_UNITS: readonly PeriodUnit[] = ["days", "weeks", "months", "years"] as const;
