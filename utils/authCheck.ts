@@ -38,11 +38,11 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'executive' 
   // Check role-specific access
   if (requiredRole) {
     if (requiredRole === 'supAdmin' && userRole !== 'supAdmin') {
-      router.replace('/business');
+      router.push('/business');
       return false;
     }
-    if (requiredRole === 'executive' && userRole === 'supAdmin') {  // Changed from 'admin' to 'executive'
-      router.replace('/supAdmin');
+    if (requiredRole === 'executive' && userRole === 'supAdmin') {
+      router.push('/supAdmin');
       return false;
     }
   }
