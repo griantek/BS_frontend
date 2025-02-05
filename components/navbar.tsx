@@ -89,10 +89,14 @@ export const Navbar = () => {
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <a className="flex justify-start items-center gap-1" href="#" onClick={handleLogoClick}>
+          <Button
+            className="flex justify-start items-center gap-1"
+            onClick={handleLogoClick}
+            variant="light"
+          >
             <Logo />
             <p className="font-bold text-inherit">GRIANTEK</p>
-          </a>
+          </Button>
         </NavbarBrand>
       </NavbarContent>
 

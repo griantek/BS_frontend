@@ -158,7 +158,7 @@ export default function Home() {
           </Card>
         </motion.div>
 
-        {/* Footer - adjusted position */}
+        {/* Footer */}
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -168,9 +168,21 @@ export default function Home() {
           <div className="flex flex-col items-center gap-2">
             <p className="text-default-500">© 2024 Graintek Business Solutions</p>
             <div className="flex gap-4 text-default-400">
-              <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
+              <Button
+                className="hover:text-primary transition-colors"
+                onClick={() => router.push('/privacy-policy')}
+                variant="light"
+              >
+                Privacy Policy
+              </Button>
               <span>•</span>
-              <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
+              <Button
+                className="hover:text-primary transition-colors"
+                onClick={() => router.push('/terms-of-service')}
+                variant="light"
+              >
+                Terms of Service
+              </Button>
             </div>
           </div>
         </motion.footer>
