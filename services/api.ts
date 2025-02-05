@@ -282,7 +282,7 @@ const PUBLIC_ENDPOINTS = [
 // API service
 const api = {
     axiosInstance: axios.create({
-        baseURL: API_URL,
+        baseURL: '/api',  // Changed from API_URL to use the proxy
         headers: {
             'Content-Type': 'application/json',
         },
