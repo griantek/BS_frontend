@@ -52,7 +52,14 @@ export default function BusinessLogin() {
         password: data.password
       });
 
-      api.setStoredAuth(response.token, response.executive, 'admin');
+      // Set both localStorage and cookies for dual protection
+      api.setStoredAuth(response.token, response.executive, 'executive');
+      
+      // Set secure cookies
+      document.cookie = `token=${response.token}; path=/; secure; samesite=strict`;
+      document.cookie = `isLoggedIn=true; path=/; secure; samesite=strict`;
+      document.cookie = `role=executive; path=/; secure; samesite=strict`;
+
       await router.replace('/business');
     } catch (error) {
       const errorMessage = api.handleError(error);

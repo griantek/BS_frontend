@@ -4,9 +4,9 @@ const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
-export const getUserRole = (): 'admin' | 'supAdmin' | null => {
+export const getUserRole = (): 'executive' | 'supAdmin' | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(USER_ROLE_KEY) as 'admin' | 'supAdmin' | null;
+  return localStorage.getItem(USER_ROLE_KEY) as 'executive' | 'supAdmin' | null;
 };
 
 export const isLoggedIn = (): boolean => {
@@ -54,7 +54,7 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
   const userRole = getUserRole();
   if (userRole === 'supAdmin') {
     router.replace('/supAdmin');
-  } else if (userRole === 'admin') {
+  } else if (userRole === 'executive') {
     router.replace('/business');
   }
 };

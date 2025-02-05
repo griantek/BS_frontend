@@ -112,7 +112,7 @@ export default function Home() {
                   router.push('/supAdmin');
                 }}
               >
-                Login as Admin
+                Login as Executive
               </Button>
             </CardBody>
           </Card>

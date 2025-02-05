@@ -621,7 +621,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'admin' | 'supAdmin') {
+    setStoredAuth(token: string, user: any, role: 'executive' | 'supAdmin') {
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
