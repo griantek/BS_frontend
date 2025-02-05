@@ -344,6 +344,30 @@ interface ServerRegistration {
   };
 }
 
+// Add Transaction interface near other interfaces
+interface Transaction {
+  id: number;
+  transaction_type: string;
+  transaction_id: string;
+  amount: number;
+  transaction_date: string;
+  additional_info: Record<string, any>;
+  exec_id: string;
+  executive: {
+    id: string;
+    username: string;
+  };
+  registration: Array<{
+    id: number;
+    prospectus: {
+      id: number;
+      reg_id: string;
+      client_name: string;
+    };
+  }>;
+  executive_name: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -723,6 +747,16 @@ const api = {
         }
     },
 
+    // Add new method for getting all transactions
+    async getAllTransactions(): Promise<ApiResponse<Transaction[]>> {
+        try {
+            const response = await this.axiosInstance.get('/common/transactions/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -812,5 +846,6 @@ export type {
     CreateRoleRequest,
     Prospectus,  // Add this export
     ServerRegistration,
+    Transaction,
 };
 export default api;

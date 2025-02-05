@@ -8,27 +8,14 @@ import {
   TableRow,
   TableCell,
   Card,
-  CardHeader,
   CardBody,
   Spinner,
   Chip
 } from "@heroui/react";
 import api from '@/services/api';
+import type { Transaction } from '@/services/api';
 
-interface Transaction {
-  id: number;
-  transaction_type: string;
-  transaction_id: string;
-  amount: number;
-  transaction_date: string;
-  additional_info: Record<string, any>;
-  exec_id: string;
-  executive: {
-    id: string;
-    username: string;
-  };
-}
-
+// Keep the helper functions
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -49,6 +36,13 @@ const getStatusColor = (type: string): "default" | "success" | "primary" | "seco
   return colors[type] || 'default';
 };
 
+const getClientName = (transaction: Transaction) => {
+  if (transaction.registration && transaction.registration.length > 0) {
+    return transaction.registration[0].prospectus.client_name;
+  }
+  return 'N/A';
+};
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -56,8 +50,9 @@ export default function TransactionsPage() {
   React.useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await api.axiosInstance.get('/common/transactions/all');
-        setTransactions(response.data.data);
+        const response = await api.getAllTransactions();
+        console.log("transactionssssss: ",response.data); 
+        setTransactions(response.data);
       } catch (error) {
         console.error('Error fetching transactions:', error);
       } finally {
@@ -81,17 +76,21 @@ export default function TransactionsPage() {
       <CardBody>
         <Table aria-label="Transactions table">
           <TableHeader>
+            <TableColumn>ID</TableColumn>
             <TableColumn>Date</TableColumn>
+            <TableColumn>Client Name</TableColumn>
             <TableColumn>Type</TableColumn>
             <TableColumn>Transaction ID</TableColumn>
             <TableColumn>Amount</TableColumn>
-            <TableColumn>Executive</TableColumn>
             <TableColumn>Additional Info</TableColumn>
+            <TableColumn>Executive</TableColumn>
           </TableHeader>
           <TableBody>
             {transactions.map((transaction) => (
               <TableRow key={transaction.id}>
+                <TableCell>{transaction.id}</TableCell>
                 <TableCell>{formatDate(transaction.transaction_date)}</TableCell>
+                <TableCell>{getClientName(transaction)}</TableCell>
                 <TableCell>
                   <Chip
                     color={getStatusColor(transaction.transaction_type)}
@@ -102,7 +101,6 @@ export default function TransactionsPage() {
                 </TableCell>
                 <TableCell>{transaction.transaction_id || '-'}</TableCell>
                 <TableCell>₹{transaction.amount.toLocaleString()}</TableCell>
-                <TableCell>{transaction.executive.username}</TableCell>
                 <TableCell>
                   {Object.entries(transaction.additional_info).map(([key, value]) => (
                     <div key={key} className="text-sm">
@@ -110,6 +108,7 @@ export default function TransactionsPage() {
                     </div>
                   ))}
                 </TableCell>
+                <TableCell>{transaction.executive_name}</TableCell>
               </TableRow>
             ))}
           </TableBody>
