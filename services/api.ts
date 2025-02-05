@@ -332,7 +332,7 @@ const api = {
                     this.clearStoredAuth();
                     window.location.href = userRole === 'supAdmin' 
                         ? '/supAdmin/login' 
-                        : '/admin';
+                        : '/business/login';
                 }
                 return Promise.reject(error);
             }

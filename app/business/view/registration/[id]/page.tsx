@@ -23,7 +23,7 @@ import {
 import { format } from 'date-fns';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
-import { withAdminAuth } from '@/components/withAdminAuth';
+import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import { useForm } from "react-hook-form";
 import type { Registration, BankAccount, TransactionInfo } from '@/services/api';
 
@@ -692,4 +692,4 @@ function RegistrationView({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(RegistrationView);
+export default withExecutiveAuth(RegistrationView);

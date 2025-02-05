@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
-import { withAdminAuth } from '@/components/withAdminAuth';
+import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import type { Registration } from '@/services/api';
 
 interface Prospect {
@@ -435,4 +435,4 @@ function BusinessDashboard() {
   );
 }
 
-export default withAdminAuth(BusinessDashboard);
+export default withExecutiveAuth(BusinessDashboard);

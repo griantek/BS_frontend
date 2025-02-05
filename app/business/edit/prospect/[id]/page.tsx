@@ -20,7 +20,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import type { ProspectusCreateRequest, Department } from '@/services/api';
 import { checkAuth } from '@/utils/authCheck';
-import { withAdminAuth } from '@/components/withAdminAuth';
+import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 
 // Use the same FormDataType as add_prospect
 interface FormDataType {
@@ -343,4 +343,4 @@ function EditProspectPage({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(EditProspectPage);
+export default withExecutiveAuth(EditProspectPage);

@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import PDFTemplate from "@/components/PDFTemplate";
 import { BANKS, PERIOD_UNITS, PeriodUnit } from "@/constants/quotation";
 import type { QuotationFormData } from "@/types/quotation";
-import { withAdminAuth } from "@/components/withAdminAuth";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -755,4 +755,4 @@ function QuotationPage({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(QuotationPage);
+export default withExecutiveAuth(QuotationPage);

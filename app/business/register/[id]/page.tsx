@@ -14,7 +14,7 @@ import {
 } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import { PERIOD_UNITS } from "@/constants/quotation";
-import { withAdminAuth } from "@/components/withAdminAuth";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import { toast } from "react-toastify";
 import api from "@/services/api";
 import { checkAuth } from "@/utils/authCheck";
@@ -771,4 +771,4 @@ function RegistrationPage({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(RegistrationPage);
+export default withExecutiveAuth(RegistrationPage);

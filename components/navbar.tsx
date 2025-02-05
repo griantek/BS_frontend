@@ -36,7 +36,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isSupAdmin, isAdmin } = useAuth();
+  const { isLoggedIn, isSupAdmin, isExecutive } = useAuth();  // Changed from isAdmin
 
   const handleLogout = () => {
     const userRole = localStorage.getItem('userRole');
@@ -45,7 +45,7 @@ export const Navbar = () => {
     if (userRole === 'supAdmin') {
       router.replace('/supAdmin/login');
     } else {
-      router.replace('/admin');
+      router.replace('/business/login');  // Changed from '/admin'
     }
   };
 
@@ -124,6 +124,22 @@ export const Navbar = () => {
             >
               Executives
             </NextLink>
+          </NavbarItem>
+        )}
+        {isLoggedIn && isExecutive && (
+          <NavbarItem className="hidden sm:flex gap-4">
+            <NextLink
+              className={clsx(
+                linkStyles({ color: "foreground" }),
+                "data-[active=true]:text-primary data-[active=true]:font-medium",
+                isActiveLink('/business') && "text-primary font-medium"
+              )}
+              color="foreground"
+              href="/business"
+            >
+              Dashboard
+            </NextLink>
+            {/* Add any other executive-specific navigation items here */}
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2">

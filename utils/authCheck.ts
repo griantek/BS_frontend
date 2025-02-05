@@ -18,11 +18,11 @@ export const isLoggedIn = (): boolean => {
 
 export const redirectToLogin = (router: AppRouterInstance, userRole?: string) => {
   if (typeof window === 'undefined') return;
-  const path = userRole === 'supAdmin' ? '/supAdmin/login' : '/admin';
+  const path = userRole === 'supAdmin' ? '/supAdmin/login' : '/business/login';
   router.replace(path);
 };
 
-export const checkAuth = (router: AppRouterInstance, requiredRole?: 'admin' | 'supAdmin'): boolean => {
+export const checkAuth = (router: AppRouterInstance, requiredRole?: 'executive' | 'supAdmin'): boolean => {
   if (typeof window === 'undefined') return false;
   
   const token = localStorage.getItem(TOKEN_KEY);
@@ -41,7 +41,7 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'admin' | 's
       router.replace('/business');
       return false;
     }
-    if (requiredRole === 'admin' && userRole === 'supAdmin') {
+    if (requiredRole === 'executive' && userRole === 'supAdmin') {  // Changed from 'admin' to 'executive'
       router.replace('/supAdmin');
       return false;
     }

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { checkAuth } from "@/utils/authCheck";
 import api from "@/services/api";
 import { toast } from "react-toastify";
-import { withAdminAuth } from "@/components/withAdminAuth";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import {
   Card,
   CardHeader,
@@ -683,4 +683,4 @@ function EditRegistrationPage({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(EditRegistrationPage);
+export default withExecutiveAuth(EditRegistrationPage);

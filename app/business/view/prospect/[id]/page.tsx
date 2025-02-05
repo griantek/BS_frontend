@@ -21,7 +21,7 @@ import {
 import { format } from 'date-fns';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
-import { withAdminAuth } from '@/components/withAdminAuth';
+import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 
 // Define params type
 interface PageParams {
@@ -307,4 +307,4 @@ function ProspectView({ params }: PageProps) {
   );
 }
 
-export default withAdminAuth(ProspectView);
+export default withExecutiveAuth(ProspectView);

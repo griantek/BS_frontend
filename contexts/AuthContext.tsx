@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 interface AuthContextType {
   isLoggedIn: boolean;
   isSupAdmin: boolean;
-  isAdmin: boolean;
+  isExecutive: boolean;  // Changed from isAdmin
   updateAuthState: () => void;
 }
 
@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSupAdmin, setIsSupAdmin] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isExecutive, setIsExecutive] = useState(false);  // Changed from isAdmin
 
   const updateAuthState = () => {
     const token = localStorage.getItem('token');
@@ -25,10 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (loggedIn) {
       setIsSupAdmin(userRole === 'supAdmin');
-      setIsAdmin(userRole === 'admin');
+      setIsExecutive(userRole === 'executive');  // Changed from 'admin'
     } else {
       setIsSupAdmin(false);
-      setIsAdmin(false);
+      setIsExecutive(false);
     }
   };
 
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, isSupAdmin, isAdmin, updateAuthState }}>
+    <AuthContext.Provider value={{ isLoggedIn, isSupAdmin, isExecutive, updateAuthState }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 
 export default function Home() {
   const router = useRouter();
-  const [hoveredCard, setHoveredCard] = useState<'admin' | 'executive' | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<'executive' | 'supAdmin' | null>(null);  // Changed from 'admin'
 
   return (
     <div className=" w-full relative overflow-hidden">
@@ -81,7 +81,7 @@ export default function Home() {
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent event bubbling
-                  router.push('/admin');
+                  router.push('/business/login');  // Changed from '/admin'
                 }}
               >
                 Login as Executive
@@ -92,9 +92,9 @@ export default function Home() {
           {/* Admin Login Card */}
           <Card
             className={`transform transition-all duration-300 hover:scale-105 cursor-pointer ${
-              hoveredCard === 'admin' ? 'border-primary' : ''
+              hoveredCard === 'supAdmin' ? 'border-primary' : ''
             }`}
-            onMouseEnter={() => setHoveredCard('admin')}
+            onMouseEnter={() => setHoveredCard('supAdmin')}
             onMouseLeave={() => setHoveredCard(null)}
           >
             <CardBody className="text-center p-8">

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Spinner } from "@heroui/react";
 import { checkAuth } from '@/utils/authCheck';
 
-export function withAdminAuth<P extends object>(
+export function withExecutiveAuth<P extends object>(  // Renamed from withExecutiveAuth
   WrappedComponent: React.ComponentType<P>
 ) {
   return function ProtectedRoute(props: P) {
@@ -14,7 +14,7 @@ export function withAdminAuth<P extends object>(
 
     React.useEffect(() => {
       const verifyAuth = () => {
-        const isAuthed = checkAuth(router, 'admin');
+        const isAuthed = checkAuth(router, 'executive');  // Changed from 'admin'
         setIsAuthenticated(isAuthed);
         setIsLoading(false);
       };
