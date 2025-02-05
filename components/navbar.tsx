@@ -30,50 +30,23 @@ import {
   SearchIcon,
   Logo,
 } from "@/components/icons";
+import api from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Navbar = () => {
-  const pathname = usePathname();  // Add this hook
+  const pathname = usePathname();
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [isSupAdmin, setIsSupAdmin] = React.useState(false);
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    // More comprehensive check for login status
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
-      const loginStatus = localStorage.getItem('isLoggedIn');
-      const userRole = localStorage.getItem('userRole');
-      
-      const loggedIn = !!(token && user && loginStatus === 'true');
-      setIsLoggedIn(loggedIn);
-      setIsSupAdmin(userRole === 'supAdmin');
-      setIsAdmin(loggedIn && userRole !== 'supAdmin'); // Admin is logged in but not supAdmin
-    };
-
-    // Check immediately
-    checkLoginStatus();
-
-    // Also listen for storage events to handle changes
-    window.addEventListener('storage', checkLoginStatus);
-    
-    return () => {
-      window.removeEventListener('storage', checkLoginStatus);
-    };
-  }, []);
+  const { isLoggedIn, isSupAdmin, isAdmin } = useAuth();
 
   const handleLogout = () => {
-    // Clear all auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userRole');
-    setIsLoggedIn(false);
-    setIsSupAdmin(false);
-    setIsAdmin(false);
-    // Use window.location for hard redirect
-    window.location.href = '/admin';
+    const userRole = localStorage.getItem('userRole');
+    api.clearStoredAuth();
+    
+    if (userRole === 'supAdmin') {
+      router.replace('/supAdmin/login');
+    } else {
+      router.replace('/admin');
+    }
   };
 
   const isActiveLink = (path: string) => {
@@ -116,7 +89,7 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        {isSupAdmin && (
+        {isLoggedIn && isSupAdmin && (
           <NavbarItem className="hidden sm:flex gap-4">
             <NextLink
               className={clsx(
@@ -155,7 +128,7 @@ export const Navbar = () => {
         )}
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
-          {isLoggedIn && (isSupAdmin || isAdmin) && (
+          {isLoggedIn && (
             <Button
               color="danger"
               variant="light"
@@ -170,7 +143,7 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <ThemeSwitch />
-        {isLoggedIn && (isSupAdmin || isAdmin) && (
+        {isLoggedIn && (
           <Button
             isIconOnly
             color="danger"

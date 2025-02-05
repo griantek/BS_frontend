@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY;
-const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY;
-const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY;
+const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
+const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
+const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY || 'isLoggedIn';
+const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
 // Types
 interface LoginCredentials {
@@ -327,9 +328,9 @@ const api = {
             (error) => {
                 // Handle 401 and other auth errors
                 if (error?.response?.status === 401 || error?.message === 'Not authenticated') {
+                    const userRole = localStorage.getItem(USER_ROLE_KEY);
                     this.clearStoredAuth();
-                    const currentPath = window.location.pathname;
-                    window.location.href = currentPath.startsWith('/supAdmin') 
+                    window.location.href = userRole === 'supAdmin' 
                         ? '/supAdmin/login' 
                         : '/admin';
                 }
@@ -620,20 +621,25 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any) {
+    setStoredAuth(token: string, user: any, role: 'admin' | 'supAdmin') {
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.setItem(USER_ROLE_KEY, role);
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
-        localStorage.setItem('isLoggedIn', 'true'); // Add this for consistency
+        
+        // Dispatch a custom event for login
+        window.dispatchEvent(new Event('auth-change'));
     },
 
     clearStoredAuth() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(USER_ROLE_KEY);
         localStorage.removeItem(LOGIN_STATUS_KEY);
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isLoggedIn');
+        
+        // Dispatch a custom event for logout
+        window.dispatchEvent(new Event('auth-change'));
     },
 
     handleError(error: any) {

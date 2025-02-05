@@ -12,10 +12,12 @@ import {
   CardBody,
   CardFooter,
   Divider,
+  Spinner,
 } from "@heroui/react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { HeartFilledIcon } from '@/components/icons';
 import api from '@/services/api';
+import { redirectToDashboard, isLoggedIn } from '@/utils/authCheck';
 
 interface LoginFormData {
   username: string;
@@ -28,16 +30,10 @@ export default function BusinessLogin() {
   const router = useRouter();
 
   React.useEffect(() => {
-    // Clear any existing auth data on mount of login page
-    api.clearStoredAuth();
-    
-    const token = api.getStoredToken();
-    const user = api.getStoredUser();
-    
-    if (token && user) {
-      window.location.href = '/business';
+    if (isLoggedIn()) {
+      redirectToDashboard(router);
     }
-  }, []);
+  }, [router]);
 
   const {
     register,
@@ -50,25 +46,20 @@ export default function BusinessLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      document.body.style.cursor = 'wait';
       const response = await api.loginExecutive({
         username: data.username,
         password: data.password
       });
 
-      api.setStoredAuth(response.token, response.executive);
-      // api.setAuthToken(response.token);
-
-      toast.success('Login successful!');
-      // Use window.location.href instead of router.push for a full page load
-      setTimeout(() => window.location.href = '/business', 1500);
+      api.setStoredAuth(response.token, response.executive, 'admin');
+      await router.replace('/business');
     } catch (error) {
       const errorMessage = api.handleError(error);
-      toast.error(errorMessage.error || 'Invalid credentials', {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      toast.error(errorMessage.error || 'Invalid credentials');
     } finally {
       setIsLoading(false);
+      document.body.style.cursor = 'default';
     }
   };
 
@@ -120,8 +111,10 @@ export default function BusinessLogin() {
               className="w-full"
               size="lg"
               isLoading={isLoading}
+              spinner={<Spinner color="current" size="sm" />}
+              disabled={isLoading}
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
         </CardBody>

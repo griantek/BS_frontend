@@ -10,10 +10,13 @@ import {
   CardHeader,
   CardBody,
   Divider,
+  Spinner,
 } from "@heroui/react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { HeartFilledIcon } from '@/components/icons';
 import api from '@/services/api';
+import { redirectToDashboard, isLoggedIn, getUserRole } from '@/utils/authCheck';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginFormData {
   username: string;
@@ -24,16 +27,19 @@ export default function SupAdminLogin() {
   const [isVisible, setIsVisible] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
+  const { updateAuthState } = useAuth();
 
   React.useEffect(() => {
-    api.clearStoredAuth();
-    const token = api.getStoredToken();
-    const userRole = localStorage.getItem('userRole');
-    
-    if (token) {
-      window.location.href = userRole === 'supAdmin' ? '/supAdmin' : '/business';
+    // Check if user is already logged in
+    if (isLoggedIn()) {
+      const userRole = getUserRole();
+      if (userRole === 'supAdmin') {
+        router.replace('/supAdmin');
+      } else {
+        router.replace('/business');
+      }
     }
-  }, []);
+  }, [router]);
 
   const {
     register,
@@ -46,34 +52,20 @@ export default function SupAdminLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await api.loginSupAdmin({
-        username: data.username,
-        password: data.password
-      });
-
+      const response = await api.loginSupAdmin(data);
       if (response.success && response.token && response.admin) {
-        // Store auth data
-        api.setStoredAuth(response.token, response.admin);
-        localStorage.setItem('userRole', 'supAdmin');
-        localStorage.setItem('isLoggedIn', 'true');
-
-        console.log('Login successful:', {
-          success: response.success,
-          hasToken: !!response.token,
-          adminId: response.admin.id
-        });
-
-        toast.success('Login successful!');
-        setTimeout(() => window.location.href = '/supAdmin', 1500);
-      } else {
-        throw new Error('Invalid response format');
+        api.setStoredAuth(response.token, response.admin, 'supAdmin');
+        updateAuthState();
+        // Show loading spinner while redirecting
+        document.body.style.cursor = 'wait';
+        await router.replace('/supAdmin');
       }
     } catch (error) {
-      console.error('Login failed:', error);
       const errorMessage = api.handleError(error);
       toast.error(errorMessage.error || 'Invalid credentials');
     } finally {
       setIsLoading(false);
+      document.body.style.cursor = 'default';
     }
   };
 
@@ -127,8 +119,10 @@ export default function SupAdminLogin() {
               className="w-full"
               size="lg"
               isLoading={isLoading}
+              spinner={<Spinner color="current" size="sm" />}
+              disabled={isLoading}
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
         </CardBody>

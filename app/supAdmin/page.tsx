@@ -1,8 +1,7 @@
 'use client'
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { withSupAdminAuth } from '@/components/withSupAdminAuth';
-import {
+import { 
   Card,
   CardBody,
   CardHeader,
@@ -16,6 +15,7 @@ import {
   ArrowTrendingUpIcon 
 } from "@heroicons/react/24/outline";
 import api from '@/services/api';
+import { checkAuth } from '@/utils/authCheck';
 
 interface DashboardMetrics {
   executivesCount: number;
@@ -37,6 +37,9 @@ function SupAdminDashboard() {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
+    const isAuthed = checkAuth(router, 'supAdmin');
+    if (!isAuthed) return;
+
     const fetchDashboardData = async () => {
       try {
         const [executivesRes, servicesRes] = await Promise.all([
@@ -175,4 +178,4 @@ function SupAdminDashboard() {
   );
 }
 
-export default withSupAdminAuth(SupAdminDashboard);
+export default SupAdminDashboard;
