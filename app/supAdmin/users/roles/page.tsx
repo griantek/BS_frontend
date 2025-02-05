@@ -23,7 +23,7 @@ import {
     Checkbox,
     useDisclosure,
 } from "@heroui/react";
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { withSupAdminAuth } from '@/components/withSupAdminAuth';
 import api, { Role, CreateRoleRequest } from '@/services/api';
@@ -43,6 +43,10 @@ function RolesPage() {
             delete: false
         }
     });
+    const [editingRole, setEditingRole] = React.useState<Role | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+    const [roleToDelete, setRoleToDelete] = React.useState<Role | null>(null);
 
     React.useEffect(() => {
         const fetchRoles = async () => {
@@ -92,6 +96,54 @@ function RolesPage() {
         }
     };
 
+    const handleEditClick = (role: Role) => {
+        setEditingRole(role);
+        setFormData({
+            name: role.name,
+            description: role.description,
+            permissions: { ...role.permissions }
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateRole = async () => {
+        if (!editingRole) return;
+        try {
+            setIsSubmitting(true);
+            const response = await api.updateRole(editingRole.id, formData);
+            setRoles(roles.map(role => 
+                role.id === editingRole.id ? response.data : role
+            ));
+            toast.success('Role updated successfully');
+            setIsEditModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.error || 'Failed to update role');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteClick = (role: Role) => {
+        setRoleToDelete(role);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteRole = async () => {
+        if (!roleToDelete) return;
+        try {
+            setIsSubmitting(true);
+            await api.deleteRole(roleToDelete.id);
+            setRoles(roles.filter(role => role.id !== roleToDelete.id));
+            toast.success('Role deleted successfully');
+            setIsDeleteModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.error || 'Failed to delete role');
+        } finally {
+            setIsSubmitting(false);
+            setRoleToDelete(null);
+        }
+    };
+
     return (
         <div className="w-full p-6">
             <Card>
@@ -117,6 +169,7 @@ function RolesPage() {
                                 <TableColumn>DESCRIPTION</TableColumn>
                                 <TableColumn>PERMISSIONS</TableColumn>
                                 <TableColumn>CREATED</TableColumn>
+                                <TableColumn>ACTIONS</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {roles.map((role) => (
@@ -145,6 +198,27 @@ function RolesPage() {
                                         </TableCell>
                                         <TableCell>
                                             {formatDateTime(role.created_at)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    onClick={() => handleEditClick(role)}
+                                                >
+                                                    <PencilIcon className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    color="danger"
+                                                    variant="light"
+                                                    onClick={() => handleDeleteClick(role)}
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -215,6 +289,96 @@ function RolesPage() {
                                     isLoading={isSubmitting}
                                 >
                                     Create Role
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader>Edit Role</ModalHeader>
+                            <ModalBody>
+                                <div className="space-y-4">
+                                    <Input
+                                        label="Role Name"
+                                        placeholder="Enter role name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            name: e.target.value
+                                        })}
+                                    />
+                                    <Textarea
+                                        label="Description"
+                                        placeholder="Enter role description"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            description: e.target.value
+                                        })}
+                                    />
+                                    <div className="space-y-3">
+                                        <p className="text-sm font-medium">Permissions</p>
+                                        {Object.keys(formData.permissions).map((permission) => (
+                                            <Checkbox
+                                                key={permission}
+                                                isSelected={formData.permissions[permission as keyof typeof formData.permissions]}
+                                                onValueChange={(isSelected) => setFormData({
+                                                    ...formData,
+                                                    permissions: {
+                                                        ...formData.permissions,
+                                                        [permission]: isSelected
+                                                    }
+                                                })}
+                                            >
+                                                {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                                            </Checkbox>
+                                        ))}
+                                    </div>
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button variant="light" onPress={onClose}>
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    color="primary"
+                                    onPress={handleUpdateRole}
+                                    isLoading={isSubmitting}
+                                >
+                                    Update Role
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader>Delete Role</ModalHeader>
+                            <ModalBody>
+                                Are you sure you want to delete the role "{roleToDelete?.name}"?
+                                This action cannot be undone.
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button variant="light" onPress={onClose}>
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    color="danger"
+                                    onPress={handleDeleteRole}
+                                    isLoading={isSubmitting}
+                                >
+                                    Delete Role
                                 </Button>
                             </ModalFooter>
                         </>

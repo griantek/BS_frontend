@@ -657,6 +657,24 @@ const api = {
         }
     },
 
+    async updateRole(id: number, data: CreateRoleRequest): Promise<ApiResponse<Role>> {
+        try {
+            const response = await this.axiosInstance.put(`/superadmin/roles/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async deleteRole(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/superadmin/roles/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
