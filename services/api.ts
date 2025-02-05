@@ -48,6 +48,11 @@ interface Prospectus {
     services: string;
     notes:string;
     next_follow_up:string;
+    executive?: {
+        id: string;
+        username: string;
+        email: string;
+    };
 }
 
 export interface ProspectusCreateRequest {

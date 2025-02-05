@@ -25,9 +25,7 @@ function ProspectsPage() {
         const fetchProspects = async () => {
             try {
                 const response = await api.getAllProspectus();
-                // Check if response is wrapped in an ApiResponse structure
-                console.log('Prospects response:', response.data);
-                setProspects(Array.isArray(response) ? response : response.data);
+                setProspects(response.data);
             } catch (error) {
                 console.error('Error fetching prospects:', error);
             } finally {
@@ -66,6 +64,7 @@ function ProspectsPage() {
                                 <TableColumn>EMAIL</TableColumn>
                                 <TableColumn>STATE</TableColumn>
                                 <TableColumn>DEPARTMENT</TableColumn>
+                                <TableColumn>EXECUTIVE</TableColumn>
                                 <TableColumn>CREATED</TableColumn>
                             </TableHeader>
                             <TableBody>
@@ -77,6 +76,15 @@ function ProspectsPage() {
                                         <TableCell>{prospect.email}</TableCell>
                                         <TableCell>{prospect.state}</TableCell>
                                         <TableCell>{prospect.department}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                size="sm"
+                                                variant="flat"
+                                                color="primary"
+                                            >
+                                                {prospect.executive?.username ?? 'N/A'}
+                                            </Chip>
+                                        </TableCell>
                                         <TableCell>
                                             {formatDate(prospect.created_at)}
                                         </TableCell>
