@@ -366,7 +366,7 @@ function RolesPage() {
                         <>
                             <ModalHeader>Delete Role</ModalHeader>
                             <ModalBody>
-                                Are you sure you want to delete the role "{roleToDelete?.name}"?
+                                Are you sure you want to delete the role &ldquo;{roleToDelete?.name}&rdquo;?
                                 This action cannot be undone.
                             </ModalBody>
                             <ModalFooter>

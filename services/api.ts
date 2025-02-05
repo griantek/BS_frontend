@@ -416,9 +416,13 @@ const api = {
         }
     },
 
-    async getAllProspectus(): Promise<Prospectus[]> {
-        const response = await this.axiosInstance.get('/executive/prospectus/all');
-        return response.data;
+    async getAllProspectus(): Promise<ApiResponse<Prospectus[]>> {
+        try {
+            const response = await this.axiosInstance.get('/executive/prospectus/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
     },
 
     async createExecutive(data: CreateExecutiveRequest) {
@@ -762,5 +766,6 @@ export type {
     CreateDepartmentRequest,
     Role,
     CreateRoleRequest,
+    Prospectus,  // Add this export
 };
 export default api;
