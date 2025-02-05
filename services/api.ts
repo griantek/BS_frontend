@@ -125,6 +125,7 @@ interface BankAccount {
   account_type: string;
   bank: string;
   upi_id: string;
+  branch:string;
   created_at: string;
 }
 
@@ -133,6 +134,7 @@ interface Department {
     id: number;
     name: string;
     created_at: string;
+    exec_id:string;
 }
 
 interface CreateDepartmentRequest {

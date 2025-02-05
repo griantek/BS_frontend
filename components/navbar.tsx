@@ -82,7 +82,7 @@ const navLinks: NavItem[] = [
   },
   {
     label: "Departments",
-    href: "/supAdmin/departments",
+    href: "/supAdmin/department",
     icon: BuildingOfficeIcon,
     isActive: false,
   }
