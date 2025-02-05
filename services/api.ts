@@ -289,6 +289,17 @@ interface Role {
     updated_at: string;
 }
 
+interface CreateRoleRequest {
+    name: string;
+    description: string;
+    permissions: {
+        create: boolean;
+        read: boolean;
+        update: boolean;
+        delete: boolean;
+    };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -637,6 +648,15 @@ const api = {
         }
     },
 
+    async createRole(data: CreateRoleRequest): Promise<ApiResponse<Role>> {
+        try {
+            const response = await this.axiosInstance.post('/superadmin/roles/create', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -723,5 +743,6 @@ export type {
     Department,
     CreateDepartmentRequest,
     Role,
+    CreateRoleRequest,
 };
 export default api;
