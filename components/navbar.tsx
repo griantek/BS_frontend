@@ -49,6 +49,17 @@ export const Navbar = () => {
     }
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isSupAdmin) {
+      router.push('/supAdmin');
+    } else if (isExecutive) {
+      router.push('/business');
+    } else {
+      router.push('/');
+    }
+  };
+
   const isActiveLink = (path: string) => {
     return pathname === path;
   };
@@ -78,10 +89,10 @@ export const Navbar = () => {
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
+          <a className="flex justify-start items-center gap-1" href="#" onClick={handleLogoClick}>
             <Logo />
             <p className="font-bold text-inherit">GRIANTEK</p>
-          </NextLink>
+          </a>
         </NavbarBrand>
       </NavbarContent>
 

@@ -1,14 +1,30 @@
 'use client'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button, Card, CardBody } from "@nextui-org/react";
-import { ThemeSwitch } from "@/components/theme-switch";
 import { motion } from "framer-motion";
+import { getUserRole } from '@/utils/authCheck';
 
 export default function Home() {
   const router = useRouter();
-  const [hoveredCard, setHoveredCard] = useState<'executive' | 'supAdmin' | null>(null);  // Changed from 'admin'
+  const [shouldRender, setShouldRender] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState<'executive' | 'supAdmin' | null>(null);
+
+  useEffect(() => {
+    const userRole = getUserRole();
+    if (userRole === 'supAdmin') {
+      router.replace('/supAdmin');
+    } else if (userRole === 'executive') {
+      router.replace('/business');
+    } else {
+      setShouldRender(true);
+    }
+  }, [router]);
+
+  if (!shouldRender) {
+    return null;
+  }
 
   return (
     <div className=" w-full relative overflow-hidden">
