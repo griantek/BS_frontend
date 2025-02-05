@@ -27,10 +27,20 @@ const getBankInfo = (registration: ServerRegistration) => {
   };
 };
 
+const getPaymentStatus = (totalAmount: number, paidAmount: number) => {
+  const remaining = totalAmount - paidAmount;
+  if (remaining === totalAmount) return { label: 'Not Paid', color: 'danger' };
+  if (remaining === 0) return { label: 'Paid', color: 'success' };
+  return { label: 'Partial', color: 'warning' };
+};
+
 const getTransactionInfo = (registration: ServerRegistration) => {
+  const paidAmount = registration.transaction?.amount || 0;
+  const status = getPaymentStatus(registration.total_amount, paidAmount);
   return {
     type: registration.transaction?.transaction_type || 'N/A',
-    amount: registration.transaction?.amount || 0
+    amount: paidAmount,
+    status
   };
 };
 
@@ -112,7 +122,8 @@ function RegistrationsPage() {
                                 <TableColumn>STATUS</TableColumn>
                                 <TableColumn>BANK</TableColumn>
                                 <TableColumn>PAYMENT</TableColumn>
-                                <TableColumn>CREATED</TableColumn>
+                                <TableColumn>PAYMENT STATUS</TableColumn>
+                                <TableColumn>EXECUTIVE</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {registrations.map((registration) => (
@@ -168,7 +179,24 @@ function RegistrationsPage() {
                                                 {getTransactionInfo(registration).type}
                                             </Chip>
                                         </TableCell>
-                                        <TableCell>{formatDate(registration.created_at)}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                size="sm"
+                                                variant="flat"
+                                                color={getTransactionInfo(registration).status.color as any}
+                                            >
+                                                {getTransactionInfo(registration).status.label}
+                                            </Chip>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                size="sm"
+                                                variant="dot"
+                                                color="default"
+                                            >
+                                                {registration.prospectus.executive?.username || 'N/A'}
+                                            </Chip>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

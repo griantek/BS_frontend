@@ -323,6 +323,11 @@ interface ServerRegistration {
     id: number;
     reg_id: string;
     client_name: string;
+    executive:{
+        id:string;
+        username:string;
+        email:string;
+    };
   };
   bank_account: {
     bank: string;
