@@ -120,7 +120,12 @@ export const Navbar = () => {
   };
 
   const isActiveMainPath = (path: string) => {
-    return pathname.startsWith(path);
+    // For dashboard, only match exact path
+    if (path === '/supAdmin') {
+      return pathname === '/supAdmin';
+    }
+    // For other sections, match the section prefix
+    return pathname.startsWith(path) && pathname !== '/supAdmin';
   };
 
   const searchInput = (

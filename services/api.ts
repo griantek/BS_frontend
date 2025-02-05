@@ -305,6 +305,38 @@ interface CreateRoleRequest {
     };
 }
 
+interface ServerRegistration {
+  id: number;
+  prospectus_id: number;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  status: 'pending' | 'registered';
+  month: number;
+  year: number;
+  created_at: string;
+  prospectus: {
+    id: number;
+    reg_id: string;
+    client_name: string;
+  };
+  bank_account: {
+    bank: string;
+    account_number: string;
+  };
+  transaction: {
+    id: number;
+    amount: number;
+    exec_id: string;
+    transaction_id: string;
+    transaction_type: string;
+  };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -533,7 +565,7 @@ const api = {
     },
 
     // Get all registrations
-    async getAllRegistrations(): Promise<ApiResponse<PaginatedResponse<Registration>>> {
+    async getAllRegistrations(): Promise<ApiResponse<PaginatedResponse<ServerRegistration>>> {
         try {
             const response = await this.axiosInstance.get('/common/registration/all');
             return response.data;
@@ -772,5 +804,6 @@ export type {
     Role,
     CreateRoleRequest,
     Prospectus,  // Add this export
+    ServerRegistration,
 };
 export default api;

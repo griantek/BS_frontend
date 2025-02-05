@@ -15,49 +15,64 @@ import {
     Button,
 } from "@heroui/react";
 import { withSupAdminAuth } from '@/components/withSupAdminAuth';
-import api, { Registration } from '@/services/api';
-import { RegistrationResponse, getBankInfo, getTransactionInfo } from './types';
+import api, { ServerRegistration } from '@/services/api';
+
+// Helper functions
+const getBankInfo = (registration: ServerRegistration) => {
+  const accountNumber = registration.bank_account?.account_number || '';
+  const lastFourDigits = accountNumber.slice(-4);
+  return {
+    bank: registration.bank_account?.bank || 'N/A',
+    accountNumber: accountNumber ? `****${lastFourDigits}` : 'N/A'
+  };
+};
+
+const getTransactionInfo = (registration: ServerRegistration) => {
+  return {
+    type: registration.transaction?.transaction_type || 'N/A',
+    amount: registration.transaction?.amount || 0
+  };
+};
+
+function AmountTooltip({ 
+  initial, 
+  accepted, 
+  discount, 
+  total 
+}: { 
+  initial: number; 
+  accepted: number; 
+  discount: number; 
+  total: number; 
+}) {
+  return (
+    <div className="group relative">
+      <div className="text-sm font-medium">₹{total.toLocaleString()}</div>
+      <div className="absolute z-50 invisible group-hover:visible bg-content1 border border-divider rounded-lg shadow-lg p-3 w-48 -translate-y-full -translate-x-1/4 mt-1">
+        <div className="space-y-2 text-sm">
+          <div>Initial: ₹{initial.toLocaleString()}</div>
+          <div>Accepted: ₹{accepted.toLocaleString()}</div>
+          {discount > 0 && (
+            <div className="text-success">Discount: -₹{discount.toLocaleString()}</div>
+          )}
+          <div className="border-t border-divider mt-2 pt-2 font-medium">
+            Total: ₹{total.toLocaleString()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RegistrationsPage() {
-    const [registrations, setRegistrations] = React.useState<RegistrationResponse[]>([]);
+    const [registrations, setRegistrations] = React.useState<ServerRegistration[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
         const fetchRegistrations = async () => {
             try {
                 const response = await api.getAllRegistrations();
-                // Transform the API response to match RegistrationResponse type
-                const transformedRegistrations: RegistrationResponse[] = response.data.items.map(reg => ({
-                    id: reg.id,
-                    prospectus_id: reg.prospectus_id,
-                    services: reg.services,
-                    init_amount: reg.init_amount,
-                    accept_amount: reg.accept_amount,
-                    discount: reg.discount,
-                    total_amount: reg.total_amount,
-                    accept_period: reg.accept_period,
-                    pub_period: reg.pub_period,
-                    status: reg.status,
-                    month: reg.month,
-                    year: reg.year,
-                    created_at: reg.created_at,
-                    prospectus: {
-                        id: reg.prospectus.id,
-                        reg_id: reg.prospectus.reg_id,
-                        client_name: reg.prospectus.client_name
-                    },
-                    bank_accounts: {  // Changed from bank_account to bank_accounts
-                        bank: reg.bank_accounts?.bank || 'N/A',
-                        account_number: reg.bank_accounts?.account_number || 'N/A'
-                    },
-                    transactions: {  // Changed from transaction to transactions
-                        id: reg.transactions?.id || 0,
-                        amount: reg.transactions?.amount || 0,
-                        transaction_type: reg.transactions?.transaction_type || 'N/A'
-                    }
-                }));
-                
-                setRegistrations(transformedRegistrations);
+                setRegistrations(response.data.items);
             } catch (error) {
                 console.error('Error fetching registrations:', error);
             } finally {
@@ -93,9 +108,7 @@ function RegistrationsPage() {
                                 <TableColumn>REG ID</TableColumn>
                                 <TableColumn>CLIENT NAME</TableColumn>
                                 <TableColumn>SERVICES</TableColumn>
-                                <TableColumn>INITIAL</TableColumn>
-                                <TableColumn>ACCEPTED</TableColumn>
-                                <TableColumn>TOTAL</TableColumn>
+                                <TableColumn>AMOUNT</TableColumn>
                                 <TableColumn>STATUS</TableColumn>
                                 <TableColumn>BANK</TableColumn>
                                 <TableColumn>PAYMENT</TableColumn>
@@ -119,17 +132,13 @@ function RegistrationsPage() {
                                                 ))}
                                             </div>
                                         </TableCell>
-                                        <TableCell>₹{registration.init_amount.toLocaleString()}</TableCell>
-                                        <TableCell>₹{registration.accept_amount.toLocaleString()}</TableCell>
                                         <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">₹{registration.total_amount.toLocaleString()}</span>
-                                                {registration.discount > 0 && (
-                                                    <span className="text-xs text-success">
-                                                        (-₹{registration.discount.toLocaleString()})
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <AmountTooltip
+                                                initial={registration.init_amount}
+                                                accepted={registration.accept_amount}
+                                                discount={registration.discount}
+                                                total={registration.total_amount}
+                                            />
                                         </TableCell>
                                         <TableCell>
                                             <Chip
@@ -142,10 +151,10 @@ function RegistrationsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="font-medium">
+                                                <span className="font-medium text-default-600">
                                                     {getBankInfo(registration).bank}
                                                 </span>
-                                                <span className="text-xs text-default-400">
+                                                <span className="text-xs text-default-400 font-mono">
                                                     {getBankInfo(registration).accountNumber}
                                                 </span>
                                             </div>
