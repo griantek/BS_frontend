@@ -163,6 +163,7 @@ interface Department {
 
 interface CreateDepartmentRequest {
     name: string;
+    exec_id?:string;
 }
 
 // Update Registration interface
@@ -752,17 +753,17 @@ const api = {
 
     // Department management methods
     async getAllDepartments(): Promise<ApiResponse<Department[]>> {
-        try {
-            const response = await this.axiosInstance.get('/common/departments/all');
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
+        return withCache('departments', () => 
+            this.axiosInstance.get('/common/departments/all')
+                .then(response => response.data)
+        );
     },
 
     async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
             const response = await this.axiosInstance.post('/common/departments/create', data);
+            // Clear departments cache after creating
+            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -772,6 +773,8 @@ const api = {
     async updateDepartment(id: number, data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
             const response = await this.axiosInstance.put(`/common/departments/${id}`, data);
+            // Clear departments cache after updating
+            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -781,6 +784,8 @@ const api = {
     async deleteDepartment(id: number): Promise<ApiResponse<void>> {
         try {
             const response = await this.axiosInstance.delete(`/common/departments/${id}`);
+            // Clear departments cache after deleting
+            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
