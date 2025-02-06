@@ -385,76 +385,44 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         return;
       }
 
-      // Prepare additional info based on payment mode
-      const additionalInfo: Record<string, any> = {};
-      switch (data.paymentMode) {
-        case "upi":
-          additionalInfo.upi_id = data.upiId;
-          break;
-        case "netbanking":
-          additionalInfo.account_number = data.accountNumber;
-          additionalInfo.ifsc_code = data.ifscCode;
-          break;
-        case "card":
-          additionalInfo.card_last_four = data.cardLastFourDigits;
-          break;
-        case "cash":
-          additionalInfo.receipt_number = data.receiptNumber;
-          break;
-        case "cheque":
-          additionalInfo.cheque_number = data.chequeNumber;
-          break;
-        case "wallet":
-          additionalInfo.wallet_provider = data.walletProvider;
-          break;
-        case "gateway":
-          additionalInfo.gateway_provider = data.gatewayProvider;
-          break;
-        case "crypto":
-          additionalInfo.transaction_hash = data.transactionHash;
-          additionalInfo.crypto_currency = data.cryptoCurrency;
-          break;
-      }
+      // Get selected services names
+      const selectedServiceNames = data.selectedServices
+        .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
+        .filter(Boolean)
+        .join(", ");
 
-      // Prepare update data
+      // Convert the form data to match API expectations
       const updateData = {
-        services: data.selectedServices
-          .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
-          .filter(Boolean)
-          .join(", "),
-        init_amount: data.initialAmount,
-        accept_amount: data.acceptanceAmount,
-        discount: data.discountAmount,
-        total_amount: data.totalAmount,
+        services: selectedServiceNames,
+        init_amount: Number(data.initialAmount),
+        accept_amount: Number(data.acceptanceAmount),
+        discount: Number(data.discountAmount),
+        total_amount: Number(data.totalAmount),
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
-        transaction_id: data.transactionId || "",
-        amount: data.amount,
-        transaction_date: data.transactionDate,
-        additional_info: additionalInfo,
+        status: registrationData.status,
+        month: registrationData.month,
+        year: registrationData.year,
         exec_id: user.id,
       };
 
-      // Log the request body
-      console.log('Update Registration Request:', {
+      console.log('Sending update request:', {
         registrationId: registrationData.id,
-        updateData: updateData,
-        formData: data, // Log original form data for debugging
+        updateData
       });
 
       const response = await api.updateRegistration(registrationData.id, updateData);
 
       if (response.success) {
-        toast.success("Registration updated successfully");
+        toast.success('Registration updated successfully');
         router.push(`/business/view/registration/${regId}`);
       } else {
-        toast.error("Failed to update registration");
+        toast.error('Failed to update registration');
       }
     } catch (error) {
-      console.error('Update Registration Error:', error);
-      toast.error("Failed to update registration");
+      console.error('Update error:', error);
+      toast.error('Failed to update registration');
     }
   };
 
@@ -473,15 +441,15 @@ function EditRegistrationContent({ regId }: { regId: string }) {
       </Button>
 
       <div className="w-full p-4 md:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          {/* Left side - Registration Details */}
-          <Card className="w-full">
-            <CardHeader>
-              <h2 className="text-xl font-bold">Registration Details</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:gap-6">
+            {/* Left side - Registration Details */}
+            <Card className="w-full">
+              <CardHeader>
+                <h2 className="text-xl font-bold">Registration Details</h2>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-4">
                 {/* Service Selection */}
                 <div className="space-y-4">
                   <select
@@ -593,78 +561,80 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                     </select>
                   </div>
                 </div>
-              </form>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
 
-          {/* Right side - Payment Details */}
-          <Card className="w-full">
-            <CardHeader>
-              <h2 className="text-xl font-bold">Payment Details</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody>
-              {/* Bank and Payment Details */}
-              <div className="space-y-4">
-                <select
-                  className="w-full p-2 rounded-lg border border-gray-300"
-                  {...register("selectedBank")}
-                >
-                  <option value="">Select Bank Account</option>
-                  {bankAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.account_name} - {account.bank}
-                    </option>
-                  ))}
-                </select>
+            {/* Show Payment Details only if status is registered */}
+            {registrationData?.status === 'registered' && (
+              <Card className="w-full">
+                <CardHeader>
+                  <h2 className="text-xl font-bold">Payment Details</h2>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                  <div className="space-y-4">
+                    <select
+                      className="w-full p-2 rounded-lg border border-gray-300"
+                      {...register("selectedBank")}
+                    >
+                      <option value="">Select Bank Account</option>
+                      {bankAccounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.account_name} - {account.bank}
+                        </option>
+                      ))}
+                    </select>
 
-                <select
-                  className="w-full p-2 rounded-lg border border-gray-300"
-                  {...register("paymentMode")}
-                >
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="netbanking">Net Banking</option>
-                  <option value="card">Credit/Debit Card</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="wallet">Wallet</option>
-                  <option value="gateway">Payment Gateway</option>
-                  <option value="crypto">Cryptocurrency</option>
-                </select>
+                    <select
+                      className="w-full p-2 rounded-lg border border-gray-300"
+                      {...register("paymentMode")}
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="upi">UPI</option>
+                      <option value="netbanking">Net Banking</option>
+                      <option value="card">Credit/Debit Card</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="wallet">Wallet</option>
+                      <option value="gateway">Payment Gateway</option>
+                      <option value="crypto">Cryptocurrency</option>
+                    </select>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    type="date"
-                    label="Transaction Date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
-                    {...register('transactionDate', { required: 'Transaction date is required' })}
-                  />
-                  <Input
-                    type="number"
-                    label="Amount Paid (₹)"
-                    required
-                    {...register('amount', { required: 'Amount is required' })}
-                  />
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        type="date"
+                        label="Transaction Date"
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                        {...register('transactionDate', { required: 'Transaction date is required' })}
+                      />
+                      <Input
+                        type="number"
+                        label="Amount Paid (₹)"
+                        required
+                        {...register('amount', { required: 'Amount is required' })}
+                      />
+                    </div>
 
-                {renderPaymentFields()}
-              </div>
+                    {renderPaymentFields()}
+                  </div>
+                </CardBody>
+              </Card>
+            )}
 
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  color="danger"
-                  variant="light"
-                  onClick={() => router.back()}
-                >
-                  Cancel
-                </Button>
-                <Button color="primary" type="submit">
-                  Update Registration
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+            {/* Action Buttons - Always show */}
+            <div className="flex justify-end gap-3 mt-6">
+              <Button
+                color="danger"
+                variant="light"
+                onClick={() => router.back()}
+              >
+                Cancel
+              </Button>
+              <Button color="primary" type="submit">
+                Update Registration
+              </Button>
+            </div>
+          </div>
+        </form>
       </div>
     </>
   );

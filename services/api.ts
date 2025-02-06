@@ -715,9 +715,16 @@ const api = {
     // Add new method for updating registration
     async updateRegistration(id: number, data: Partial<CreateRegistrationRequest>): Promise<ApiResponse<Registration>> {
         try {
+            // Log the request for debugging
+            console.log('Updating registration:', {
+                id,
+                data
+            });
+            
             const response = await this.axiosInstance.put(`/common/registration/${id}`, data);
             return response.data;
         } catch (error: any) {
+            console.error('Update registration error:', error);
             throw this.handleError(error);
         }
     },
