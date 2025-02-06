@@ -95,7 +95,7 @@ const ExecutivesPage: React.FC = () => {
         setEditForm({
             username: executive.username,
             email: executive.email,
-            role: executive.role_details.name,
+            role: executive.role_details.name, // This is correct
         });
         
         // Fetch roles when opening modal
@@ -265,7 +265,9 @@ const ExecutivesPage: React.FC = () => {
                                     <Select 
                                         label="Role"
                                         name="role"
-                                        selectedKeys={[editForm.role]}
+                                        // Update this part
+                                        defaultSelectedKeys={[editForm.role]}
+                                        value={editForm.role}
                                         onChange={(e) => handleRoleChange(e.target.value)}
                                         isDisabled={isLoadingRoles}
                                     >
@@ -275,7 +277,10 @@ const ExecutivesPage: React.FC = () => {
                                             </SelectItem>
                                         ) : (
                                             roles.map((role) => (
-                                                <SelectItem key={role.id} value={role.name}>
+                                                <SelectItem 
+                                                    key={role.name} // Change this to use name as key
+                                                    value={role.name}
+                                                >
                                                     {role.name}
                                                 </SelectItem>
                                             ))
