@@ -289,7 +289,7 @@ const ExecutivesPage: React.FC = () => {
                                     <Divider />
                                     <div className="space-y-4">
                                         <p className="text-sm text-default-500">
-                                            Leave password fields empty if you don't want to change the password
+                                            Leave password fields empty if you don&apos;t want to change the password
                                         </p>
                                         <Input
                                             type="password"
@@ -307,7 +307,7 @@ const ExecutivesPage: React.FC = () => {
                                             isInvalid={editForm.password !== editForm.confirmPassword}
                                             errorMessage={
                                                 editForm.password !== editForm.confirmPassword 
-                                                    ? "Passwords don't match" 
+                                                    ? "Passwords don&apos;t match" 
                                                     : undefined
                                             }
                                         />
