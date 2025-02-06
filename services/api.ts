@@ -113,6 +113,7 @@ interface Executive {
     email: string;
     role: string;
     created_at: string;
+    password?: string; // Add optional password field
 }
 
 // Add new interface for BankAccount

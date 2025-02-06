@@ -15,14 +15,40 @@ import {
     Button,
     Spinner,
     Chip,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Input,
+    useDisclosure,
+    Divider,
+    Select,
+    SelectItem
 } from "@heroui/react";
 import { toast } from 'react-toastify';
 import api, { Executive } from '@/services/api';
 
+interface EditExecutiveForm {
+    username: string;
+    email: string;
+    role: string;
+    password?: string;
+    confirmPassword?: string;
+}
+
 const ExecutivesPage: React.FC = () => {
     const router = useRouter();
+    const { isOpen, onOpen, onClose } = useDisclosure();
     const [executives, setExecutives] = React.useState<Executive[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [selectedExecutive, setSelectedExecutive] = React.useState<Executive | null>(null);
+    const [editForm, setEditForm] = React.useState<EditExecutiveForm>({
+        username: '',
+        email: '',
+        role: '',
+    });
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     const formatDate = (dateString: string) => {
         try {
@@ -62,6 +88,70 @@ const ExecutivesPage: React.FC = () => {
         fetchExecutives();
     }, [router]);
 
+    const handleRowClick = (executive: Executive) => {
+        setSelectedExecutive(executive);
+        setEditForm({
+            username: executive.username,
+            email: executive.email,
+            role: executive.role,
+        });
+        onOpen();
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEditForm(prev => ({
+            ...prev,
+            [e.target.name]: e.target.value
+        }));
+    };
+
+    const handleRoleChange = (value: string) => {
+        setEditForm(prev => ({
+            ...prev,
+            role: value
+        }));
+    };
+
+    const handleSubmit = async () => {
+        if (!selectedExecutive) return;
+
+        // Validate password match if password is being changed
+        if (editForm.password && editForm.password !== editForm.confirmPassword) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            
+            // Prepare update data
+            const updateData: any = {
+                username: editForm.username,
+                email: editForm.email,
+                role: editForm.role,
+            };
+
+            // Only include password if it's being changed
+            if (editForm.password) {
+                updateData.password = editForm.password;
+            }
+
+            // Update executive
+            await api.axiosInstance.put(`/executive/${selectedExecutive.id}`, updateData);
+            
+            // Refresh executives list
+            const response = await api.getAllExecutives();
+            setExecutives(response.data);
+            
+            toast.success('Executive updated successfully');
+            onClose();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update executive');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-[50vh]">
@@ -80,8 +170,10 @@ const ExecutivesPage: React.FC = () => {
                 <CardBody>
                     <Table 
                         aria-label="Executives table"
+                        selectionMode="none"
                         classNames={{
                             wrapper: "min-h-[auto]",
+                            tr: "cursor-pointer hover:bg-default-100",
                         }}
                     >
                         <TableHeader>
@@ -89,11 +181,13 @@ const ExecutivesPage: React.FC = () => {
                             <TableColumn>EMAIL</TableColumn>
                             <TableColumn>ROLE</TableColumn>
                             <TableColumn>JOINED</TableColumn>
-                            <TableColumn>ACTIONS</TableColumn>
                         </TableHeader>
                         <TableBody emptyContent="No executives found">
                             {executives.map((executive) => (
-                                <TableRow key={executive.id}>
+                                <TableRow 
+                                    key={executive.id} 
+                                    onClick={() => handleRowClick(executive)}
+                                >
                                     <TableCell>{executive.username}</TableCell>
                                     <TableCell>{executive.email}</TableCell>
                                     <TableCell>
@@ -106,17 +200,95 @@ const ExecutivesPage: React.FC = () => {
                                         </Chip>
                                     </TableCell>
                                     <TableCell>{formatDate(executive.created_at)}</TableCell>
-                                    <TableCell>
-                                        <Button size="sm" color="primary" variant="light">
-                                            Edit
-                                        </Button>
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </CardBody>
             </Card>
+
+            {/* Edit Executive Modal */}
+            <Modal 
+                isOpen={isOpen} 
+                onClose={onClose}
+                size="2xl"
+            >
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader>Edit Executive</ModalHeader>
+                            <ModalBody>
+                                <div className="space-y-4">
+                                    <Input
+                                        label="Username"
+                                        name="username"
+                                        value={editForm.username}
+                                        onChange={handleInputChange}
+                                    />
+                                    <Input
+                                        type="email"
+                                        label="Email"
+                                        name="email"
+                                        value={editForm.email}
+                                        onChange={handleInputChange}
+                                    />
+                                    <Select 
+                                        label="Role"
+                                        name="role"
+                                        selectedKeys={[editForm.role]}
+                                        onChange={(e) => handleRoleChange(e.target.value)}
+                                    >
+                                        <SelectItem key="executive" value="executive">
+                                            Executive
+                                        </SelectItem>
+                                        <SelectItem key="manager" value="manager">
+                                            Manager
+                                        </SelectItem>
+                                    </Select>
+                                    <Divider />
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-default-500">
+                                            Leave password fields empty if you don't want to change the password
+                                        </p>
+                                        <Input
+                                            type="password"
+                                            label="New Password"
+                                            name="password"
+                                            value={editForm.password || ''}
+                                            onChange={handleInputChange}
+                                        />
+                                        <Input
+                                            type="password"
+                                            label="Confirm New Password"
+                                            name="confirmPassword"
+                                            value={editForm.confirmPassword || ''}
+                                            onChange={handleInputChange}
+                                            isInvalid={editForm.password !== editForm.confirmPassword}
+                                            errorMessage={
+                                                editForm.password !== editForm.confirmPassword 
+                                                    ? "Passwords don't match" 
+                                                    : undefined
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button variant="light" onPress={onClose}>
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    color="primary" 
+                                    onPress={handleSubmit}
+                                    isLoading={isSubmitting}
+                                >
+                                    Save Changes
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
         </div>
     );
 };
