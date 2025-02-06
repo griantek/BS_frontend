@@ -116,6 +116,19 @@ interface Executive {
     password?: string; // Add optional password field
 }
 
+interface ExecutiveWithRoleName {
+    id: string;
+    username: string;
+    email: string;
+    role_details: {
+        id:string;
+        name: string;
+        description: string;
+    };
+    created_at: string;
+    password?: string; // Add optional password field
+}
+
 // Add new interface for BankAccount
 interface BankAccount {
   id: string;
@@ -569,14 +582,10 @@ const api = {
     },
 
     // Add new method for getting executives
-    async getAllExecutives(): Promise<ApiResponse<Executive[]>> {
+    async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
             // Try one of these endpoints based on your backend structure:
             const response = await this.axiosInstance.get('/executive/all');
-            // OR
-            // const response = await this.axiosInstance.get('/superadmin/executives');
-            // OR
-            // const response = await this.axiosInstance.get('/executives');
             
             return response.data;
         } catch (error: any) {
@@ -848,5 +857,6 @@ export type {
     Prospectus,  // Add this export
     ServerRegistration,
     Transaction,
+    ExecutiveWithRoleName,
 };
 export default api;

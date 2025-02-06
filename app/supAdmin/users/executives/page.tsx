@@ -27,7 +27,7 @@ import {
     SelectItem
 } from "@heroui/react";
 import { toast } from 'react-toastify';
-import api, { Executive } from '@/services/api';
+import api, { Executive,ExecutiveWithRoleName, Role } from '@/services/api';
 
 interface EditExecutiveForm {
     username: string;
@@ -40,15 +40,17 @@ interface EditExecutiveForm {
 const ExecutivesPage: React.FC = () => {
     const router = useRouter();
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const [executives, setExecutives] = React.useState<Executive[]>([]);
+    const [executives, setExecutives] = React.useState<ExecutiveWithRoleName[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
-    const [selectedExecutive, setSelectedExecutive] = React.useState<Executive | null>(null);
+    const [selectedExecutive, setSelectedExecutive] = React.useState<ExecutiveWithRoleName | null>(null);
     const [editForm, setEditForm] = React.useState<EditExecutiveForm>({
         username: '',
         email: '',
         role: '',
     });
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [roles, setRoles] = React.useState<Role[]>([]);
+    const [isLoadingRoles, setIsLoadingRoles] = React.useState(false);
 
     const formatDate = (dateString: string) => {
         try {
@@ -88,13 +90,26 @@ const ExecutivesPage: React.FC = () => {
         fetchExecutives();
     }, [router]);
 
-    const handleRowClick = (executive: Executive) => {
+    const handleRowClick = async (executive: ExecutiveWithRoleName) => {
         setSelectedExecutive(executive);
         setEditForm({
             username: executive.username,
             email: executive.email,
-            role: executive.role,
+            role: executive.role_details.name,
         });
+        
+        // Fetch roles when opening modal
+        setIsLoadingRoles(true);
+        try {
+            const rolesResponse = await api.getAllRoles();
+            setRoles(rolesResponse.data);
+        } catch (error) {
+            toast.error('Failed to load roles');
+            console.error('Error loading roles:', error);
+        } finally {
+            setIsLoadingRoles(false);
+        }
+        
         onOpen();
     };
 
@@ -152,6 +167,10 @@ const ExecutivesPage: React.FC = () => {
         }
     };
 
+    const handleAddExecutive = () => {
+        router.push('/supAdmin/users/executives/create_exec');
+    };
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-[50vh]">
@@ -165,7 +184,12 @@ const ExecutivesPage: React.FC = () => {
             <Card>
                 <CardHeader className="flex justify-between items-center px-6 py-4">
                     <h1 className="text-2xl font-bold">Executives Management</h1>
-                    <Button color="primary">Add Executive</Button>
+                    <Button 
+                        color="primary"
+                        onPress={handleAddExecutive}
+                    >
+                        Add Executive
+                    </Button>
                 </CardHeader>
                 <CardBody>
                     <Table 
@@ -194,9 +218,15 @@ const ExecutivesPage: React.FC = () => {
                                         <Chip
                                             size="sm"
                                             variant="flat"
-                                            color={executive.role === 'manager' ? 'primary' : 'default'}
+                                            // Change color based on role name
+                                            color={
+                                                executive.role_details.name === 'Manager' ? 'primary' :
+                                                executive.role_details.name === 'Administrator' ? 'warning' :
+                                                'default'
+                                            }
                                         >
-                                            {executive.role}
+                                            {/* Display the role name with proper capitalization */}
+                                            {executive.role_details.name}
                                         </Chip>
                                     </TableCell>
                                     <TableCell>{formatDate(executive.created_at)}</TableCell>
@@ -237,13 +267,19 @@ const ExecutivesPage: React.FC = () => {
                                         name="role"
                                         selectedKeys={[editForm.role]}
                                         onChange={(e) => handleRoleChange(e.target.value)}
+                                        isDisabled={isLoadingRoles}
                                     >
-                                        <SelectItem key="executive" value="executive">
-                                            Executive
-                                        </SelectItem>
-                                        <SelectItem key="manager" value="manager">
-                                            Manager
-                                        </SelectItem>
+                                        {isLoadingRoles ? (
+                                            <SelectItem key="loading" value="loading">
+                                                Loading roles...
+                                            </SelectItem>
+                                        ) : (
+                                            roles.map((role) => (
+                                                <SelectItem key={role.id} value={role.name}>
+                                                    {role.name}
+                                                </SelectItem>
+                                            ))
+                                        )}
                                     </Select>
                                     <Divider />
                                     <div className="space-y-4">
