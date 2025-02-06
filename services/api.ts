@@ -97,6 +97,16 @@ interface Service {
   max_duration: string | null;
 }
 
+// Add interface for update request
+interface UpdateServiceRequest {
+  service_name: string;
+  service_type?: string;
+  description?: string;
+  fee: number;
+  min_duration?: string;
+  max_duration?: string;
+}
+
 interface CreateServiceRequest {
   service_name: string;
   service_type?: string;
@@ -581,6 +591,30 @@ const api = {
         }
     },
 
+    // Add new method for updating service
+    async updateService(id: number, data: UpdateServiceRequest): Promise<ApiResponse<Service>> {
+        try {
+            const response = await this.axiosInstance.put(`/common/services/${id}`, data);
+            // Clear the services cache after successful update
+            cache.delete('services');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add delete service method
+    async deleteService(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/common/services/${id}`);
+            // Clear the services cache after successful deletion
+            cache.delete('services');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method for getting executives
     async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
@@ -845,6 +879,7 @@ api.init();
 export type { 
     Service, 
     CreateServiceRequest, 
+    UpdateServiceRequest,
     Executive, 
     BankAccount, 
     Registration, 
