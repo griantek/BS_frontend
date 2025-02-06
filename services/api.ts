@@ -392,6 +392,18 @@ interface Transaction {
   executive_name: string;
 }
 
+// Add new interface for bank account creation/update
+interface BankAccountRequest {
+    account_name: string;
+    account_holder_name: string;
+    account_number: string;
+    ifsc_code: string;
+    account_type: string;
+    bank: string;
+    upi_id: string;
+    branch: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -637,6 +649,36 @@ const api = {
     async getBankAccountById(id: string): Promise<ApiResponse<BankAccount>> {
         const response = await this.axiosInstance.get(`/common/bank-accounts/${id}`);
         return response.data;
+    },
+
+    // Create new bank account
+    async createBankAccount(data: BankAccountRequest): Promise<ApiResponse<BankAccount>> {
+        try {
+            const response = await this.axiosInstance.post('/common/bank-accounts/create', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Update bank account
+    async updateBankAccount(id: string, data: BankAccountRequest): Promise<ApiResponse<BankAccount>> {
+        try {
+            const response = await this.axiosInstance.put(`/common/bank-accounts/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Delete bank account
+    async deleteBankAccount(id: string): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/common/bank-accounts/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
     },
 
     // Get all registrations
@@ -893,5 +935,6 @@ export type {
     ServerRegistration,
     Transaction,
     ExecutiveWithRoleName,
+    BankAccountRequest
 };
 export default api;
