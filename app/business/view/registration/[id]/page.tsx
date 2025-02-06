@@ -329,7 +329,7 @@ function RegistrationContent({ regId }: { regId: string }) {
       };
 
       // Send update request
-      const response = await api.approveRegistration(registrationData.id, updateData);
+      const response = await api.updateRegistration(registrationData.id, updateData);
       
       if (response.success) {
         toast.success('Registration approved successfully');
