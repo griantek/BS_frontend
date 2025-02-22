@@ -457,13 +457,18 @@ const api = {
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
-                // Handle 401 and other auth errors
+                // Only redirect on auth errors if not on login pages
                 if (error?.response?.status === 401 || error?.message === 'Not authenticated') {
                     const userRole = localStorage.getItem(USER_ROLE_KEY);
-                    this.clearStoredAuth();
-                    window.location.href = userRole === 'supAdmin' 
-                        ? '/supAdmin/login' 
-                        : '/business/login';
+                    const path = window.location.pathname;
+                    
+                    // Don't redirect if already on a login page
+                    if (!path.includes('/login')) {
+                        this.clearStoredAuth();
+                        window.location.href = userRole === 'supAdmin' 
+                            ? '/supAdmin/login' 
+                            : '/business/login';
+                    }
                 }
                 return Promise.reject(error);
             }
@@ -486,24 +491,11 @@ const api = {
 
     async loginSupAdmin(credentials: LoginCredentials): Promise<SupAdminLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/login', {
-                username: credentials.username,
-                password: credentials.password
-            });
-
-            // console.log('Login response:', {
-            //     success: response.data.success,
-            //     hasToken: !!response.data.token,
-            //     hasAdmin: !!response.data.admin
-            // });
-
+            const response = await this.axiosInstance.post('/superadmin/login', credentials);
             return response.data;
         } catch (error: any) {
-            console.error('Login error:', {
-                status: error.response?.status,
-                data: error.response?.data
-            });
-            throw this.handleError(error);
+            // Don't transform the error, let the component handle it
+            throw error;
         }
     },
 

@@ -56,13 +56,13 @@ export default function SupAdminLogin() {
       if (response.success && response.token && response.admin) {
         api.setStoredAuth(response.token, response.admin, 'supAdmin');
         updateAuthState();
-        // Show loading spinner while redirecting
         document.body.style.cursor = 'wait';
         await router.replace('/supAdmin');
       }
-    } catch (error) {
-      const errorMessage = api.handleError(error);
-      toast.error(errorMessage.error || 'Invalid credentials');
+    } catch (error: any) {
+      // Directly use the error message from the response
+      const errorMsg = error.response?.data?.error || 'Failed to login';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
       document.body.style.cursor = 'default';
