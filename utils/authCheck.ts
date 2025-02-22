@@ -4,9 +4,9 @@ const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
-export const getUserRole = (): 'executive' | 'supAdmin' | null => {
+export const getUserRole = (): 'editor' | 'executive' | 'supAdmin' | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(USER_ROLE_KEY) as 'executive' | 'supAdmin' | null;
+  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'supAdmin' | null;
 };
 
 export const isLoggedIn = (): boolean => {
@@ -22,7 +22,7 @@ export const redirectToLogin = (router: AppRouterInstance, userRole?: string) =>
   router.replace(path);
 };
 
-export const checkAuth = (router: AppRouterInstance, requiredRole?: 'executive' | 'supAdmin'): boolean => {
+export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'supAdmin'): boolean => {
   if (typeof window === 'undefined') return false;
   
   const token = localStorage.getItem(TOKEN_KEY);
@@ -36,15 +36,21 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'executive' 
   }
 
   // Check role-specific access
-  if (requiredRole) {
-    if (requiredRole === 'supAdmin' && userRole !== 'supAdmin') {
-      router.push('/business');
-      return false;
+  if (requiredRole && userRole !== requiredRole) {
+    switch(userRole) {
+      case 'editor':
+        router.push('/editor');
+        break;
+      case 'executive':
+        router.push('/business');
+        break;
+      case 'supAdmin':
+        router.push('/supAdmin');
+        break;
+      default:
+        router.push('/');
     }
-    if (requiredRole === 'executive' && userRole === 'supAdmin') {
-      router.push('/supAdmin');
-      return false;
-    }
+    return false;
   }
 
   return true;

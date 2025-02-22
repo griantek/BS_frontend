@@ -13,11 +13,21 @@ interface LoginCredentials {
 }
 
 interface ExecutiveLoginResponse {
+    success: boolean;
     token: string;
     executive: {
         id: string;
-        name: string;
+        username: string;
         email: string;
+        entity_type: 'Editor' | 'Executive';
+        role: {
+            id: number;
+            name: string;
+            description: string;
+            permissions: any[];
+        };
+        created_at: string;
+        updated_at: string;
     };
 }
 
@@ -478,6 +488,7 @@ const api = {
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/executive/login', credentials);
+            console.log('Login response:', response.data);
             return response.data;
         } catch (error: any) {
             // console.error('API createProspectus error:', {
@@ -856,7 +867,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'executive' | 'supAdmin') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'supAdmin') {
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));

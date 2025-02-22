@@ -52,15 +52,33 @@ export default function BusinessLogin() {
         password: data.password
       });
 
-      // Set both localStorage and cookies for dual protection
-      api.setStoredAuth(response.token, response.executive, 'executive');
-      
-      // Set secure cookies
-      document.cookie = `token=${response.token}; path=/; secure; samesite=strict`;
-      document.cookie = `isLoggedIn=true; path=/; secure; samesite=strict`;
-      document.cookie = `role=executive; path=/; secure; samesite=strict`;
+      if (!response.success) {
+        toast.error('Login failed');
+        return;
+      }
 
-      await router.replace('/business');
+      // Convert entity_type to lowercase for consistency
+      const entityType = response.executive.entity_type.toLowerCase();
+      const userRole = response.executive.role.name.toLowerCase();
+
+      // Store auth data including role information
+      api.setStoredAuth(
+        response.token, 
+        {
+          ...response.executive,
+          role: response.executive.role,
+          entity_type: entityType
+        }, 
+        entityType as 'editor' | 'executive'
+      );
+
+      // Route based on entity_type
+      if (entityType === 'editor') {
+        await router.replace('/editor');
+      } else {
+        await router.replace('/business');
+      }
+
     } catch (error) {
       const errorMessage = api.handleError(error);
       toast.error(errorMessage.error || 'Invalid credentials');
