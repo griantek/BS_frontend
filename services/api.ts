@@ -415,6 +415,35 @@ interface BankAccountRequest {
     branch: string;
 }
 
+// First add the interface for Journal Data
+interface JournalData {
+  id: number;
+  prospectus_id: number;
+  client_name: string;
+  requirement: string;
+  personal_email: string;
+  applied_person: string;
+  journal_name: string;
+  status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+  journal_link: string;
+  username: string;
+  password: string;
+  orcid_username1: string;
+  password1: string;
+  paper_title: string;
+  created_at: string;
+  updated_at: string;
+  executive: {
+    id: string;
+    email: string;
+    username: string;
+  };
+  prospectus: {
+    id: number;
+    reg_id: string;
+  };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -488,7 +517,6 @@ const api = {
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/executive/login', credentials);
-            console.log('Login response:', response.data);
             return response.data;
         } catch (error: any) {
             // console.error('API createProspectus error:', {
@@ -719,10 +747,10 @@ const api = {
     async updateRegistration(id: number, data: Partial<CreateRegistrationRequest>): Promise<ApiResponse<Registration>> {
         try {
             // Log the request for debugging
-            console.log('Updating registration:', {
-                id,
-                data
-            });
+            // console.log('Updating registration:', {
+            //     id,
+            //     data
+            // });
             
             const response = await this.axiosInstance.put(`/common/registration/${id}`, data);
             return response.data;
@@ -858,6 +886,17 @@ const api = {
         }
     },
 
+    // Add new method for getting all journal data
+    async getAllJournalData(): Promise<ApiResponse<JournalData[]>> {
+      try {
+        const response = await this.axiosInstance.get('/editor/journal-data/all');
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data:', error);
+        throw this.handleError(error);
+      }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -950,6 +989,7 @@ export type {
     ServerRegistration,
     Transaction,
     ExecutiveWithRoleName,
-    BankAccountRequest
+    BankAccountRequest,
+    JournalData
 };
 export default api;

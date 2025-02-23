@@ -35,7 +35,7 @@ export default function RootLayout({
             {!isHomePage && <Navbar />}
             <main className={clsx(
               "container mx-auto flex-grow",
-              isHomePage ? "" : "max-w-7xl pt-16 px-6"
+              isHomePage ? "" : "pt-16 px-6"
             )}>
               {children}
             </main>

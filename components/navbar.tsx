@@ -1,6 +1,7 @@
 'use client'
 import React from 'react';
 import { usePathname } from 'next/navigation';  // Add this import
+import { getUserRole } from '@/utils/authCheck';  // Add this import
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -12,30 +13,17 @@ import {
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Kbd } from "@heroui/kbd";
-import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'; // Updated import
-import {
-  ChartBarIcon,
-  UsersIcon,
-  WrenchScrewdriverIcon,
-  UserGroupIcon,
-  BanknotesIcon,
-  BuildingOfficeIcon,
-  ChartPieIcon
-} from '@heroicons/react/24/outline';
+
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import {
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  HeartFilledIcon,
   SearchIcon,
   Logo,
 } from "@/components/icons";
@@ -48,45 +36,6 @@ interface NavItem {
   icon: React.ComponentType<any>;
   isActive: boolean;
 }
-
-const navLinks: NavItem[] = [
-  {
-    label: "Dashboard",
-    href: "/supAdmin",
-    icon: ChartBarIcon,
-    isActive: false,
-  },
-  {
-    label: "Users",
-    href: "/supAdmin/users/executives",
-    icon: UsersIcon,
-    isActive: false,
-  },
-  {
-    label: "Services",
-    href: "/supAdmin/services",
-    icon: WrenchScrewdriverIcon,
-    isActive: false,
-  },
-  {
-    label: "Clients",
-    href: "/supAdmin/clients",
-    icon: UserGroupIcon,
-    isActive: false,
-  },
-  {
-    label: "Finance",
-    href: "/supAdmin/finance",
-    icon: BanknotesIcon,
-    isActive: false,
-  },
-  {
-    label: "Departments",
-    href: "/supAdmin/department",
-    icon: BuildingOfficeIcon,
-    isActive: false,
-  }
-];
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -120,12 +69,26 @@ export const Navbar = () => {
   };
 
   const isActiveMainPath = (path: string) => {
-    // For dashboard, only match exact path
-    if (path === '/supAdmin') {
-      return pathname === '/supAdmin';
+    // For dashboard pages, only match exact path
+    if (path === '/supAdmin' || path === '/business' || path === '/editor') {
+      return pathname === path;
     }
     // For other sections, match the section prefix
-    return pathname.startsWith(path) && pathname !== '/supAdmin';
+    return pathname.startsWith(path) && !pathname.match(/^\/(supAdmin|business|editor)$/);
+  };
+
+  const getNavigationLinks = () => {
+    if (isSupAdmin) {
+      return siteConfig.supAdminLinks;
+    }
+    if (isExecutive) {
+      return siteConfig.executiveLinks;
+    }
+    const role = getUserRole();  // Now getUserRole is defined
+    if (role === 'editor') {
+      return siteConfig.editorLinks;
+    }
+    return [];
   };
 
   const searchInput = (
@@ -168,9 +131,9 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        {isLoggedIn && isSupAdmin && (
+        {isLoggedIn && (
           <NavbarItem className="hidden sm:flex gap-4">
-            {navLinks.map((link) => (
+            {getNavigationLinks().map((link) => (
               <NextLink
                 key={link.href}
                 className={clsx(
@@ -185,22 +148,6 @@ export const Navbar = () => {
                 {link.label}
               </NextLink>
             ))}
-          </NavbarItem>
-        )}
-        {isLoggedIn && isExecutive && (
-          <NavbarItem className="hidden sm:flex gap-4">
-            <NextLink
-              className={clsx(
-                linkStyles({ color: "foreground" }),
-                "data-[active=true]:text-primary data-[active=true]:font-medium",
-                isActiveLink('/business') && "text-primary font-medium"
-              )}
-              color="foreground"
-              href="/business"
-            >
-              Dashboard
-            </NextLink>
-            {/* Add any other executive-specific navigation items here */}
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2">
@@ -234,25 +181,23 @@ export const Navbar = () => {
         <NavbarMenuToggle />
       </NavbarContent>
 
-      {isSupAdmin && (
-        <NavbarMenu>
-          {navLinks.map((link) => (
-            <NavbarMenuItem key={link.href}>
-              <NextLink 
-                className={clsx(
-                  linkStyles(),
-                  "flex items-center gap-2",
-                  isActiveMainPath(link.href) && "text-primary font-medium"
-                )} 
-                href={link.href}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </NextLink>
-            </NavbarMenuItem>
-          ))}
-        </NavbarMenu>
-      )}
+      <NavbarMenu>
+        {getNavigationLinks().map((link) => (
+          <NavbarMenuItem key={link.href}>
+            <NextLink 
+              className={clsx(
+                linkStyles(),
+                "flex items-center gap-2",
+                isActiveMainPath(link.href) && "text-primary font-medium"
+              )} 
+              href={link.href}
+            >
+              <link.icon className="w-4 h-4" />
+              {link.label}
+            </NextLink>
+          </NavbarMenuItem>
+        ))}
+      </NavbarMenu>
     </HeroUINavbar>
   );
 };

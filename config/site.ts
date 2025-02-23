@@ -1,7 +1,76 @@
+import {
+  ChartBarIcon,
+  UsersIcon,
+  WrenchScrewdriverIcon,
+  UserGroupIcon,
+  BanknotesIcon,
+  BuildingOfficeIcon,
+  NewspaperIcon,
+  HomeIcon
+} from '@heroicons/react/24/outline';
+
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Business suite",
+  
+  // Super Admin Navigation
+  supAdminLinks: [
+    {
+      label: "Dashboard",
+      href: "/supAdmin",
+      icon: ChartBarIcon,
+    },
+    {
+      label: "Users",
+      href: "/supAdmin/users/executives",
+      icon: UsersIcon,
+    },
+    {
+      label: "Services",
+      href: "/supAdmin/services",
+      icon: WrenchScrewdriverIcon,
+    },
+    {
+      label: "Clients",
+      href: "/supAdmin/clients",
+      icon: UserGroupIcon,
+    },
+    {
+      label: "Finance",
+      href: "/supAdmin/finance",
+      icon: BanknotesIcon,
+    },
+    {
+      label: "Departments",
+      href: "/supAdmin/department",
+      icon: BuildingOfficeIcon,
+    }
+  ],
+
+  // Executive Navigation
+  executiveLinks: [
+    {
+      label: "Dashboard",
+      href: "/business",
+      icon: HomeIcon,
+    }
+  ],
+
+  // Editor Navigation
+  editorLinks: [
+    {
+      label: "Dashboard",
+      href: "/editor",
+      icon: HomeIcon,
+    },
+    {
+      label: "Journals",
+      href: "/editor/journals",
+      icon: NewspaperIcon,
+    }
+  ],
+
   navItems: [
     {
       label: "Home",
