@@ -218,7 +218,6 @@ function BusinessDashboard() {
       reg.status?.toLowerCase().includes(filterValue.toLowerCase()) ||
       reg.prospectus?.department?.toLowerCase().includes(filterValue.toLowerCase())
     );
-    console.log('Filtered Registrations:', filtered);
     return filtered;
   }, [filterValue, registrations]);
 

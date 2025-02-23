@@ -15,12 +15,18 @@ export default function Home() {
 
   useEffect(() => {
     const userRole = getUserRole();
-    if (userRole === "supAdmin") {
-      router.replace("/supAdmin");
-    } else if (userRole === "executive") {
-      router.replace("/business");
-    } else {
-      setShouldRender(true);
+    switch(userRole) {
+      case "supAdmin":
+        router.replace("/supAdmin");
+        break;
+      case "executive":
+        router.replace("/business");
+        break;
+      case "editor":
+        router.replace("/editor");
+        break;
+      default:
+        setShouldRender(true);
     }
   }, [router]);
 

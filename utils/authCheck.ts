@@ -58,9 +58,17 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
 
 export const redirectToDashboard = (router: AppRouterInstance) => {
   const userRole = getUserRole();
-  if (userRole === 'supAdmin') {
-    router.replace('/supAdmin');
-  } else if (userRole === 'executive') {
-    router.replace('/business');
+  switch(userRole) {
+    case 'editor':
+      router.replace('/editor');
+      break;
+    case 'executive':
+      router.replace('/business');
+      break;
+    case 'supAdmin':
+      router.replace('/supAdmin');
+      break;
+    default:
+      router.replace('/');
   }
 };
