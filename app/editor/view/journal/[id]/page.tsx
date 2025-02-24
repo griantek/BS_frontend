@@ -200,6 +200,26 @@ function JournalContent({ id }: { id: string }) {
                     </Card>
                 </div>
 
+                {/* Journal Screenshot Section */}
+                {journal.status_link && (
+                    <Card className="w-full">
+                        <CardHeader>
+                            <p className="text-md font-semibold">Journal Status Screenshot</p>
+                        </CardHeader>
+                        <Divider/>
+                        <CardBody>
+                            <div className="flex justify-center">
+                                <img
+                                    src={journal.status_link}
+                                    alt="Journal Status Screenshot"
+                                    className="rounded-lg shadow-lg max-w-full h-auto"
+                                    style={{ maxHeight: '600px' }}
+                                />
+                            </div>
+                        </CardBody>
+                    </Card>
+                )}
+
                 {/* Delete Confirmation Modal */}
                 <Modal isOpen={isOpen} onClose={onClose}>
                     <ModalContent>

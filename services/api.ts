@@ -442,6 +442,7 @@ interface JournalData {
     id: number;
     reg_id: string;
   };
+  status_link: string | null; // Add this new field
 }
 
 // Update the UpdateJournalRequest interface to make all fields required
@@ -454,6 +455,7 @@ interface UpdateJournalRequest {
     password: string;
     orcid_username1: string;
     password1: string;
+    status_link?: string; // Add this new optional field
 }
 
 const PUBLIC_ENDPOINTS = [
