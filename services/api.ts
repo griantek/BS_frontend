@@ -444,6 +444,18 @@ interface JournalData {
   };
 }
 
+// Update the UpdateJournalRequest interface to make all fields required
+interface UpdateJournalRequest {
+    status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+    journal_name: string;
+    journal_link: string;
+    paper_title: string;
+    username: string;
+    password: string;
+    orcid_username1: string;
+    password1: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -897,6 +909,27 @@ const api = {
       }
     },
 
+    async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
+        try {
+            const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async updateJournal(id: number, data: UpdateJournalRequest): Promise<ApiResponse<JournalData>> {
+        try {
+            // console.log('Updating journal:', data);
+            const response = await this.axiosInstance.put(`/editor/journal-data/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating journal:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -990,6 +1023,7 @@ export type {
     Transaction,
     ExecutiveWithRoleName,
     BankAccountRequest,
-    JournalData
+    JournalData,
+    UpdateJournalRequest
 };
 export default api;

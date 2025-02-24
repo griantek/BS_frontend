@@ -21,6 +21,7 @@ import { withEditorAuth } from '@/components/withEditorAuth';
 import api, { JournalData } from '@/services/api';
 import { toast } from 'react-toastify';
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useRouter } from 'next/navigation';
 
 const JournalsEditorPage = () => {
     const [journals, setJournals] = React.useState<JournalData[]>([]);
@@ -29,6 +30,7 @@ const JournalsEditorPage = () => {
     const [page, setPage] = React.useState(1);
     const [showPassword, setShowPassword] = React.useState<{ [key: number]: boolean }>({});
     const rowsPerPage = 10;
+    const router = useRouter();
 
     React.useEffect(() => {
         const fetchJournals = async () => {
@@ -216,7 +218,11 @@ const JournalsEditorPage = () => {
                             isLoading={isLoading}
                         >
                             {(journal) => (
-                                <TableRow key={journal.id}>
+                                <TableRow 
+                                    key={journal.id}
+                                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    onClick={() => router.push(`/editor/view/journal/${journal.id}`)}
+                                >
                                     {columns.map((column) => (
                                         <TableCell key={`${journal.id}-${column.key}`}>
                                             {renderCell(journal, column.key)}
