@@ -930,6 +930,16 @@ const api = {
         }
     },
 
+    async deleteJournal(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/editor/journal-data/${id}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error deleting journal:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },

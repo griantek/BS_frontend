@@ -51,7 +51,7 @@ function JournalContent({ id }: { id: string }) {
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
-            // Add your delete API call here
+            await api.deleteJournal(Number(id));
             toast.success('Journal deleted successfully');
             router.push('/editor/journals');
         } catch (error) {
