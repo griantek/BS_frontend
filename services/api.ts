@@ -640,10 +640,8 @@ const api = {
 
     // Get all services
     async getAllServices(): Promise<ApiResponse<Service[]>> {
-        return withCache('services', () => 
-            this.axiosInstance.get('/common/services/all')
-                .then(response => response.data)
-        );
+        return this.axiosInstance.get('/common/services/all')
+                .then(response => response.data);
     },
 
     // Get service by ID
@@ -660,8 +658,6 @@ const api = {
     async updateService(id: number, data: UpdateServiceRequest): Promise<ApiResponse<Service>> {
         try {
             const response = await this.axiosInstance.put(`/common/services/${id}`, data);
-            // Clear the services cache after successful update
-            cache.delete('services');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -672,8 +668,6 @@ const api = {
     async deleteService(id: number): Promise<ApiResponse<void>> {
         try {
             const response = await this.axiosInstance.delete(`/common/services/${id}`);
-            // Clear the services cache after successful deletion
-            cache.delete('services');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -812,17 +806,13 @@ const api = {
 
     // Department management methods
     async getAllDepartments(): Promise<ApiResponse<Department[]>> {
-        return withCache('departments', () => 
-            this.axiosInstance.get('/common/departments/all')
-                .then(response => response.data)
-        );
+        return this.axiosInstance.get('/common/departments/all')
+                .then(response => response.data);
     },
 
     async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
             const response = await this.axiosInstance.post('/common/departments/create', data);
-            // Clear departments cache after creating
-            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -832,8 +822,6 @@ const api = {
     async updateDepartment(id: number, data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
             const response = await this.axiosInstance.put(`/common/departments/${id}`, data);
-            // Clear departments cache after updating
-            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -843,8 +831,6 @@ const api = {
     async deleteDepartment(id: number): Promise<ApiResponse<void>> {
         try {
             const response = await this.axiosInstance.delete(`/common/departments/${id}`);
-            // Clear departments cache after deleting
-            cache.delete('departments');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -910,6 +896,7 @@ const api = {
     // Add new method for getting all journal data
     async getAllJournalData(): Promise<ApiResponse<JournalData[]>> {
       try {
+        // Remove caching, make direct request
         const response = await this.axiosInstance.get('/editor/journal-data/all');
         return response.data;
       } catch (error: any) {
@@ -920,7 +907,7 @@ const api = {
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
         try {
-            const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
+                        const response = await this.axiosInstance.get(                `/editor/journal-data/${id}`            );
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data:', error);
@@ -1016,23 +1003,6 @@ const api = {
         }
     }
 };
-
-// Add caching to your API methods
-
-const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function withCache<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return Promise.resolve(cached.data);
-  }
-
-  return fetchFn().then(data => {
-    cache.set(key, { data, timestamp: Date.now() });
-    return data;
-  });
-}
 
 // Initialize the interceptors
 api.init();

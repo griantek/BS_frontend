@@ -61,7 +61,6 @@ const JournalsEditorPage = () => {
         { key: "journal_name", label: "JOURNAL" },
         { key: "status", label: "STATUS" },
         { key: "journal_link", label: "LINK" },
-        { key: "credentials", label: "CREDENTIALS" },
         { key: "paper_title", label: "PAPER TITLE" },
     ];
 
