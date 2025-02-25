@@ -954,6 +954,7 @@ const api = {
             const response = await this.axiosInstance.post('/editor/trigger-status-upload', {
                 journalId: journalId
             });
+            console.log('Trigger status upload response:', response.data);
             return response.data;
         } catch (error: any) {
             console.error('Error triggering status upload:', error);

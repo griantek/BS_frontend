@@ -68,19 +68,36 @@ function JournalContent({ id }: { id: string }) {
         if (!journal) return;
         
         setIsRefreshing(true);
+        const toastId = toast.loading('Starting status update. This may take a few minutes...', {
+            autoClose: false
+        });
+
         try {
             const response = await api.triggerStatusUpload(journal.id);
-            if (response.success) {
+            
+            toast.dismiss(toastId);
+            
+            if (response.success && response.data.success) {
                 toast.success('Status screenshot updated successfully');
-                // Refetch the journal data to get the new screenshot
+                // Add a delay before refetching
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
                 const journalResponse = await api.getJournalById(Number(id));
                 if (journalResponse.success) {
                     setJournal(journalResponse.data);
                 }
+            } else {
+                toast.error('Failed to update status screenshot');
             }
-        } catch (error) {
-            const errorMessage = api.handleError(error);
-            toast.error(errorMessage.error || 'Failed to update status screenshot');
+        } catch (error: any) {
+            console.error('Error triggering status upload:', error);
+            toast.dismiss(toastId);
+            
+            if (error.message.includes('background') || error.message.includes('taking longer')) {
+                toast.info(error.message || 'The screenshot is being generated in the background. Please refresh in a few minutes.');
+            } else {
+                toast.error(error.message || 'Failed to update status screenshot');
+            }
         } finally {
             setIsRefreshing(false);
         }
