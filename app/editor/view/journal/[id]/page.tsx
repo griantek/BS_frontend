@@ -19,13 +19,14 @@ import {
 import { withEditorAuth } from '@/components/withEditorAuth';
 import api, { JournalData } from '@/services/api';
 import { toast } from 'react-toastify';
-import { ArrowLeftIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TrashIcon, PencilIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 function JournalContent({ id }: { id: string }) {
     const router = useRouter();
     const [journal, setJournal] = React.useState<JournalData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     React.useEffect(() => {
@@ -60,6 +61,28 @@ function JournalContent({ id }: { id: string }) {
         } finally {
             setIsDeleting(false);
             onClose();
+        }
+    };
+
+    const handleRefreshStatus = async () => {
+        if (!journal) return;
+        
+        setIsRefreshing(true);
+        try {
+            const response = await api.triggerStatusUpload(journal.id);
+            if (response.success) {
+                toast.success('Status screenshot updated successfully');
+                // Refetch the journal data to get the new screenshot
+                const journalResponse = await api.getJournalById(Number(id));
+                if (journalResponse.success) {
+                    setJournal(journalResponse.data);
+                }
+            }
+        } catch (error) {
+            const errorMessage = api.handleError(error);
+            toast.error(errorMessage.error || 'Failed to update status screenshot');
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -201,24 +224,35 @@ function JournalContent({ id }: { id: string }) {
                 </div>
 
                 {/* Journal Screenshot Section */}
-                {journal.status_link && (
-                    <Card className="w-full">
-                        <CardHeader>
-                            <p className="text-md font-semibold">Journal Status Screenshot</p>
-                        </CardHeader>
-                        <Divider/>
-                        <CardBody>
-                            <div className="flex justify-center">
+                <Card className="w-full">
+                    <CardHeader className="flex justify-between items-center">
+                        <p className="text-md font-semibold">Journal Status Screenshot</p>
+                        <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onClick={handleRefreshStatus}
+                            isLoading={isRefreshing}
+                        >
+                            <ArrowPathIcon className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </CardHeader>
+                    <Divider/>
+                    <CardBody>
+                        <div className="flex justify-center">
+                            {journal.status_link ? (
                                 <img
                                     src={journal.status_link}
                                     alt="Journal Status Screenshot"
                                     className="rounded-lg shadow-lg max-w-full h-auto"
                                     style={{ maxHeight: '600px' }}
                                 />
-                            </div>
-                        </CardBody>
-                    </Card>
-                )}
+                            ) : (
+                                <div className="text-gray-500">No screenshot available</div>
+                            )}
+                        </div>
+                    </CardBody>
+                </Card>
 
                 {/* Delete Confirmation Modal */}
                 <Modal isOpen={isOpen} onClose={onClose}>

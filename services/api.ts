@@ -458,6 +458,13 @@ interface UpdateJournalRequest {
     status_link?: string; // Add this new optional field
 }
 
+interface TriggerStatusUploadResponse {
+    success: boolean;
+    journalId: number;
+    searchQuery: string;
+    count: number;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -938,6 +945,18 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Error deleting journal:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async triggerStatusUpload(journalId: number): Promise<ApiResponse<TriggerStatusUploadResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/editor/trigger-status-upload', {
+                journalId: journalId
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error triggering status upload:', error);
             throw this.handleError(error);
         }
     },

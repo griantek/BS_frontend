@@ -52,6 +52,7 @@ const JournalsEditorPage = () => {
 
     const columns = [
         { key: "id", label: "ID" },
+        { key: "prospectus_id", label: "PID" },
         { key: "reg_id", label: "REG NUMBER" },
         { key: "client_name", label: "CLIENT NAME" },
         { key: "requirement", label: "REQUIREMENT" },
@@ -91,6 +92,8 @@ const JournalsEditorPage = () => {
     const renderCell = (journal: JournalData, key: string): React.ReactNode => {
         switch(key) {
             case "id":
+                return <span>{journal.id}</span>;
+            case "prospectus_id":
                 return <span>{journal.prospectus.id}</span>;
             case "reg_id":
                 return <span>{journal.prospectus.reg_id}</span>;
