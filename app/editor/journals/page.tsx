@@ -57,7 +57,7 @@ const JournalsEditorPage = () => {
         { key: "client_name", label: "CLIENT NAME" },
         { key: "requirement", label: "REQUIREMENT" },
         { key: "personal_email", label: "EMAIL" },
-        { key: "applied_person", label: "APPLIED BY" },
+        { key: "executive", label: "APPLIED EXECUTIVE" },
         { key: "journal_name", label: "JOURNAL" },
         { key: "status", label: "STATUS" },
         { key: "journal_link", label: "LINK" },
@@ -102,7 +102,7 @@ const JournalsEditorPage = () => {
                         <span>{journal.requirement.slice(0, 50)}...</span>
                     </Tooltip>
                 );
-            case "applied_person":
+            case "executive":
                 return <span>{journal.executive.username}</span>;
             case "journal_name":
                 return (

@@ -422,7 +422,7 @@ interface JournalData {
   client_name: string;
   requirement: string;
   personal_email: string;
-  applied_person: string;
+  assigned_to: string;
   journal_name: string;
   status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
   journal_link: string;

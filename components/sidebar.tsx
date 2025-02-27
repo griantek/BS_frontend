@@ -8,13 +8,15 @@ import {
     NewspaperIcon,
     ChartBarIcon,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    ClipboardDocumentListIcon // Add this import
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 
 const sidebarItems = [
     { name: 'Dashboard', icon: HomeIcon, path: '/editor' },
-    { name: 'Journals', icon: NewspaperIcon, path: '/editor/journals' },
+    { name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/editor/assigned' }, 
+    { name: 'Journal Details', icon: NewspaperIcon, path: '/editor/journals' },
     // { name: 'Reports', icon: ChartBarIcon, path: '/editor/reports' },
 ];
 
@@ -25,7 +27,18 @@ export const Sidebar = () => {
 
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
-    const isActive = (path: string) => pathname === path;
+    const isActive = (path: string) => {
+        if (path === '/editor/journals') {
+            return pathname === path || 
+                   pathname.startsWith('/editor/view/journal/') || 
+                   pathname.startsWith('/editor/edit/journal/');
+        }
+        if (path === '/editor/assigned') {
+            return pathname === path || 
+                   pathname.startsWith('/editor/assigned/');
+        }
+        return pathname === path;
+    };
 
     // Add an effect to dispatch a custom event when sidebar state changes
     React.useEffect(() => {
