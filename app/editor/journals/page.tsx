@@ -168,7 +168,7 @@ const JournalsEditorPage = () => {
     };
 
     return (
-        <div className="min-h-screen p-4">
+        <div className="p-4">
             <Card>
                 <CardHeader className="flex justify-between items-center px-6 py-4">
                     <h1 className="text-2xl font-bold">Journal Management</h1>

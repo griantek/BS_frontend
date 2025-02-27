@@ -20,7 +20,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get the current pathname
   const isHomePage = typeof window !== 'undefined' ? window.location.pathname === '/' : false;
 
   return (
@@ -29,14 +28,11 @@ export default function RootLayout({
       <body>
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <div className={clsx(
-            "relative flex flex-col h-screen min-h-screen bg-background font-sans antialiased",
+            "relative flex flex-col min-h-screen bg-background font-sans antialiased",
             fontSans.variable,
           )}>
             {!isHomePage && <Navbar />}
-            <main className={clsx(
-              "container mx-auto flex-grow",
-              isHomePage ? "" : "pt-16 px-6"
-            )}>
+            <main className="flex-grow">
               {children}
             </main>
           </div>

@@ -19,7 +19,8 @@ import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'; // Updated import
-
+import { Badge } from "@heroui/badge";
+import { BellIcon } from "@heroicons/react/24/outline";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -41,6 +42,10 @@ export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { isLoggedIn, isSupAdmin, isExecutive } = useAuth();  // Changed from isAdmin
+  const [notificationCount, setNotificationCount] = React.useState(5); // Example count
+  
+  // Add this line to declare isEditorPath
+  const isEditorPath = pathname?.startsWith('/editor');
 
   const handleLogout = () => {
     const userRole = localStorage.getItem('userRole');
@@ -78,18 +83,46 @@ export const Navbar = () => {
   };
 
   const getNavigationLinks = () => {
+    // Now using the properly declared isEditorPath variable
     if (isSupAdmin) {
       return siteConfig.supAdminLinks;
     }
     if (isExecutive) {
       return siteConfig.executiveLinks;
     }
-    const role = getUserRole();  // Now getUserRole is defined
+    const role = getUserRole();
     if (role === 'editor') {
-      return siteConfig.editorLinks;
+      // Only return links if we're in mobile view or not in editor section
+      return !isEditorPath ? siteConfig.editorLinks : [];
     }
     return [];
   };
+
+  // Add notification button component
+  const NotificationButton = () => (
+    <Button
+      isIconOnly
+      variant="light"
+      className="relative"
+      aria-label="Notifications"
+    >
+      <BellIcon 
+        className={clsx(
+          "h-5 w-5 transition-colors",
+          notificationCount > 0 && "text-danger animate-pulse"
+        )} 
+      />
+      {notificationCount > 0 && (
+        <Badge
+          className="absolute -top-2 -right-2"
+          color="danger"
+          size="sm"
+        >
+          {notificationCount}
+        </Badge>
+      )}
+    </Button>
+  );
 
   const searchInput = (
     <Input
@@ -148,9 +181,11 @@ export const Navbar = () => {
                 {link.label}
               </NextLink>
             ))}
+            {/* {isEditorPath && <NotificationButton />} */}
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2">
+          {isEditorPath && <NotificationButton />}
           <ThemeSwitch />
           {isLoggedIn && (
             <Button
@@ -166,6 +201,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
+        {isEditorPath && <NotificationButton />}
         <ThemeSwitch />
         {isLoggedIn && (
           <Button
@@ -182,7 +218,8 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarMenu>
-        {getNavigationLinks().map((link) => (
+        {/* Show all navigation links in mobile menu, including editor links */}
+        {isLoggedIn && (getUserRole() === 'editor' ? siteConfig.editorLinks : getNavigationLinks()).map((link) => (
           <NavbarMenuItem key={link.href}>
             <NextLink 
               className={clsx(
