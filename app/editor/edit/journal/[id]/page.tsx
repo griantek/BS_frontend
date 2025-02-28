@@ -23,7 +23,8 @@ const statusOptions = [
     'under review',
     'approved',
     'rejected',
-    'submitted'
+    'submitted',
+    'other'  // Add 'other' option
 ] as const;
 
 function JournalEditContent({ id }: { id: string }) {
@@ -31,6 +32,8 @@ function JournalEditContent({ id }: { id: string }) {
     const [journal, setJournal] = React.useState<JournalData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [selectedStatus, setSelectedStatus] = React.useState<string>('');
+    const [customStatus, setCustomStatus] = React.useState('');
 
     React.useEffect(() => {
         const fetchJournal = async () => {
@@ -38,6 +41,13 @@ function JournalEditContent({ id }: { id: string }) {
                 const response = await api.getJournalById(Number(id));
                 if (response.success) {
                     setJournal(response.data);
+                    // Check if current status is in statusOptions
+                    if (statusOptions.includes(response.data.status as any)) {
+                        setSelectedStatus(response.data.status);
+                    } else {
+                        setSelectedStatus('other');
+                        setCustomStatus(response.data.status);
+                    }
                 }
             } catch (error) {
                 const errorMessage = api.handleError(error);
@@ -57,8 +67,12 @@ function JournalEditContent({ id }: { id: string }) {
         setIsSubmitting(true);
         try {
             const formData = new FormData(e.currentTarget);
+            
+            // Determine final status value
+            const finalStatus = selectedStatus === 'other' ? customStatus : selectedStatus;
+
             const updateData: UpdateJournalRequest = {
-                status: formData.get('status') as UpdateJournalRequest['status'],
+                status: finalStatus as UpdateJournalRequest['status'],
                 journal_name: formData.get('journal_name') as string,
                 journal_link: formData.get('journal_link') as string,
                 paper_title: formData.get('paper_title') as string,
@@ -68,7 +82,6 @@ function JournalEditContent({ id }: { id: string }) {
                 password1: formData.get('password1') as string,
             };
 
-            // console.log('Updating journal with:', updateData);
             await api.updateJournal(journal.id, updateData);
             toast.success('Journal updated successfully');
             router.push(`/editor/view/journal/${journal.id}`);
@@ -150,18 +163,35 @@ function JournalEditContent({ id }: { id: string }) {
 
                             {/* Editable fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Select
-                                    label="Status"
-                                    name="status"
-                                    defaultSelectedKeys={[journal.status]}
-                                    isRequired
-                                >
-                                    {statusOptions.map((status) => (
-                                        <SelectItem key={status} value={status}>
-                                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
+                                {/* Replace the old status Select with new status section */}
+                                <div className="col-span-2">
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-semibold">Status</h3>
+                                        <div className="flex gap-4">
+                                            <Select
+                                                label="Status"
+                                                defaultSelectedKeys={[selectedStatus]}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                                className="flex-1"
+                                            >
+                                                {statusOptions.map((status) => (
+                                                    <SelectItem key={status} value={status}>
+                                                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
+                                            {selectedStatus === 'other' && (
+                                                <Input
+                                                    label="Custom Status"
+                                                    value={customStatus}
+                                                    onChange={(e) => setCustomStatus(e.target.value)}
+                                                    isRequired
+                                                    className="flex-1"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <Input
                                     label="Journal Name"

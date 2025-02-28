@@ -1,11 +1,10 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY ;
-const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY ;
-const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY ;
-const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY ;
-
+const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token' ;
+const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
+const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY || 'isLoggedIn';
+const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 // Types
 interface LoginCredentials {
     username: string;
@@ -447,6 +446,23 @@ interface JournalData {
   status_link: string | null; // Add this new field
 }
 
+// Add new interface for journal creation
+interface CreateJournalRequest {
+    prospectus_id: number;
+    client_name: string;
+    requirement: string;
+    personal_email: string;
+    assigned_to: string;
+    journal_name: string;
+    status: string;
+    journal_link: string;
+    username: string;
+    password: string;
+    orcid_username1: string;
+    password1: string;
+    paper_title: string;
+}
+
 // Update the UpdateJournalRequest interface to make all fields required
 interface UpdateJournalRequest {
     status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
@@ -505,6 +521,13 @@ interface AssignedRegistration {
     client_name: string;
     requirement: string;
   };
+}
+
+// Add new interface for prospectus assist data
+interface ProspectusAssistData {
+    personal_email: string;
+    client_name: string;
+    requirement: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1010,6 +1033,16 @@ const api = {
         }
     },
 
+    // Add new method for creating journal data
+    async createJournalData(data: CreateJournalRequest): Promise<ApiResponse<JournalData>> {
+        try {
+            const response = await this.axiosInstance.post('/editor/journal-data/create', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method for fetching editors
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
@@ -1025,6 +1058,16 @@ const api = {
                 config: error.config,
                 stack: error.stack
             });
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to get prospectus assist data
+    async getProspectusAssistData(prospectusId: number): Promise<ApiResponse<ProspectusAssistData>> {
+        try {
+            const response = await this.axiosInstance.get(`/editor/prospectus-assist/${prospectusId}`);
+            return response.data;
+        } catch (error: any) {
             throw this.handleError(error);
         }
     },
@@ -1116,6 +1159,8 @@ export type {
     JournalData,
     UpdateJournalRequest,
     Editor,  // Add this export
-    AssignedRegistration
+    AssignedRegistration,
+    CreateJournalRequest,
+    ProspectusAssistData,
 };
 export default api;
