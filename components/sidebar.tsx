@@ -12,6 +12,7 @@ import {
     ClipboardDocumentListIcon // Add this import
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
+import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 
 const sidebarItems = [
     { name: 'Dashboard', icon: HomeIcon, path: '/editor' },
@@ -24,6 +25,7 @@ export const Sidebar = () => {
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const router = useRouter();
     const pathname = usePathname();
+    const { setIsNavigating } = useNavigationLoading();
 
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -35,9 +37,15 @@ export const Sidebar = () => {
         }
         if (path === '/editor/assigned') {
             return pathname === path || 
+                   pathname.startsWith('/editor/view/assigned/') ||  // Add this line
                    pathname.startsWith('/editor/assigned/');
         }
         return pathname === path;
+    };
+
+    const handleNavigation = (path: string) => {
+        setIsNavigating(true);
+        router.push(path);
     };
 
     // Add an effect to dispatch a custom event when sidebar state changes
@@ -95,7 +103,7 @@ export const Sidebar = () => {
                                     isActive(item.path) ? "text-primary-foreground" : "text-foreground"
                                 )} />
                             }
-                            onClick={() => router.push(item.path)}
+                            onClick={() => handleNavigation(item.path)}
                         >
                             {!isCollapsed && <span>{item.name}</span>}
                         </Button>

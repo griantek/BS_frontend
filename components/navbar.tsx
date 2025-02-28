@@ -30,6 +30,7 @@ import {
 } from "@/components/icons";
 import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 
 interface NavItem {
   label: string;
@@ -43,6 +44,7 @@ export const Navbar = () => {
   const router = useRouter();
   const { isLoggedIn, isSupAdmin, isExecutive } = useAuth();  // Changed from isAdmin
   const [notificationCount, setNotificationCount] = React.useState(5); // Example count
+  const { setIsNavigating } = useNavigationLoading();
   
   // Add this line to declare isEditorPath
   const isEditorPath = pathname?.startsWith('/editor');
@@ -60,13 +62,14 @@ export const Navbar = () => {
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isSupAdmin) {
-      router.push('/supAdmin');
-    } else if (isExecutive) {
-      router.push('/business');
-    } else {
-      router.push('/');
-    }
+    const path = isSupAdmin ? '/supAdmin' : isExecutive ? '/business' : '/';
+    setIsNavigating(true);
+    router.push(path);
+  };
+
+  const handleNavigation = (path: string) => {
+    setIsNavigating(true);
+    router.push(path);
   };
 
   const isActiveLink = (path: string) => {
@@ -176,6 +179,10 @@ export const Navbar = () => {
                 )}
                 color="foreground"
                 href={link.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigation(link.href);
+                }}
               >
                 <link.icon className="w-4 h-4" />
                 {link.label}

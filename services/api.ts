@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
-const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
-const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY || 'isLoggedIn';
-const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
+const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY ;
+const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY ;
+const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY ;
+const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY ;
 
 // Types
 interface LoginCredentials {
@@ -473,6 +473,40 @@ interface Editor {
     username: string;
 }
 
+interface AssignedRegistration {
+  id: number;
+  prospectus_id: number;
+  date: string;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  bank_id: string;
+  status: 'registered' | 'pending';
+  month: number;
+  year: number;
+  created_at: string;
+  transaction_id: number;
+  notes: string | null;
+  updated_at: string;
+  assigned_to: string;
+  prospectus: {
+    id: number;
+    email: string;
+    reg_id: string;
+    executive: {
+      id: string;
+      email: string;
+      username: string;
+    };
+    client_name: string;
+    requirement: string;
+  };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -821,6 +855,16 @@ const api = {
         }
     },
 
+    async getAssignedRegistrations(executiveId: string): Promise<ApiResponse<AssignedRegistration[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/editor/assigned-registrations/${executiveId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching assigned registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
     // Department management methods
     async getAllDepartments(): Promise<ApiResponse<Department[]>> {
         return this.axiosInstance.get('/common/departments/all')
@@ -1071,6 +1115,7 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-    Editor  // Add this export
+    Editor,  // Add this export
+    AssignedRegistration
 };
 export default api;

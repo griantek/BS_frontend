@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 import { Navbar } from "@/components/navbar";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
-
+import { NavigationLoadingProvider } from '@/contexts/NavigationLoadingContext';
 
 export const viewport: Viewport = {
   themeColor: [
@@ -26,17 +26,19 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       <head />
       <body>
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className={clsx(
-            "relative flex flex-col min-h-screen bg-background font-sans antialiased",
-            fontSans.variable,
-          )}>
-            {!isHomePage && <Navbar />}
-            <main className="flex-grow">
-              {children}
-            </main>
-          </div>
-        </Providers>
+        <NavigationLoadingProvider>
+          <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+            <div className={clsx(
+              "relative flex flex-col min-h-screen bg-background font-sans antialiased",
+              fontSans.variable,
+            )}>
+              {!isHomePage && <Navbar />}
+              <main className="flex-grow">
+                {children}
+              </main>
+            </div>
+          </Providers>
+        </NavigationLoadingProvider>
       </body>
     </html>
   );

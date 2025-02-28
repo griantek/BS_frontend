@@ -3,6 +3,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from "@heroui/react";
 import { checkAuth } from '@/utils/authCheck';
+import { PageLoadingSpinner } from "@/components/LoadingSpinner";
 
 export function withEditorAuth<P extends object>(
   WrappedComponent: React.ComponentType<P>
@@ -23,11 +24,7 @@ export function withEditorAuth<P extends object>(
     }, [router]);
 
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center min-h-screen">
-          <Spinner size="lg" />
-        </div>
-      );
+      return <PageLoadingSpinner text="Loading contents..." />;
     }
 
     if (!isAuthenticated) {

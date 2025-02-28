@@ -32,6 +32,7 @@ import { toast } from 'react-toastify';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import type { Registration } from '@/services/api';
+import { Spinner } from "@nextui-org/react"; // Add this import
 
 interface Prospect {
   id: number;
@@ -284,54 +285,60 @@ function BusinessDashboard() {
               </div>
             </CardHeader>
             <CardBody>
-              <Table
-                aria-label="Prospects table"
-                bottomContent={
-                  <div className="flex w-full justify-center">
-                    <Pagination
-                      isCompact
-                      showControls
-                      showShadow
-                      color="primary"
-                      page={page}
-                      total={pages}
-                      onChange={setPage}
-                    />
-                  </div>
-                }
-                className="min-h-[400px]"
-              >
-                <TableHeader>
-                  {columns.map((column) => (
-                    <TableColumn 
-                      key={column.key}
-                      align={column.key === "actions" ? "center" : "start"}
-                    >
-                      {column.label}
-                    </TableColumn>
-                  ))}
-                </TableHeader>
-                <TableBody
-                  items={items}
-                  emptyContent="No prospects found"
+              {isLoading ? (
+                <div className="flex justify-center items-center h-[400px]">
+                  <Spinner size="lg" label="Loading prospects..." />
+                </div>
+              ) : (
+                <Table
+                  aria-label="Prospects table"
+                  bottomContent={
+                    <div className="flex w-full justify-center">
+                      <Pagination
+                        isCompact
+                        showControls
+                        showShadow
+                        color="primary"
+                        page={page}
+                        total={pages}
+                        onChange={setPage}
+                      />
+                    </div>
+                  }
+                  className="min-h-[400px]"
                 >
-                  {(item) => (
-                    <TableRow 
-                      key={item.id}
-                      className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => router.push(`/business/view/prospect/${item.reg_id}`)}
-                    >
-                      <TableCell>{formatDate(item.date)}</TableCell>
-                      <TableCell>{item.reg_id}</TableCell>
-                      <TableCell>{item.client_name}</TableCell>
-                      <TableCell>{item.email}</TableCell>
-                      <TableCell>{item.phone}</TableCell>
-                      <TableCell>{item.department}</TableCell>
-                      <TableCell>{item.state}</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  <TableHeader>
+                    {columns.map((column) => (
+                      <TableColumn 
+                        key={column.key}
+                        align={column.key === "actions" ? "center" : "start"}
+                      >
+                        {column.label}
+                      </TableColumn>
+                    ))}
+                  </TableHeader>
+                  <TableBody
+                    items={items}
+                    emptyContent="No prospects found"
+                  >
+                    {(item) => (
+                      <TableRow 
+                        key={item.id}
+                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => router.push(`/business/view/prospect/${item.reg_id}`)}
+                      >
+                        <TableCell>{formatDate(item.date)}</TableCell>
+                        <TableCell>{item.reg_id}</TableCell>
+                        <TableCell>{item.client_name}</TableCell>
+                        <TableCell>{item.email}</TableCell>
+                        <TableCell>{item.phone}</TableCell>
+                        <TableCell>{item.department}</TableCell>
+                        <TableCell>{item.state}</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardBody>
           </Card>
         </Tab>
@@ -354,78 +361,84 @@ function BusinessDashboard() {
               </div>
             </CardHeader>
             <CardBody>
-              <Table
-                aria-label="Registrations table"
-                bottomContent={
-                  <div className="flex w-full justify-center">
-                    <Pagination
-                      isCompact
-                      showControls
-                      showShadow
-                      color="primary"
-                      page={page}
-                      total={Math.ceil(filteredRegistrations.length / rowsPerPage)}
-                      onChange={setPage}
-                    />
-                  </div>
-                }
-              >
-                <TableHeader>
-                  {registrationColumns.map((column) => (
-                    <TableColumn key={column.key}>
-                      {column.label}
-                    </TableColumn>
-                  ))}
-                </TableHeader>
-                <TableBody
-                  items={filteredRegistrations.slice(
-                    (page - 1) * rowsPerPage,
-                    page * rowsPerPage
-                  )}
-                  emptyContent="No registrations found"
+              {isLoading ? (
+                <div className="flex justify-center items-center h-[400px]">
+                  <Spinner size="lg" label="Loading registrations..." />
+                </div>
+              ) : (
+                <Table
+                  aria-label="Registrations table"
+                  bottomContent={
+                    <div className="flex w-full justify-center">
+                      <Pagination
+                        isCompact
+                        showControls
+                        showShadow
+                        color="primary"
+                        page={page}
+                        total={Math.ceil(filteredRegistrations.length / rowsPerPage)}
+                        onChange={setPage}
+                      />
+                    </div>
+                  }
                 >
-                  {(registration) => (
-                    <TableRow 
-                      key={registration.id}
-                      className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => router.push(`/business/view/registration/${registration.id}`)}
-                    >
-                      <TableCell>{formatDate(registration.created_at)}</TableCell>
-                      <TableCell>{registration.prospectus.reg_id}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{registration.prospectus.client_name}</div>
-                          <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{registration.services}</TableCell>
-                      <TableCell>
-                        <AmountTooltip
-                          initial={registration.init_amount}
-                          accept={registration.accept_amount}
-                          discount={registration.discount}
-                          total={registration.total_amount}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <PaymentTooltip
-                          type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
-                          amount={registration.transactions?.amount || 0}
-                          status={registration.status}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          color={registration.status === 'registered' ? 'success' : 'warning'}
-                          variant="flat"
-                        >
-                          {registration.status}
-                        </Chip>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  <TableHeader>
+                    {registrationColumns.map((column) => (
+                      <TableColumn key={column.key}>
+                        {column.label}
+                      </TableColumn>
+                    ))}
+                  </TableHeader>
+                  <TableBody
+                    items={filteredRegistrations.slice(
+                      (page - 1) * rowsPerPage,
+                      page * rowsPerPage
+                    )}
+                    emptyContent="No registrations found"
+                  >
+                    {(registration) => (
+                      <TableRow 
+                        key={registration.id}
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => router.push(`/business/view/registration/${registration.id}`)}
+                      >
+                        <TableCell>{formatDate(registration.created_at)}</TableCell>
+                        <TableCell>{registration.prospectus.reg_id}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{registration.prospectus.client_name}</div>
+                            <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{registration.services}</TableCell>
+                        <TableCell>
+                          <AmountTooltip
+                            initial={registration.init_amount}
+                            accept={registration.accept_amount}
+                            discount={registration.discount}
+                            total={registration.total_amount}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <PaymentTooltip
+                            type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
+                            amount={registration.transactions?.amount || 0}
+                            status={registration.status}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            color={registration.status === 'registered' ? 'success' : 'warning'}
+                            variant="flat"
+                          >
+                            {registration.status}
+                          </Chip>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardBody>
           </Card>
         </Tab>
