@@ -25,7 +25,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import { useForm } from "react-hook-form";
-import type { Registration, BankAccount, TransactionInfo } from '@/services/api';
+import type { Registration, BankAccount, TransactionInfo,Editor } from '@/services/api';
 
 interface ExtendedRegistration extends Registration {
   date: string;
@@ -73,6 +73,7 @@ interface PaymentFormData {
   gatewayProvider?: 'razorpay' | 'stripe' | 'other';
   transactionHash?: string;
   cryptoCurrency?: string;
+  assigned_to: string;  // Add this field
 }
 
 // Add PAYMENT_MODE_MAP constant
@@ -95,6 +96,7 @@ function RegistrationContent({ regId }: { regId: string }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [registrationData, setRegistrationData] = React.useState<ExtendedRegistration | null>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
+  const [editors, setEditors] = React.useState<Editor[]>([]);
 
   const {
     register,
@@ -107,6 +109,7 @@ function RegistrationContent({ regId }: { regId: string }) {
       paymentMode: 'cash',
       amount: 0,
       transactionDate: new Date().toISOString().split('T')[0],
+      assigned_to: '', // Add this default value
     }
   });
 
@@ -116,12 +119,14 @@ function RegistrationContent({ regId }: { regId: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [registrationResponse, bankResponse] = await Promise.all([
+        const [registrationResponse, bankResponse, editorsResponse] = await Promise.all([
           api.getRegistrationById(parseInt(regId)),
           api.getAllBankAccounts(),
+          api.getAllEditors(),
         ]);
         setRegistrationData(registrationResponse.data as ExtendedRegistration);
         setBankAccounts(bankResponse.data);
+        setEditors(editorsResponse.data);
       } catch (error) {
         console.error('Error fetching registration:', error);
         toast.error('Failed to load registration data');
@@ -279,6 +284,12 @@ function RegistrationContent({ regId }: { regId: string }) {
     try {
       if (!registrationData) return;
 
+      // Add validation for editor assignment
+      if (!data.assigned_to) {
+        toast.error('Please select an editor to assign');
+        return;
+      }
+
       // Get user data for exec_id
       const user = api.getStoredUser();
       if (!user?.id) {
@@ -326,6 +337,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
         exec_id: user.id,
+        assigned_to: data.assigned_to, // Add this field
       };
 
       // Send update request
@@ -430,6 +442,12 @@ function RegistrationContent({ regId }: { regId: string }) {
                 <InfoField label="Phone" value={registrationData.prospectus.phone} />
                 <InfoField label="Department" value={registrationData.prospectus.department} />
                 <InfoField label="State" value={registrationData.prospectus.state} />
+                {registrationData.assigned_to && (
+                  <InfoField 
+                    label="Assigned Editor" 
+                    value={editors?.find(e => e.id === registrationData.assigned_to)?.username || registrationData.assigned_to} 
+                  />
+                )}
                 <InfoField label="Status">
                   <Chip
                     color={registrationData.status === 'registered' ? 'success' : 'warning'}
@@ -632,6 +650,19 @@ function RegistrationContent({ regId }: { regId: string }) {
 
               {/* Dynamic Payment Fields */}
               {renderPaymentFields()}
+
+              {/* Add editor selection */}
+              <select
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("assigned_to", { required: "Editor assignment is required" })}
+              >
+                <option value="">Select Editor to Assign</option>
+                {editors.map((editor) => (
+                  <option key={editor.id} value={editor.id}>
+                    {editor.username}
+                  </option>
+                ))}
+              </select>
             </ModalBody>
             <ModalFooter>
               <Button color="danger" variant="light" onPress={onPaymentModalClose}>

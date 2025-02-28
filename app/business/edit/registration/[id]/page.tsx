@@ -19,7 +19,7 @@ import {
 } from "@nextui-org/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { PERIOD_UNITS } from "@/constants/quotation";
-import type { Registration, BankAccount, Service } from "@/services/api";
+import type { Registration, BankAccount, Service, Editor } from "@/services/api";
 import type { PeriodUnit } from "@/constants/quotation";
 
 // Add helper function
@@ -91,6 +91,7 @@ interface RegistrationFormData {
   initialAmount: number;
   acceptanceAmount: number;
   discountPercentage: number;
+  assigned_to: string;
   discountAmount: number;
   subTotal: number;
   totalAmount: number;
@@ -122,6 +123,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
   const [registrationData, setRegistrationData] = React.useState<ExtendedRegistration | null>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
+  const [editors, setEditors] = React.useState<Editor[]>([]);
 
   const {
     register,
@@ -153,10 +155,11 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [regResponse, servicesResponse, bankResponse] = await Promise.all([
+        const [regResponse, servicesResponse, bankResponse, editorsResponse] = await Promise.all([
           api.getRegistrationById(parseInt(regId)),
           api.getAllServices(),
           api.getAllBankAccounts(),
+          api.getAllEditors(),
         ]);
         
         if (regResponse.success) {
@@ -164,6 +167,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           setRegistrationData(reg);
           setServices(servicesResponse.data);
           setBankAccounts(bankResponse.data);
+          setEditors(editorsResponse.data);
           
           // Parse periods
           const [acceptPeriodValue, acceptPeriodUnit] = reg.accept_period.split(' ');
@@ -202,6 +206,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
               accountNumber: reg.transactions.additional_info.account_number,
               ifscCode: reg.transactions.additional_info.ifsc_code,
             }),
+            assigned_to: reg.assigned_to,
           });
         }
       } catch (error) {
@@ -619,6 +624,19 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                 </CardBody>
               </Card>
             )}
+
+            {/* Add this before the submit button */}
+            <select
+              className="w-full p-2 rounded-lg border border-gray-300"
+              {...register("assigned_to", { required: "Editor assignment is required" })}
+            >
+              <option value="">Select Editor to Assign</option>
+              {editors.map((editor) => (
+                <option key={editor.id} value={editor.id}>
+                  {editor.username}
+                </option>
+              ))}
+            </select>
 
             {/* Action Buttons - Always show */}
             <div className="flex justify-end gap-3 mt-6">

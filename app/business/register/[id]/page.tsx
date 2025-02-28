@@ -24,6 +24,7 @@ import type {
   Service,
   CreateRegistrationRequest,
   TransactionInfo,
+  Editor,
 } from "@/services/api";
 
 interface RegistrationFormData {
@@ -61,6 +62,7 @@ interface RegistrationFormData {
   transactionHash?: string;
   cryptoCurrency?: string;
   transactionId?: string;
+  assigned_to?: string;
 }
 
 // Add this mapping outside the component
@@ -81,6 +83,7 @@ function RegistrationContent({ regId }: { regId: string }) {
   const [prospectData, setProspectData] = React.useState<any>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
+  const [editors, setEditors] = React.useState<Editor[]>([]);
 
   const {
     register,
@@ -116,16 +119,18 @@ function RegistrationContent({ regId }: { regId: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [prospectResponse, servicesResponse, bankResponse] =
+        const [prospectResponse, servicesResponse, bankResponse, editorsResponse] =
           await Promise.all([
             api.getProspectusByRegId(regId),
             api.getAllServices(),
             api.getAllBankAccounts(),
+            api.getAllEditors(),
           ]);
 
         setProspectData(prospectResponse.data);
         setServices(servicesResponse.data);
         setBankAccounts(bankResponse.data);
+        setEditors(editorsResponse.data);
 
         // Pre-fill service if it exists
         if (prospectResponse.data.services) {
@@ -223,29 +228,29 @@ function RegistrationContent({ regId }: { regId: string }) {
       });
 
       // Validate required form fields first
-      if (!data.selectedServices.length) {
-        console.log("Validation failed: No services selected");
-        toast.error("Please select at least one service");
-        return;
-      }
+      // if (!data.selectedServices.length) {
+      //   console.log("Validation failed: No services selected");
+      //   toast.error("Please select at least one service");
+      //   return;
+      // }
 
-      if (!data.amount) {
-        console.log("Validation failed: No amount entered");
-        toast.error("Please enter the payment amount");
-        return;
-      }
+      // if (!data.amount) {
+      //   console.log("Validation failed: No amount entered");
+      //   toast.error("Please enter the payment amount");
+      //   return ;
+      // }
 
-      if (!data.transactionDate) {
-        console.log("Validation failed: No transaction date");
-        toast.error("Please enter the transaction date");
-        return;
-      }
+      //  if (!data.transactionDate) {
+      //   console.log("Validation failed: No transaction date");
+      //   toast.error("Please enter the transaction date");
+      //   return;
+      // }
 
-      if (!data.selectedBank) {
-        console.log("Validation failed: No bank selected");
-        toast.error("Please select a bank account");
-        return;
-      }
+      // if (!data.selectedBank) {
+      //   console.log("Validation failed: No bank selected");
+      //   toast.error("Please select a bank account");
+      //   return;
+      // }
 
       // Parse user data
       let user;
@@ -352,6 +357,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         init_amount: data.initialAmount,
         accept_amount: data.acceptanceAmount,
         discount: data.discountAmount,
+        assigned_to: data.assigned_to,
         total_amount: data.totalAmount,
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
@@ -736,17 +742,33 @@ function RegistrationContent({ regId }: { regId: string }) {
                   {renderPaymentFields()}
                 </div>
 
-                <div className="flex justify-end gap-3">
-                  <Button
-                    color="danger"
-                    variant="light"
-                    onClick={() => router.back()}
+                <div className="space-y-4">
+                  {/* Add this before the submit button */}
+                  <select
+                    className="w-full p-2 rounded-lg border border-gray-300"
+                    {...register("assigned_to", { required: "Editor assignment is required" })}
                   >
-                    Cancel
-                  </Button>
-                  <Button color="primary" type="submit">
-                    Complete Registration
-                  </Button>
+                    <option value="">Select Editor to Assign</option>
+                    {editors.map((editor) => (
+                      <option key={editor.id} value={editor.id}>
+                        {editor.username}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Existing submit buttons */}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      color="danger"
+                      variant="light"
+                      onClick={() => router.back()}
+                    >
+                      Cancel
+                    </Button>
+                    <Button color="primary" type="submit">
+                      Complete Registration
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardBody>

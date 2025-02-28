@@ -186,6 +186,7 @@ interface Registration {
   accept_amount: number;
   discount: number;
   total_amount: number;
+  assigned_to: string;
   accept_period: string;
   pub_period: string;
   bank_id: string;  // Added
@@ -270,6 +271,7 @@ interface CreateRegistrationRequest {
   status: 'registered' | 'pending';  // Explicitly define literal types
   month: number;
   year: number;
+  assigned_to?: string;  // Add this field
 }
 
 // Add new interface for database registration
@@ -465,6 +467,12 @@ interface TriggerStatusUploadResponse {
     count: number;
 }
 
+// Add new interface for Editor
+interface Editor {
+    id: string;
+    username: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
@@ -605,9 +613,18 @@ const api = {
     // Get single prospect by registration ID
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
+            console.log('Fetching prospect by regId:', regId);
             const response = await this.axiosInstance.get(`/executive/prospectus/register/${regId}`);
+            console.log('Prospect response:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('Error in getProspectusByRegId:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
             throw this.handleError(error);
         }
     },
@@ -949,6 +966,25 @@ const api = {
         }
     },
 
+    // Add new method for fetching editors
+    async getAllEditors(): Promise<ApiResponse<Editor[]>> {
+        try {
+            console.log('Fetching all editors');
+            const response = await this.axiosInstance.get('/executive/editors/all'); // Changed from /editor/editors/all
+            console.log('Editors response:', response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllEditors:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -980,11 +1016,19 @@ const api = {
     },
 
     handleError(error: any) {
-        // console.error('Full error details:', {
-        //     status: error.response?.status,
-        //     data: error.response?.data,
-        //     message: error.message
-        // });
+        console.error('API Error Details:', {
+            message: error.message,
+            response: {
+                data: error.response?.data,
+                status: error.response?.status,
+                headers: error.response?.headers
+            },
+            request: {
+                url: error.config?.url,
+                method: error.config?.method,
+                headers: error.config?.headers
+            }
+        });
 
         if (error.response) {
             return {
@@ -1026,6 +1070,7 @@ export type {
     ExecutiveWithRoleName,
     BankAccountRequest,
     JournalData,
-    UpdateJournalRequest
+    UpdateJournalRequest,
+    Editor  // Add this export
 };
 export default api;
