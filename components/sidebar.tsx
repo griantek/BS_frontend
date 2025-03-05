@@ -15,9 +15,9 @@ import clsx from "clsx";
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 
 const sidebarItems = [
-    { name: 'Dashboard', icon: HomeIcon, path: '/editor' },
-    { name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/editor/assigned' }, 
-    { name: 'Journal Details', icon: NewspaperIcon, path: '/editor/journals' },
+    { name: 'Dashboard', icon: HomeIcon, path: '/business/editor' },
+    { name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' }, 
+    { name: 'Journal Details', icon: NewspaperIcon, path: '/business/editor/journals' },
     // { name: 'Reports', icon: ChartBarIcon, path: '/editor/reports' },
 ];
 
@@ -30,15 +30,15 @@ export const Sidebar = () => {
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
     const isActive = (path: string) => {
-        if (path === '/editor/journals') {
+        if (path === '/business/editor/journals') {
             return pathname === path || 
-                   pathname.startsWith('/editor/view/journal/') || 
-                   pathname.startsWith('/editor/edit/journal/');
+                   pathname.startsWith('/business/editor/view/journal/') || 
+                   pathname.startsWith('/business/editor/edit/journal/');
         }
-        if (path === '/editor/assigned') {
+        if (path === '/business/editor/assigned') {
             return pathname === path || 
-                   pathname.startsWith('/editor/view/assigned/') ||  // Add this line
-                   pathname.startsWith('/editor/assigned/');
+                   pathname.startsWith('/business/editor/view/assigned/') ||  // Add this line
+                   pathname.startsWith('/business/editor/assigned/');
         }
         return pathname === path;
     };

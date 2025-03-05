@@ -20,10 +20,10 @@ export default function Home() {
         router.replace("/admin");
         break;
       case "executive":
-        router.replace("/business");
+        router.replace("/business/executive");
         break;
       case "editor":
-        router.replace("/editor");
+        router.replace("/business/editor");
         break;
       default:
         setShouldRender(true);
@@ -155,7 +155,7 @@ export default function Home() {
                 className="w-full font-medium"
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push("/business/login");
+                  router.push("/business/executive/login");
                 }}
               >
                 Access Executive Dashboard

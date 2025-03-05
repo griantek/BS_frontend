@@ -18,7 +18,7 @@ export const isLoggedIn = (): boolean => {
 
 export const redirectToLogin = (router: AppRouterInstance, userRole?: string) => {
   if (typeof window === 'undefined') return;
-  const path = userRole === 'admin' ? '/admin/login' : '/business/login';
+  const path = userRole === 'admin' ? '/admin/login' : '/business/executive/login';
   router.replace(path);
 };
 
@@ -39,10 +39,10 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
   if (requiredRole && userRole !== requiredRole) {
     switch(userRole) {
       case 'editor':
-        router.push('/editor');
+        router.push('/business/editor');
         break;
       case 'executive':
-        router.push('/business');
+        router.push('/business/executive');
         break;
       case 'admin':
         router.push('/admin');
@@ -60,10 +60,10 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
   const userRole = getUserRole();
   switch(userRole) {
     case 'editor':
-      router.replace('/editor');
+      router.replace('/business/editor');
       break;
     case 'executive':
-      router.replace('/business');
+      router.replace('/business/executive');
       break;
     case 'admin':
       router.replace('/admin');

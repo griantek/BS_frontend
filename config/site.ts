@@ -52,7 +52,7 @@ export const siteConfig = {
   executiveLinks: [
     {
       label: "Dashboard",
-      href: "/business",
+      href: "/business/executive",
       icon: HomeIcon,
     }
   ],
@@ -61,12 +61,12 @@ export const siteConfig = {
   editorLinks: [
     {
       label: "Dashboard",
-      href: "/editor",
+      href: "/business/editor",
       icon: HomeIcon,
     },
     {
       label: "Journals",
-      href: "/editor/journals",
+      href: "/business/editor/journals",
       icon: NewspaperIcon,
     }
   ],

@@ -47,7 +47,7 @@ export const Navbar = () => {
   const { setIsNavigating } = useNavigationLoading();
   
   // Add this line to declare isEditorPath
-  const isEditorPath = pathname?.startsWith('/editor');
+  const isEditorPath = pathname?.startsWith('/business/editor');
 
   const handleLogout = () => {
     const userRole = localStorage.getItem('userRole');
@@ -56,13 +56,13 @@ export const Navbar = () => {
     if (userRole === 'admin') {
       router.replace('/admin/login');
     } else {
-      router.replace('/business/login');  // Changed from '/admin'
+      router.replace('/business/executive/login');  // Changed from '/admin'
     }
   };
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const path = isAdmin ? '/admin' : isExecutive ? '/business' : '/';
+    const path = isAdmin ? '/admin' : isExecutive ? '/business/executive' : '/';
     setIsNavigating(true);
     router.push(path);
   };
@@ -78,11 +78,11 @@ export const Navbar = () => {
 
   const isActiveMainPath = (path: string) => {
     // For dashboard pages, only match exact path
-    if (path === '/admin' || path === '/business' || path === '/editor') {
+    if (path === '/admin' || path === '/business/executive' || path === '/business/editor') {
       return pathname === path;
     }
     // For other sections, match the section prefix
-    return pathname.startsWith(path) && !pathname.match(/^\/(admin|business|editor)$/);
+    return pathname.startsWith(path) && !pathname.match(/^\/(admin|executive|editor)$/);
   };
 
   const getNavigationLinks = () => {

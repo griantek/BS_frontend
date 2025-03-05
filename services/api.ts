@@ -614,7 +614,7 @@ const api = {
                         this.clearStoredAuth();
                         window.location.href = userRole === 'admin' 
                             ? '/admin/login' 
-                            : '/business/login';
+                            : '/business/executive/login';
                     }
                 }
                 return Promise.reject(error);
@@ -1013,7 +1013,7 @@ const api = {
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
         try {
-                        const response = await this.axiosInstance.get(                `/editor/journal-data/${id}`            );
+                        const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data:', error);
