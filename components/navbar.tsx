@@ -42,7 +42,7 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isSupAdmin, isExecutive } = useAuth();  // Changed from isAdmin
+  const { isLoggedIn, isAdmin, isExecutive } = useAuth();  // Changed from isAdmin
   const [notificationCount, setNotificationCount] = React.useState(5); // Example count
   const { setIsNavigating } = useNavigationLoading();
   
@@ -53,8 +53,8 @@ export const Navbar = () => {
     const userRole = localStorage.getItem('userRole');
     api.clearStoredAuth();
     
-    if (userRole === 'supAdmin') {
-      router.replace('/supAdmin/login');
+    if (userRole === 'admin') {
+      router.replace('/admin/login');
     } else {
       router.replace('/business/login');  // Changed from '/admin'
     }
@@ -62,7 +62,7 @@ export const Navbar = () => {
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const path = isSupAdmin ? '/supAdmin' : isExecutive ? '/business' : '/';
+    const path = isAdmin ? '/admin' : isExecutive ? '/business' : '/';
     setIsNavigating(true);
     router.push(path);
   };
@@ -78,17 +78,17 @@ export const Navbar = () => {
 
   const isActiveMainPath = (path: string) => {
     // For dashboard pages, only match exact path
-    if (path === '/supAdmin' || path === '/business' || path === '/editor') {
+    if (path === '/admin' || path === '/business' || path === '/editor') {
       return pathname === path;
     }
     // For other sections, match the section prefix
-    return pathname.startsWith(path) && !pathname.match(/^\/(supAdmin|business|editor)$/);
+    return pathname.startsWith(path) && !pathname.match(/^\/(admin|business|editor)$/);
   };
 
   const getNavigationLinks = () => {
     // Now using the properly declared isEditorPath variable
-    if (isSupAdmin) {
-      return siteConfig.supAdminLinks;
+    if (isAdmin) {
+      return siteConfig.adminLinks;
     }
     if (isExecutive) {
       return siteConfig.executiveLinks;

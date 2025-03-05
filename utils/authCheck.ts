@@ -4,9 +4,9 @@ const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
-export const getUserRole = (): 'editor' | 'executive' | 'supAdmin' | null => {
+export const getUserRole = (): 'editor' | 'executive' | 'admin' | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'supAdmin' | null;
+  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'admin' | null;
 };
 
 export const isLoggedIn = (): boolean => {
@@ -18,11 +18,11 @@ export const isLoggedIn = (): boolean => {
 
 export const redirectToLogin = (router: AppRouterInstance, userRole?: string) => {
   if (typeof window === 'undefined') return;
-  const path = userRole === 'supAdmin' ? '/supAdmin/login' : '/business/login';
+  const path = userRole === 'admin' ? '/admin/login' : '/business/login';
   router.replace(path);
 };
 
-export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'supAdmin'): boolean => {
+export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'admin'): boolean => {
   if (typeof window === 'undefined') return false;
   
   const token = localStorage.getItem(TOKEN_KEY);
@@ -44,8 +44,8 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
       case 'executive':
         router.push('/business');
         break;
-      case 'supAdmin':
-        router.push('/supAdmin');
+      case 'admin':
+        router.push('/admin');
         break;
       default:
         router.push('/');
@@ -65,8 +65,8 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
     case 'executive':
       router.replace('/business');
       break;
-    case 'supAdmin':
-      router.replace('/supAdmin');
+    case 'admin':
+      router.replace('/admin');
       break;
     default:
       router.replace('/');

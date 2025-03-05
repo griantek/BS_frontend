@@ -22,6 +22,7 @@ import api, { JournalData } from '@/services/api';
 import { toast } from 'react-toastify';
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const JournalsEditorPage = () => {
     const [journals, setJournals] = React.useState<JournalData[]>([]);
@@ -188,52 +189,55 @@ const JournalsEditorPage = () => {
                     </div>
                 </CardHeader>
                 <CardBody>
-                    <Table
-                        aria-label="Journals table"
-                        bottomContent={
-                            <div className="flex w-full justify-center">
-                                <Pagination
-                                    isCompact
-                                    showControls
-                                    showShadow
-                                    color="primary"
-                                    page={page}
-                                    total={pages}
-                                    onChange={setPage}
-                                />
-                            </div>
-                        }
-                        classNames={{
-                            wrapper: "min-h-[400px]",
-                        }}
-                    >
-                        <TableHeader columns={columns}>
-                            {(column) => (
-                                <TableColumn key={column.key}>
-                                    {column.label}
-                                </TableColumn>
-                            )}
-                        </TableHeader>
-                        <TableBody
-                            items={items}
-                            emptyContent="No journals found"
-                            isLoading={isLoading}
+                    {isLoading ? (
+                        <LoadingSpinner text="Loading journals..." />
+                    ) : (
+                        <Table
+                            aria-label="Journals table"
+                            bottomContent={
+                                <div className="flex w-full justify-center">
+                                    <Pagination
+                                        isCompact
+                                        showControls
+                                        showShadow
+                                        color="primary"
+                                        page={page}
+                                        total={pages}
+                                        onChange={setPage}
+                                    />
+                                </div>
+                            }
+                            classNames={{
+                                wrapper: "min-h-[400px]",
+                            }}
                         >
-                            {(journal) => (
-                                <TableRow 
-                                    key={journal.id}
-                                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                    onClick={() => router.push(`/editor/view/journal/${journal.id}`)}
-                                >
-                                    {columns.map((column) => (
-                                        <TableCell key={`${journal.id}-${column.key}`}>
-                                            {renderCell(journal, column.key)}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            <TableHeader columns={columns}>
+                                {(column) => (
+                                    <TableColumn key={column.key}>
+                                        {column.label}
+                                    </TableColumn>
+                                )}
+                            </TableHeader>
+                            <TableBody
+                                items={items}
+                                emptyContent="No journals found"
+                            >
+                                {(journal) => (
+                                    <TableRow 
+                                        key={journal.id}
+                                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        onClick={() => router.push(`/editor/view/journal/${journal.id}`)}
+                                    >
+                                        {columns.map((column) => (
+                                            <TableCell key={`${journal.id}-${column.key}`}>
+                                                {renderCell(journal, column.key)}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardBody>
             </Card>
         </div>

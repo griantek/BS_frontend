@@ -10,14 +10,14 @@ export default function Home() {
   const router = useRouter();
   const [shouldRender, setShouldRender] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<
-    "executive" | "supAdmin" | null
+    "executive" | "admin" | null
   >(null);
 
   useEffect(() => {
     const userRole = getUserRole();
     switch(userRole) {
-      case "supAdmin":
-        router.replace("/supAdmin");
+      case "admin":
+        router.replace("/admin");
         break;
       case "executive":
         router.replace("/business");
@@ -88,9 +88,9 @@ export default function Home() {
           {/* Super Admin Card */}
           <Card
             className={`group transform transition-all duration-500 hover:scale-102 cursor-pointer backdrop-blur-sm bg-background/60 border-1 ${
-              hoveredCard === "supAdmin" ? "border-primary shadow-lg shadow-primary/20" : "border-border"
+              hoveredCard === "admin" ? "border-primary shadow-lg shadow-primary/20" : "border-border"
             }`}
-            onMouseEnter={() => setHoveredCard("supAdmin")}
+            onMouseEnter={() => setHoveredCard("admin")}
             onMouseLeave={() => setHoveredCard(null)}
           >
             <CardBody className="text-center p-10">
@@ -116,7 +116,7 @@ export default function Home() {
                 className="w-full font-medium"
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push("/supAdmin");
+                  router.push("/admin");
                 }}
               >
                 Access Admin Dashboard

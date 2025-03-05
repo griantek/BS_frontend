@@ -30,7 +30,7 @@ interface ExecutiveLoginResponse {
     };
 }
 
-interface SupAdminLoginResponse {
+interface AdminLoginResponse {
   success: boolean;
   token: string;
   admin: {
@@ -530,10 +530,32 @@ interface ProspectusAssistData {
     requirement: string;
 }
 
+// Add new interfaces for dashboard
+interface DashboardStats {
+    total_journals: number;
+    published_count: number;
+    pending_count: number;
+    under_review_count: number;
+    approved_count: number;
+    rejected_count: number;
+    total_assigned: number;
+}
+
+interface ActivityItem {
+    id: number;
+    journal_id: number;
+    journal_name: string;
+    client_name: string;
+    action: 'created' | 'updated' | 'status_changed';
+    old_status?: string;
+    new_status?: string;
+    timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/executive/create',
     '/executive/login',
-    '/superadmin/login'
+    '/admin/login'
 ];
 
 // API service
@@ -590,8 +612,8 @@ const api = {
                     // Don't redirect if already on a login page
                     if (!path.includes('/login')) {
                         this.clearStoredAuth();
-                        window.location.href = userRole === 'supAdmin' 
-                            ? '/supAdmin/login' 
+                        window.location.href = userRole === 'admin' 
+                            ? '/admin/login' 
                             : '/business/login';
                     }
                 }
@@ -614,9 +636,9 @@ const api = {
         }
     },
 
-    async loginSupAdmin(credentials: LoginCredentials): Promise<SupAdminLoginResponse> {
+    async loginAdmin(credentials: LoginCredentials): Promise<AdminLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/login', credentials);
+            const response = await this.axiosInstance.post('/admin/login', credentials);
             return response.data;
         } catch (error: any) {
             // Don't transform the error, let the component handle it
@@ -933,7 +955,7 @@ const api = {
     // Add new method for getting all roles
     async getAllRoles(): Promise<ApiResponse<Role[]>> {
         try {
-            const response = await this.axiosInstance.get('/superadmin/roles/all');
+            const response = await this.axiosInstance.get('/admin/roles/all');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -942,7 +964,7 @@ const api = {
 
     async createRole(data: CreateRoleRequest): Promise<ApiResponse<Role>> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/roles/create', data);
+            const response = await this.axiosInstance.post('/admin/roles/create', data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -951,7 +973,7 @@ const api = {
 
     async updateRole(id: number, data: CreateRoleRequest): Promise<ApiResponse<Role>> {
         try {
-            const response = await this.axiosInstance.put(`/superadmin/roles/${id}`, data);
+            const response = await this.axiosInstance.put(`/admin/roles/${id}`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -960,7 +982,7 @@ const api = {
 
     async deleteRole(id: number): Promise<ApiResponse<void>> {
         try {
-            const response = await this.axiosInstance.delete(`/superadmin/roles/${id}`);
+            const response = await this.axiosInstance.delete(`/admin/roles/${id}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -1072,6 +1094,24 @@ const api = {
         }
     },
 
+    async getEditorDashboardStats(): Promise<ApiResponse<DashboardStats>> {
+        try {
+            const response = await this.axiosInstance.get('/editor/dashboard/stats');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getEditorRecentActivity(): Promise<ApiResponse<ActivityItem[]>> {
+        try {
+            const response = await this.axiosInstance.get('/editor/dashboard/recent-activity');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1081,7 +1121,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'supAdmin') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin') {
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -1162,5 +1202,7 @@ export type {
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
+    DashboardStats,
+    ActivityItem,
 };
 export default api;
