@@ -24,7 +24,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
 import type { Department, CreateDepartmentRequest } from '@/services/api';
-import { WithAdminAuth } from '@/components/WithAdminAuth';
+import { WithAdminAuth } from '@/components/withAdminAuth';
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {

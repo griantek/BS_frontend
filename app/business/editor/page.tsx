@@ -4,6 +4,7 @@ import { withEditorAuth } from '@/components/withEditorAuth';
 import { Card, CardBody, CardHeader, Divider, Chip } from "@nextui-org/react";
 import { format } from 'date-fns';
 import api from '@/services/api';
+import { useRouter } from "next/navigation";
 import type { DashboardStats, ActivityItem } from '@/services/api'; // Change to type-only import
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -50,15 +51,17 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
 ];
 
 const EditorPage = () => {
+    const router = useRouter();
     const [stats, setStats] = React.useState<DashboardStats | null>(null);
     const [activities, setActivities] = React.useState<ActivityItem[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
-        // Simulate API call with mock data
         const fetchDashboardData = async () => {
             try {
-                // Simulate network delay
+                const user = api.getStoredUser();
+                
+                // Simulate API call with mock data
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // Set mock data

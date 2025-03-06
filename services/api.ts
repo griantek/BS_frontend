@@ -14,7 +14,7 @@ interface LoginCredentials {
 interface ExecutiveLoginResponse {
     success: boolean;
     token: string;
-    executive: {
+    entities: {
         id: string;
         username: string;
         email: string;
@@ -42,7 +42,7 @@ interface AdminLoginResponse {
 
 interface Prospectus {
     id: number;
-    executive_id: string;
+    entity_id: string; // Changed from executive_id
     date: string;
     email: string;
     reg_id: string;
@@ -167,12 +167,12 @@ interface Department {
     id: number;
     name: string;
     created_at: string;
-    exec_id:string;
+    entity_id: string;  // Changed from exec_id
 }
 
 interface CreateDepartmentRequest {
     name: string;
-    exec_id?:string;
+    entity_id?: string;  // Changed from exec_id
 }
 
 // Update Registration interface
@@ -229,7 +229,7 @@ interface Registration {
   transactions: {  // Changed from transaction to transactions
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string;  // Changed from exec_id
     executive: object;
     transaction_id: string;
     additional_info: object;
@@ -247,6 +247,7 @@ interface TransactionInfo {
   additional_info: Record<string, any>;
 }
 
+// Update the CreateRegistrationRequest interface
 interface CreateRegistrationRequest {
   // Transaction details
   transaction_type: TransactionInfo['transaction_type'];
@@ -255,8 +256,8 @@ interface CreateRegistrationRequest {
   transaction_date: string;
   additional_info: Record<string, any>;
   
-  // Executive and prospect details
-  exec_id: string;
+  // Changed from exec_id to entity_id
+  entity_id: string;  // Changed field
   client_id: string;
   prospectus_id: number;
   services: string;
@@ -374,7 +375,7 @@ interface ServerRegistration {
   transaction: {
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string;  // Changed from exec_id
     transaction_id: string;
     transaction_type: string;
   };
@@ -388,8 +389,8 @@ interface Transaction {
   amount: number;
   transaction_date: string;
   additional_info: Record<string, any>;
-  exec_id: string;
-  executive: {
+  entity_id: string;  // Changed from exec_id
+  executive: {  // Keep this as 'executive' for backward compatibility in UI
     id: string;
     username: string;
   };
@@ -434,7 +435,7 @@ interface JournalData {
   paper_title: string;
   created_at: string;
   updated_at: string;
-  executive: {
+  entities: {
     id: string;
     email: string;
     username: string;
@@ -553,8 +554,8 @@ interface ActivityItem {
 }
 
 const PUBLIC_ENDPOINTS = [
-    '/executive/create',
-    '/executive/login',
+    '/entity/login',     // Add the new entity login endpoint
+    '/entity/create',    // Add entity creation endpoint
     '/admin/login'
 ];
 
@@ -570,30 +571,24 @@ const api = {
     init() {
         this.axiosInstance.interceptors.request.use(
             (config) => {
+                // Check if the endpoint is public before requiring authentication
                 const isPublicEndpoint = PUBLIC_ENDPOINTS.some(
                     endpoint => config.url?.includes(endpoint)
                 );
 
-                if (!isPublicEndpoint) {
-                    const token = this.getStoredToken();
-                    const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
-                    
-                    // console.log('Request Config:', {
-                    //     url: config.url,
-                    //     token: token,
-                    //     isLoggedIn: isLoggedIn
-                    // });
-
-                    if (!token || isLoggedIn !== 'true') {
-                        // Reject the request if not authenticated
-                        return Promise.reject(new Error('Not authenticated'));
-                    }
-
-                    // Ensure token has Bearer prefix
-                    const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-                    config.headers.Authorization = finalToken;
-                    // console.log('Final headers:', config.headers);
+                if (isPublicEndpoint) {
+                    return config; // Allow public endpoints without auth
                 }
+
+                const token = this.getStoredToken();
+                const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
+                
+                if (!token || isLoggedIn !== 'true') {
+                    return Promise.reject(new Error('Not authenticated'));
+                }
+
+                const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                config.headers.Authorization = finalToken;
                 return config;
             },
             (error) => {
@@ -604,12 +599,12 @@ const api = {
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
-                // Only redirect on auth errors if not on login pages
-                if (error?.response?.status === 401 || error?.message === 'Not authenticated') {
+                // Only handle auth errors for non-public endpoints
+                if (error?.response?.status === 401 && 
+                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.endsWith(endpoint))) {
                     const userRole = localStorage.getItem(USER_ROLE_KEY);
                     const path = window.location.pathname;
                     
-                    // Don't redirect if already on a login page
                     if (!path.includes('/login')) {
                         this.clearStoredAuth();
                         window.location.href = userRole === 'admin' 
@@ -624,7 +619,7 @@ const api = {
 
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/executive/login', credentials);
+            const response = await this.axiosInstance.post('/entity/login', credentials);
             return response.data;
         } catch (error: any) {
             // console.error('API createProspectus error:', {
@@ -648,7 +643,7 @@ const api = {
 
     async createProspectus(data: ProspectusCreateRequest): Promise<Prospectus> {
         try {
-            const response = await this.axiosInstance.post('/executive/prospectus/create', data);
+            const response = await this.axiosInstance.post('/entity/prospectus/create', data);
             return response.data;
         } catch (error: any) {
             console.error('API createProspectus error:', {
@@ -662,7 +657,7 @@ const api = {
 
     async getAllProspectus(): Promise<ApiResponse<Prospectus[]>> {
         try {
-            const response = await this.axiosInstance.get('/executive/prospectus/all');
+            const response = await this.axiosInstance.get('/entity/prospectus/all');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -671,7 +666,7 @@ const api = {
 
     async createExecutive(data: CreateExecutiveRequest) {
         try {
-            const response = await this.axiosInstance.post('/executive/create', data);
+            const response = await this.axiosInstance.post('/entity/create', data);
             return response.data;
         } catch (error: any) {
             console.error('API Error:', error.response || error);
@@ -682,7 +677,7 @@ const api = {
     // Get prospects by executive's clientId
     async getProspectusByClientId(clientId: string): Promise<ApiResponse<Prospectus[]>> {
         try {
-            const response = await this.axiosInstance.get(`/executive/prospectus/${clientId}`);
+            const response = await this.axiosInstance.get(`/entity/prospectus/${clientId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -693,7 +688,7 @@ const api = {
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
             console.log('Fetching prospect by regId:', regId);
-            const response = await this.axiosInstance.get(`/executive/prospectus/register/${regId}`);
+            const response = await this.axiosInstance.get(`/entity/prospectus/register/${regId}`);
             console.log('Prospect response:', response.data);
             return response.data;
         } catch (error: any) {
@@ -774,7 +769,7 @@ const api = {
     async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
             // Try one of these endpoints based on your backend structure:
-            const response = await this.axiosInstance.get('/executive/all');
+            const response = await this.axiosInstance.get('/entity/all');
             
             return response.data;
         } catch (error: any) {
@@ -847,7 +842,14 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            const response = await this.axiosInstance.post('/common/registration/create', data);
+            // Ensure we're using entity_id in the request
+            const response = await this.axiosInstance.post('/common/registration/create', {
+                ...data,
+                // If there's still an exec_id in the data, remove it
+                exec_id: undefined,
+                // Ensure entity_id is present
+                entity_id: data.entity_id,
+            });
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -893,16 +895,16 @@ const api = {
     // Add new method for getting registrations by executive ID
     async getRegistrationsByExecutive(executiveId: string): Promise<ApiResponse<Registration[]>> {
         try {
-            const response = await this.axiosInstance.get(`/executive/registrations/${executiveId}`);
+            const response = await this.axiosInstance.get(`/entity/registrations/${executiveId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
         }
     },
 
-    async getAssignedRegistrations(executiveId: string): Promise<ApiResponse<AssignedRegistration[]>> {
+    async getAssignedRegistrations(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
         try {
-            const response = await this.axiosInstance.get(`/editor/assigned-registrations/${executiveId}`);
+            const response = await this.axiosInstance.get(`/editor/assigned-registrations/${entityId}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching assigned registrations:', error);
@@ -918,7 +920,10 @@ const api = {
 
     async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
-            const response = await this.axiosInstance.post('/common/departments/create', data);
+            const response = await this.axiosInstance.post('/common/departments/create', {
+                ...data,
+                entity_id: data.entity_id // Ensure this field is included
+            });
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -945,7 +950,7 @@ const api = {
     
     async updateProspectus(id: number, data: Partial<ProspectusCreateRequest>): Promise<ApiResponse<Prospectus>> {
         try {
-            const response = await this.axiosInstance.put(`/executive/prospectus/${id}`, data);
+            const response = await this.axiosInstance.put(`/entity/prospectus/${id}`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -1069,7 +1074,7 @@ const api = {
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
             console.log('Fetching all editors');
-            const response = await this.axiosInstance.get('/executive/editors/all'); // Changed from /editor/editors/all
+            const response = await this.axiosInstance.get('/entity/editors/all'); // Changed from /editor/editors/all
             console.log('Editors response:', response.data);
             return response.data;
         } catch (error: any) {

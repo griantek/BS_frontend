@@ -36,6 +36,7 @@ const JournalsEditorPage = () => {
     React.useEffect(() => {
         const fetchJournals = async () => {
             try {
+                const user = api.getStoredUser();
                 const response = await api.getAllJournalData();
                 if (response.success) {
                     setJournals(response.data);
@@ -104,7 +105,7 @@ const JournalsEditorPage = () => {
                     </Tooltip>
                 );
             case "executive":
-                return <span>{journal.executive.username}</span>;
+                return <span>{journal.entities.username}</span>;
             case "journal_name":
                 return (
                     <Tooltip content={journal.journal_name}>

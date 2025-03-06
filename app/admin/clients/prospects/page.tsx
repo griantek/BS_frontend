@@ -14,7 +14,7 @@ import {
     Spinner,
     Button,
 } from "@heroui/react";
-import { WithAdminAuth } from '@/components/WithAdminAuth';
+import { WithAdminAuth } from '@/components/withAdminAuth';
 import api, { type Prospectus } from '@/services/api';
 
 function ProspectsPage() {

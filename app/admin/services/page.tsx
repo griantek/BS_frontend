@@ -27,7 +27,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api, { Service } from '@/services/api';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { WithAdminAuth } from '@/components/WithAdminAuth';
+import { WithAdminAuth } from '@/components/withAdminAuth';
 
 function ServicesDashboard() {
   const router = useRouter();

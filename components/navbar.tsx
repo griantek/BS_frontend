@@ -56,7 +56,7 @@ export const Navbar = () => {
     if (userRole === 'admin') {
       router.replace('/admin/login');
     } else {
-      router.replace('/business/executive/login');  // Changed from '/admin'
+      router.replace('/business/executive/login');
     }
   };
 

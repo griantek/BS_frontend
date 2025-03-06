@@ -57,16 +57,19 @@ export default function BusinessLogin() {
         return;
       }
 
+      // Get the entity data from the new response structure
+      const entityData = response.entities;
+      
       // Convert entity_type to lowercase for consistency
-      const entityType = response.executive.entity_type.toLowerCase();
-      const userRole = response.executive.role.name.toLowerCase();
+      const entityType = entityData.entity_type.toLowerCase();
+      const userRole = entityData.role.name.toLowerCase();
 
       // Store auth data including role information
       api.setStoredAuth(
         response.token, 
         {
-          ...response.executive,
-          role: response.executive.role,
+          ...entityData,
+          role: entityData.role,
           entity_type: entityType
         }, 
         entityType as 'editor' | 'executive'

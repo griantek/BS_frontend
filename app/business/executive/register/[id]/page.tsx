@@ -345,7 +345,7 @@ function RegistrationContent({ regId }: { regId: string }) {
 
       const registrationData: CreateRegistrationRequest = {  // Add type annotation here
         ...getTransactionInfo(),
-        exec_id: user.id,
+        entity_id: user.id,  // Changed from exec_id
         client_id: user.client_id || user.clientId,
         prospectus_id: prospectData.id,
         services: data.selectedServices

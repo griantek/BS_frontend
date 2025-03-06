@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { WithAdminAuth } from '@/components/WithAdminAuth';
+import { WithAdminAuth } from '@/components/withAdminAuth';
 import {
     Table,
     TableHeader,

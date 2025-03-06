@@ -31,7 +31,7 @@ import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
-import type { Registration } from '@/services/api';
+import type { Prospectus, Registration } from '@/services/api';
 import { Spinner } from "@nextui-org/react"; // Add this import
 
 interface Prospect {
@@ -62,7 +62,7 @@ function BusinessDashboard() {
   const [filterValue, setFilterValue] = React.useState("");
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 10;
-  const [prospects, setProspects] = React.useState<Prospect[]>([]);
+  const [prospects, setProspects] = React.useState<Prospectus[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [registrations, setRegistrations] = React.useState<Registration[]>([]);
   const [selectedTab, setSelectedTab] = React.useState("prospects");
@@ -101,7 +101,7 @@ function BusinessDashboard() {
   const filteredItems = React.useMemo(() => {
     if (!Array.isArray(prospects)) return [];
     
-    return prospects.filter((prospect: Prospect) =>
+    return prospects.filter((prospect: Prospectus) =>
       prospect?.client_name?.toLowerCase().includes(filterValue.toLowerCase()) ||
       prospect?.email?.toLowerCase().includes(filterValue.toLowerCase()) ||
       prospect?.reg_id?.toLowerCase().includes(filterValue.toLowerCase())

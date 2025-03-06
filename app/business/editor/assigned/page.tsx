@@ -31,9 +31,7 @@ function AssignedPage() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
         const user = api.getStoredUser();
-        if (!user?.id) return;
 
         const response = await api.getAssignedRegistrations(user.id);
         setRegistrations(response.data);
