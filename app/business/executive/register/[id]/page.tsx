@@ -213,77 +213,19 @@ function RegistrationContent({ regId }: { regId: string }) {
 
   const onSubmit = async (data: RegistrationFormData) => {
     try {
-      console.log("Starting form submission...");
-
-      // Get and validate auth data
+      // Get user data
       const userStr = localStorage.getItem("user");
-      const tokenStr = localStorage.getItem("token");
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-      console.log("Auth Data:", {
-        hasUser: !!userStr,
-        hasToken: !!tokenStr,
-        isLoggedIn,
-        rawUserData: userStr, // Add this to see the actual user data
-      });
-
-      // Validate required form fields first
-      // if (!data.selectedServices.length) {
-      //   console.log("Validation failed: No services selected");
-      //   toast.error("Please select at least one service");
-      //   return;
-      // }
-
-      // if (!data.amount) {
-      //   console.log("Validation failed: No amount entered");
-      //   toast.error("Please enter the payment amount");
-      //   return ;
-      // }
-
-      //  if (!data.transactionDate) {
-      //   console.log("Validation failed: No transaction date");
-      //   toast.error("Please enter the transaction date");
-      //   return;
-      // }
-
-      // if (!data.selectedBank) {
-      //   console.log("Validation failed: No bank selected");
-      //   toast.error("Please select a bank account");
-      //   return;
-      // }
-
-      // Parse user data
-      let user;
-      try {
-        user = JSON.parse(userStr || "{}");
-        console.log("Parsed user data:", user);
-      } catch (e) {
-        console.error("Error parsing user data:", e);
-        toast.error("Invalid user data");
+      if (!userStr) {
+        toast.error("User data not found");
         return;
       }
-
-      // Log the form data
-      console.log("Form Data:", {
-        selectedServices: data.selectedServices,
-        amounts: {
-          initial: data.initialAmount,
-          acceptance: data.acceptanceAmount,
-          discount: data.discountAmount,
-          total: data.totalAmount,
-          payment: data.amount,
-        },
-        periods: {
-          acceptance: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-          publication: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-        },
-        payment: {
-          mode: data.paymentMode,
-          bank: data.selectedBank,
-          date: data.transactionDate,
-        },
-      });
-
+  
+      const user = JSON.parse(userStr);
+      
+      // Log user data to verify
+      console.log("User data:", user);
+  
+      // Create transaction info
       const getTransactionInfo = () => {
         const baseInfo = {
           transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
@@ -291,9 +233,9 @@ function RegistrationContent({ regId }: { regId: string }) {
           amount: data.amount,
           transaction_date: data.transactionDate,
         };
-
+  
         let additional_info: Record<string, any> = {};
-
+  
         switch (data.paymentMode) {
           case "upi":
             additional_info = {
@@ -339,14 +281,16 @@ function RegistrationContent({ regId }: { regId: string }) {
             };
             break;
         }
-
+  
         return { ...baseInfo, additional_info };
       };
-
+  
+      // Prepare registration data with explicit client_id and registered_by
       const registrationData: CreateRegistrationRequest = {  
         ...getTransactionInfo(),
-        entity_id: user.id,  // Changed from entity_id
-        client_id: user.client_id || user.clientId,
+        entity_id: user.id,
+        client_id: user.id, // Use user.id as client_id
+        registered_by: user.id, // Use user.id as registered_by
         prospectus_id: prospectData.id,
         services: data.selectedServices
           .map(
@@ -362,29 +306,28 @@ function RegistrationContent({ regId }: { regId: string }) {
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        status: 'registered' as const,  
+        status: 'registered' as const,
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
       };
-
+  
+      // Log the registration data before sending
+      console.log("Registration data being sent:", registrationData);
+  
       // Send to API
-      try {
-        const response = await api.createRegistration(registrationData);
-        if (response.success) {
-          toast.success('Registration completed successfully!');
-          router.push('/business/executive');
-        } else {
-          toast.error('Registration failed');
-        }
-      } catch (apiError) {
-        console.error('API Error:', apiError);
-        toast.error('Failed to submit registration');
+      const response = await api.createRegistration(registrationData);
+      if (response.success) {
+        toast.success('Registration completed successfully!');
+        router.push('/business/executive');
+      } else {
+        toast.error('Registration failed');
       }
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("Failed to complete registration");
     }
   };
+  
 
   const renderPaymentFields = () => {
     const paymentMode = watch("paymentMode");

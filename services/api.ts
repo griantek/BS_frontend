@@ -272,6 +272,7 @@ interface CreateRegistrationRequest {
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
+  registered_by: string;  // Add this new field
 }
 
 // Add new interface for database registration

@@ -267,36 +267,38 @@ function QuotationContent({ regId }: { regId: string }) {
     try {
       setIsGenerating(true);
 
-      // Get user data for entity ID
+      // Get user data
       const userStr = localStorage.getItem("user");
-      const user = userStr ? JSON.parse(userStr) : null;
-
-      if (!user?.id) {
-        throw new Error("Entity ID not found");
+      if (!userStr) {
+        toast.error("User data not found");
+        return;
       }
+
+      const user = JSON.parse(userStr);
+      console.log("User data:", user); // Log to verify user data
 
       if (!prospectData) {
         throw new Error("Prospect data not found");
       }
 
-      // Prepare registration data
+      // Prepare registration data with updated fields
       const registrationData: CreateRegistrationRequest = {
-        // Transaction details (minimal for pending status)
-        transaction_type: "Cash", // Default type
-        transaction_id: "", // Will be updated later
-        amount: 0, // Will be updated later
-        transaction_date:
-          data.transactionDate || new Date().toISOString().split("T")[0],
+        // Transaction details 
+        transaction_type: "Cash",
+        transaction_id: "",
+        amount: 0,
+        transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
         additional_info: {},
 
-        // Entity and prospect details
-        entity_id: user.id, // Changed from entity_id
-        client_id: user.client_id || user.clientId,
+        // Important: Set both entity_id and client_id to user.id
+        entity_id: user.id,
+        client_id: user.id, // Use user.id instead of user.client_id
+        registered_by: user.id, // Add registered_by field
         prospectus_id: prospectData.id,
+        
+        // ...rest of registration data...
         services: data.selectedServices
-          .map(
-            (id) => services.find((s) => s.id === parseInt(id))?.service_name
-          )
+          .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
           .filter(Boolean)
           .join(", "),
         init_amount: data.initialAmount || 0,
@@ -306,16 +308,18 @@ function QuotationContent({ regId }: { regId: string }) {
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        status: "pending", // Set status as pending for quotation
+        status: "pending",
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
       };
 
-      // Submit registration with pending status
+      // Log the data being sent
+      console.log("Sending registration data:", registrationData);
+
+      // Submit registration
       const response = await api.createRegistration(registrationData);
 
       if (response.success) {
-        // Generate PDF after successful registration
         await generatePDF();
         toast.success("Quotation generated and saved successfully!");
         router.push("/business/executive");
