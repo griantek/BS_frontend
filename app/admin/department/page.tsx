@@ -91,7 +91,7 @@ function DepartmentsPage() {
       const formData = new FormData(event.currentTarget);
       const data: CreateDepartmentRequest = {
         name: formData.get('name') as string,
-        exec_id: formData.get('exec_id') as string || 'Admin' // Default to 'admin' if empty
+        entity_id: formData.get('entity_id') as string || 'Admin' // Default to 'admin' if empty
       };
 
       await api.createDepartment(data);
@@ -113,10 +113,10 @@ function DepartmentsPage() {
     setIsSubmitting(true);
     try {
       const formData = new FormData(event.currentTarget);
-      const exec_id = formData.get('exec_id') as string;
+      const entity_id = formData.get('entity_id') as string;
       const data: CreateDepartmentRequest = {
         name: formData.get('name') as string,
-        exec_id: exec_id || 'admin' // Default to 'admin' if empty
+        entity_id: entity_id || 'admin' // Default to 'admin' if empty
       };
 
       await api.updateDepartment(selectedDepartment.id, data);
@@ -196,7 +196,7 @@ function DepartmentsPage() {
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{dept.name}</TableCell>
                   <TableCell>{formatDate(dept.created_at)}</TableCell>
-                  <TableCell>{dept.exec_id}</TableCell>
+                  <TableCell>{dept.entity_id}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -219,7 +219,7 @@ function DepartmentsPage() {
                   />
                   <Input
                     label="Executive ID (Optional)"
-                    name="exec_id"
+                    name="entity_id"
                     placeholder="Leave empty for admin"
                   />
                 </div>
@@ -253,8 +253,8 @@ function DepartmentsPage() {
                   />
                   <Input
                     label="Executive ID (Optional)"
-                    name="exec_id"
-                    defaultValue={selectedDepartment?.exec_id}
+                    name="entity_id"
+                    defaultValue={selectedDepartment?.entity_id}
                     placeholder="Leave empty for admin"
                   />
                 </div>

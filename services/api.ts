@@ -57,7 +57,7 @@ interface Prospectus {
     services: string;
     notes:string;
     next_follow_up:string;
-    executive?: {
+    entities?: {
         id: string;
         username: string;
         email: string;
@@ -167,12 +167,12 @@ interface Department {
     id: number;
     name: string;
     created_at: string;
-    entity_id: string;  // Changed from exec_id
+    entity_id: string;
 }
 
 interface CreateDepartmentRequest {
     name: string;
-    entity_id?: string;  // Changed from exec_id
+    entity_id?: string;
 }
 
 // Update Registration interface
@@ -229,7 +229,7 @@ interface Registration {
   transactions: {  // Changed from transaction to transactions
     id: number;
     amount: number;
-    entity_id: string;  // Changed from exec_id
+    entity_id: string;
     executive: object;
     transaction_id: string;
     additional_info: object;
@@ -256,8 +256,8 @@ interface CreateRegistrationRequest {
   transaction_date: string;
   additional_info: Record<string, any>;
   
-  // Changed from exec_id to entity_id
-  entity_id: string;  // Changed field
+
+  entity_id: string; 
   client_id: string;
   prospectus_id: number;
   services: string;
@@ -375,7 +375,7 @@ interface ServerRegistration {
   transaction: {
     id: number;
     amount: number;
-    entity_id: string;  // Changed from exec_id
+    entity_id: string; 
     transaction_id: string;
     transaction_type: string;
   };
@@ -389,8 +389,8 @@ interface Transaction {
   amount: number;
   transaction_date: string;
   additional_info: Record<string, any>;
-  entity_id: string;  // Changed from exec_id
-  executive: {  // Keep this as 'executive' for backward compatibility in UI
+  entity_id: string;
+  enities: { 
     id: string;
     username: string;
   };
@@ -689,7 +689,6 @@ const api = {
         try {
             console.log('Fetching prospect by regId:', regId);
             const response = await this.axiosInstance.get(`/entity/prospectus/register/${regId}`);
-            console.log('Prospect response:', response.data);
             return response.data;
         } catch (error: any) {
             console.error('Error in getProspectusByRegId:', {
@@ -845,9 +844,6 @@ const api = {
             // Ensure we're using entity_id in the request
             const response = await this.axiosInstance.post('/common/registration/create', {
                 ...data,
-                // If there's still an exec_id in the data, remove it
-                exec_id: undefined,
-                // Ensure entity_id is present
                 entity_id: data.entity_id,
             });
             return response.data;

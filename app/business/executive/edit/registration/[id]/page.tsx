@@ -77,7 +77,7 @@ interface ExtendedRegistration extends Omit<Registration, 'transactions'> {
   transactions: {
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string;
     transaction_id: string;
     transaction_date: string;
     transaction_type: string;
@@ -383,7 +383,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     try {
       if (!registrationData) return;
 
-      // Get user data for exec_id
+      // Get user data for entity_id
       const user = api.getStoredUser();
       if (!user?.id) {
         toast.error("User data not found");
@@ -409,7 +409,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         status: registrationData.status,
         month: registrationData.month,
         year: registrationData.year,
-        exec_id: user.id,
+        entity_id: user.id,
       };
 
       console.log('Sending update request:', {

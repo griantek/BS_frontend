@@ -82,7 +82,7 @@ function EditProspectContent({ regId }: { regId: string }) {
 
         // Pre-fill form with prospect data
         const data = prospectResponse.data;
-        setValue('clientId', data.executive_id);
+        setValue('clientId', data.entity_id);
         setValue('date', format(new Date(data.date), 'yyyy-MM-dd'));
         setValue('regId', data.reg_id);
         setValue('clientName', data.client_name);

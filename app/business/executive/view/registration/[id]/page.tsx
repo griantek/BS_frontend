@@ -45,7 +45,7 @@ interface ExtendedRegistration extends Registration {
   transactions: {
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string;
     executive: object;  // Add this property
     transaction_id: string;
     transaction_date: string;
@@ -290,7 +290,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         return;
       }
 
-      // Get user data for exec_id
+      // Get user data for entity_id
       const user = api.getStoredUser();
       if (!user?.id) {
         toast.error('User data not found');
@@ -336,7 +336,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         amount: data.amount,
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
-        exec_id: user.id,
+        entity_id: user.id,
         assigned_to: data.assigned_to, // Add this field
       };
 

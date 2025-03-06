@@ -145,7 +145,7 @@ function JournalEditContent({ id }: { id: string }) {
                                 />
                                 <Input
                                     label="Applied By"
-                                    value={journal.executive.username}
+                                    value={journal.entities.username}
                                     isReadOnly
                                     isDisabled
                                 />

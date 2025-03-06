@@ -343,9 +343,9 @@ function RegistrationContent({ regId }: { regId: string }) {
         return { ...baseInfo, additional_info };
       };
 
-      const registrationData: CreateRegistrationRequest = {  // Add type annotation here
+      const registrationData: CreateRegistrationRequest = {  
         ...getTransactionInfo(),
-        entity_id: user.id,  // Changed from exec_id
+        entity_id: user.id,  // Changed from entity_id
         client_id: user.client_id || user.clientId,
         prospectus_id: prospectData.id,
         services: data.selectedServices
@@ -362,7 +362,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        status: 'registered' as const,  // Use const assertion to ensure literal type
+        status: 'registered' as const,  
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
       };

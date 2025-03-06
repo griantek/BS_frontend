@@ -30,7 +30,7 @@ interface PageParams {
 
 interface ProspectData {
   id: number;
-  executive_id: string;
+  entity_id: string;
   date: string;
   email: string;
   reg_id: string;

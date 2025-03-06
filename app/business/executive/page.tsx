@@ -33,10 +33,11 @@ import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import type { Prospectus, Registration } from '@/services/api';
 import { Spinner } from "@nextui-org/react"; // Add this import
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Prospect {
   id: number;
-  executive_id: string;
+  entity_id: string;
   date: string;
   email: string;
   reg_id: string;
@@ -66,6 +67,7 @@ function BusinessDashboard() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [registrations, setRegistrations] = React.useState<Registration[]>([]);
   const [selectedTab, setSelectedTab] = React.useState("prospects");
+  const [clickedRowId, setClickedRowId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -246,6 +248,22 @@ function BusinessDashboard() {
     return `${bankAccount.bank} (*${lastFourDigits})`;
   };
 
+  const handleRowClick = async (route: string, id: string) => {
+    setClickedRowId(id);
+    await router.push(route);
+  };
+
+  const renderLoadingRow = (colspan: number) => (
+    <TableRow>
+      <TableCell colSpan={colspan}>
+        <div className="flex justify-center items-center h-16">
+          <Spinner size="sm" />
+          <span className="ml-2">Loading...</span>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+
   return (
     <div className="w-full p-6">
       <Card className="mb-6">
@@ -322,19 +340,23 @@ function BusinessDashboard() {
                     emptyContent="No prospects found"
                   >
                     {(item) => (
-                      <TableRow 
-                        key={item.id}
-                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        onClick={() => router.push(`/business/executive/view/prospect/${item.reg_id}`)}
-                      >
-                        <TableCell>{formatDate(item.date)}</TableCell>
-                        <TableCell>{item.reg_id}</TableCell>
-                        <TableCell>{item.client_name}</TableCell>
-                        <TableCell>{item.email}</TableCell>
-                        <TableCell>{item.phone}</TableCell>
-                        <TableCell>{item.department}</TableCell>
-                        <TableCell>{item.state}</TableCell>
-                      </TableRow>
+                      clickedRowId === item.reg_id ? (
+                        renderLoadingRow(columns.length)
+                      ) : (
+                        <TableRow 
+                          key={item.id}
+                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => handleRowClick(`/business/executive/view/prospect/${item.reg_id}`, item.reg_id)}
+                        >
+                          <TableCell>{formatDate(item.date)}</TableCell>
+                          <TableCell>{item.reg_id}</TableCell>
+                          <TableCell>{item.client_name}</TableCell>
+                          <TableCell>{item.email}</TableCell>
+                          <TableCell>{item.phone}</TableCell>
+                          <TableCell>{item.department}</TableCell>
+                          <TableCell>{item.state}</TableCell>
+                        </TableRow>
+                      )
                     )}
                   </TableBody>
                 </Table>
@@ -397,44 +419,48 @@ function BusinessDashboard() {
                     emptyContent="No registrations found"
                   >
                     {(registration) => (
-                      <TableRow 
-                        key={registration.id}
-                        className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        onClick={() => router.push(`/business/executive/view/registration/${registration.id}`)}
-                      >
-                        <TableCell>{formatDate(registration.created_at)}</TableCell>
-                        <TableCell>{registration.prospectus.reg_id}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">{registration.prospectus.client_name}</div>
-                            <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{registration.services}</TableCell>
-                        <TableCell>
-                          <AmountTooltip
-                            initial={registration.init_amount}
-                            accept={registration.accept_amount}
-                            discount={registration.discount}
-                            total={registration.total_amount}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <PaymentTooltip
-                            type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
-                            amount={registration.transactions?.amount || 0}
-                            status={registration.status}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            color={registration.status === 'registered' ? 'success' : 'warning'}
-                            variant="flat"
-                          >
-                            {registration.status}
-                          </Chip>
-                        </TableCell>
-                      </TableRow>
+                      clickedRowId === registration.id.toString() ? (
+                        renderLoadingRow(registrationColumns.length)
+                      ) : (
+                        <TableRow 
+                          key={registration.id}
+                          className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => handleRowClick(`/business/executive/view/registration/${registration.id}`, registration.id.toString())}
+                        >
+                          <TableCell>{formatDate(registration.created_at)}</TableCell>
+                          <TableCell>{registration.prospectus.reg_id}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium">{registration.prospectus.client_name}</div>
+                              <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{registration.services}</TableCell>
+                          <TableCell>
+                            <AmountTooltip
+                              initial={registration.init_amount}
+                              accept={registration.accept_amount}
+                              discount={registration.discount}
+                              total={registration.total_amount}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <PaymentTooltip
+                              type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
+                              amount={registration.transactions?.amount || 0}
+                              status={registration.status}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              color={registration.status === 'registered' ? 'success' : 'warning'}
+                              variant="flat"
+                            >
+                              {registration.status}
+                            </Chip>
+                          </TableCell>
+                        </TableRow>
+                      )
                     )}
                   </TableBody>
                 </Table>

@@ -33,7 +33,7 @@ import type {
 // Add interface for better type safety
 interface ProspectData {
   id: number;
-  executive_id: string;
+  entity_id: string;
   date: string;
   email: string;
   reg_id: string;
@@ -267,12 +267,12 @@ function QuotationContent({ regId }: { regId: string }) {
     try {
       setIsGenerating(true);
 
-      // Get user data for executive ID
+      // Get user data for entity ID
       const userStr = localStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
 
       if (!user?.id) {
-        throw new Error("Executive ID not found");
+        throw new Error("Entity ID not found");
       }
 
       if (!prospectData) {
@@ -289,8 +289,8 @@ function QuotationContent({ regId }: { regId: string }) {
           data.transactionDate || new Date().toISOString().split("T")[0],
         additional_info: {},
 
-        // Executive and prospect details
-        exec_id: user.id,
+        // Entity and prospect details
+        entity_id: user.id, // Changed from entity_id
         client_id: user.client_id || user.clientId,
         prospectus_id: prospectData.id,
         services: data.selectedServices
