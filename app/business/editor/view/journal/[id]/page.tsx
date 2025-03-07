@@ -198,7 +198,7 @@ function JournalContent({ id }: { id: string }) {
               </div>
               <div>
                 <h3 className="text-sm text-gray-500">Applied By</h3>
-                <p className="font-medium">{journal.executive.username}</p>
+                <p className="font-medium">{journal.entities.username}</p>
               </div>
             </CardBody>
           </Card>
