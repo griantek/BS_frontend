@@ -143,6 +143,7 @@ interface ExecutiveWithRoleName {
         id:string;
         name: string;
         description: string;
+        entity_type:string;
     };
     created_at: string;
     password?: string; // Add optional password field
@@ -319,18 +320,17 @@ interface PaginatedResponse<T> {
   items: T[];
 }
 
-// Update the Role interface to handle both old and new formats
+// Update the Role interface to match the new response format
 interface Role {
     id: number;
     name: string;
     description: string;
-    permissions?: {
-        read: boolean;
-        create: boolean;
-        delete: boolean;
-        update: boolean;
-    };
-    permission_ids?: number[];  // Make this optional for backward compatibility
+    permissions: {
+        id: number;
+        name?: string;
+        description?: string;
+        entity_type?: string;
+    }[];
     entity_type: 'Admin' | 'Editor' | 'Executive';
     created_at: string;
     updated_at: string;
@@ -341,7 +341,7 @@ interface Permission {
   id: number;
   name: string;
   description: string;
-  entity_type: 'Admin' | 'Editor' | 'Executive';
+  entity_type:string;
 }
 
 // Update the CreateRoleRequest interface
@@ -349,7 +349,7 @@ interface CreateRoleRequest {
   name: string;
   description: string;
   permissions: number[];  // Changed from object to array of permission IDs
-  entity_type: 'Admin' | 'Editor' | 'Executive';
+  entity_type: string;
 }
 
 interface ServerRegistration {

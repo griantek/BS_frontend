@@ -54,46 +54,45 @@ function RolesPage() {
     const [availablePermissions, setAvailablePermissions] = React.useState<Permission[]>([]);
     const [selectedEntityType, setSelectedEntityType] = React.useState<'Admin' | 'Editor' | 'Executive' | ''>('');
     const [selectedPermissions, setSelectedPermissions] = React.useState<number[]>([]);
-    const [permissionsByType, setPermissionsByType] = React.useState<Record<string, Permission[]>>({});
+    const [previousEntityType, setPreviousEntityType] = React.useState<string>('');
 
     const entityTypes = ['Admin', 'Editor', 'Executive'] as const;
 
-    React.useEffect(() => {
-        const fetchRoles = async () => {
-            try {
-                const response = await api.getAllRoles();
-                setRoles(response.data);
-            } catch (error) {
-                console.error('Error fetching roles:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    // Add this function to fetch roles
+    const fetchRoles = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.getAllRoles();
+            setRoles(response.data);
+        } catch (error) {
+            console.error('Error fetching roles:', error);
+            toast.error('Failed to load roles');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
+    // Update initial load effect to use fetchRoles
+    React.useEffect(() => {
         fetchRoles();
     }, []);
 
+    // Fix: Separate effect for entity type changes
     React.useEffect(() => {
-        const fetchAllPermissions = async () => {
+        if (!selectedEntityType) return;
+
+        const fetchPermissions = async () => {
             try {
-                // Fetch permissions for all entity types when the component mounts
-                const types = ['Admin', 'Editor', 'Executive'] as const;
-                const permissionsMap: Record<string, Permission[]> = {};
-                
-                for (const type of types) {
-                  const response = await api.getPermissionsByEntityType(type);
-                  permissionsMap[type] = response.data;
-                }
-                
-                setPermissionsByType(permissionsMap);
-              } catch (error) {
+                const response = await api.getPermissionsByEntityType(selectedEntityType);
+                setAvailablePermissions(response.data);
+            } catch (error) {
                 console.error('Error fetching permissions:', error);
                 toast.error('Failed to load permissions');
-              }
+            }
         };
 
-        fetchAllPermissions();
-    }, []); // Only run once when component mounts
+        fetchPermissions();
+    }, [selectedEntityType]);
 
     const formatDateTime = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -111,6 +110,7 @@ function RolesPage() {
         );
     };
 
+    // Update handleCreateRole to use fetchRoles
     const handleCreateRole = async () => {
         try {
             setIsSubmitting(true);
@@ -127,16 +127,11 @@ function RolesPage() {
                 entity_type: selectedEntityType
             };
 
-            const response = await api.createRole(roleData);
-            setRoles([...roles, response.data]);
+            await api.createRole(roleData);
+            await fetchRoles(); // Reload data from backend
             toast.success('Role created successfully');
             onClose();
-
-            // Reset form
-            setFormData({ name: '', description: '', entity_type: '' });
-            setSelectedEntityType('');
-            setSelectedPermissions([]);
-            setAvailablePermissions([]);
+            resetFormData();
         } catch (error: any) {
             toast.error(error.error || 'Failed to create role');
         } finally {
@@ -144,31 +139,34 @@ function RolesPage() {
         }
     };
 
-    // Update handleEditClick to use selectedPermissions instead of permissions object
-    const handleEditClick = (role: Role) => {
-        setEditingRole(role);
-        setFormData({
-            name: role.name,
-            description: role.description,
-            entity_type: role.entity_type
-        });
-        
-        setSelectedEntityType(role.entity_type);
-        // Handle both old and new permission formats
-        if (role.permission_ids) {
-            setSelectedPermissions(role.permission_ids);
-        } else if (role.permissions) {
-            // Convert old format permissions to IDs if needed
-            const oldFormatPermissionIds = Object.entries(role.permissions)
-                .filter(([_, value]) => value)
-                .map(([key]) => key);
-            setSelectedPermissions(oldFormatPermissionIds.map(Number));
+    // Update handleEditClick to fetch all permissions for the role's entity type
+    const handleEditClick = async (role: Role) => {
+        try {
+            setEditingRole(role);
+            setFormData({
+                name: role.name,
+                description: role.description,
+                entity_type: role.entity_type
+            });
+            
+            // Set entity type first
+            setSelectedEntityType(role.entity_type);
+            
+            // Fetch permissions for this entity type
+            const response = await api.getPermissionsByEntityType(role.entity_type);
+            setAvailablePermissions(response.data);
+            
+            // Set selected permissions from the role
+            setSelectedPermissions(role.permissions.map(p => p.id));
+            
+            setIsEditModalOpen(true);
+        } catch (error) {
+            console.error('Error fetching permissions:', error);
+            toast.error('Failed to load permissions');
         }
-        
-        setIsEditModalOpen(true);
     };
 
-    // Fix handleUpdateRole function
+    // Update handleUpdateRole to use fetchRoles
     const handleUpdateRole = async () => {
         if (!editingRole) return;
         try {
@@ -177,15 +175,14 @@ function RolesPage() {
                 name: formData.name,
                 description: formData.description,
                 permissions: selectedPermissions,
-                entity_type: formData.entity_type as 'Admin' | 'Editor' | 'Executive'
+                entity_type: selectedEntityType // Changed from formData.entity_type
             };
             
-            const response = await api.updateRole(editingRole.id, updateData);
-            setRoles(roles.map(role => 
-                role.id === editingRole.id ? response.data : role
-            ));
+            await api.updateRole(editingRole.id, updateData);
+            await fetchRoles(); // Reload data from backend
             toast.success('Role updated successfully');
             setIsEditModalOpen(false);
+            resetFormData();
         } catch (error: any) {
             toast.error(error.error || 'Failed to update role');
         } finally {
@@ -198,12 +195,13 @@ function RolesPage() {
         setIsDeleteModalOpen(true);
     };
 
+    // Update handleDeleteRole to use fetchRoles
     const handleDeleteRole = async () => {
         if (!roleToDelete) return;
         try {
             setIsSubmitting(true);
             await api.deleteRole(roleToDelete.id);
-            setRoles(roles.filter(role => role.id !== roleToDelete.id));
+            await fetchRoles(); // Reload data from backend
             toast.success('Role deleted successfully');
             setIsDeleteModalOpen(false);
         } catch (error: any) {
@@ -214,41 +212,92 @@ function RolesPage() {
         }
     };
 
-    // Fix getPermissionNames function
-    const getPermissionNames = async (permissionIds: number[] | undefined) => {
-        if (!permissionIds?.length) return [];
+    // Update the renderRolePermissions function
+    const renderRolePermissions = (role: Role) => {
+        return role.permissions?.map((permission) => (
+            <Chip
+                key={permission.id}
+                size="sm"
+                variant="flat"
+                className="max-w-[200px] truncate"
+            >
+                {permission.description || permission.name}
+            </Chip>
+        ));
+    };
+
+    // Add this function to reset form state
+    const resetFormData = () => {
+        setFormData({ 
+            name: '', 
+            description: '', 
+            entity_type: '' 
+        });
+        setSelectedEntityType('');
+        setSelectedPermissions([]);
+        setAvailablePermissions([]);
+    };
+
+    // Update onOpen to reset form
+    const handleCreateClick = () => {
+        resetFormData();
+        onOpen();
+    };
+
+    // Update modal close handlers
+    const handleCreateModalClose = () => {
+        resetFormData();
+        onClose();
+    };
+
+    const handleEditModalClose = () => {
+        resetFormData();
+        setIsEditModalOpen(false);
+    };
+
+    // Fix: Add proper key handling in select components
+    const renderSelect = (
+        value: string, 
+        onChange: (value: string) => void, 
+        disabled?: boolean
+    ) => (
+        <Select
+            label="Entity Type"
+            placeholder="Select entity type"
+            selectedKeys={value ? new Set([value]) : new Set()}
+            onChange={(e) => onChange(e.target.value)}
+            isDisabled={disabled}
+            isRequired
+        >
+            {entityTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                    {type}
+                </SelectItem>
+            ))}
+        </Select>
+    );
+
+    const handleEntityTypeChange = async (newEntityType: string) => {
+        // Clear previous permissions if entity type changes
+        if (previousEntityType !== newEntityType) {
+            setSelectedPermissions([]);
+        }
+        
+        setPreviousEntityType(newEntityType);
+        setSelectedEntityType(newEntityType as typeof entityTypes[number]);
+        
         try {
-            const response = await api.getPermissionsByEntityType(editingRole?.entity_type || 'Executive');
-            return permissionIds.map(id => {
-                const permission = response.data.find(p => p.id === id);
-                return permission?.description || '';
-            }).filter(Boolean);
+            const response = await api.getPermissionsByEntityType(newEntityType as typeof entityTypes[number]);
+            setAvailablePermissions(response.data);
         } catch (error) {
-            console.error('Error fetching permission names:', error);
-            return [];
+            console.error('Error fetching permissions:', error);
+            toast.error('Failed to load permissions');
         }
     };
 
-    // Add state for resolved permission names
-    const [permissionNames, setPermissionNames] = React.useState<Record<number, string[]>>({});
-
-    // Add effect to fetch permission names for each role
-    React.useEffect(() => {
-        const fetchPermissionNames = async () => {
-            const namesMap: Record<number, string[]> = {};
-            for (const role of roles) {
-                namesMap[role.id] = await getPermissionNames(role.permission_ids);
-            }
-            setPermissionNames(namesMap);
-        };
-
-        if (roles.length) {
-            fetchPermissionNames();
-        }
-    }, [roles]);
-
+    // Update the create modal to use the new select renderer
     const renderCreateRoleModal = () => (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <Modal isOpen={isOpen} onClose={handleCreateModalClose} size="lg">
             <ModalContent>
                 {(onClose) => (
                     <>
@@ -273,8 +322,8 @@ function RolesPage() {
                                 <Select
                                     label="Entity Type"
                                     placeholder="Select entity type"
-                                    value={selectedEntityType}
-                                    onChange={(e) => setSelectedEntityType(e.target.value as typeof entityTypes[number])}
+                                    selectedKeys={selectedEntityType ? [selectedEntityType] : []}
+                                    onChange={(e) => handleEntityTypeChange(e.target.value)}
                                     isRequired
                                 >
                                     {entityTypes.map((type) => (
@@ -305,7 +354,7 @@ function RolesPage() {
                             </div>
                         </ModalBody>
                         <ModalFooter>
-                            <Button variant="light" onPress={onClose}>
+                            <Button variant="light" onPress={handleCreateModalClose}>
                                 Cancel
                             </Button>
                             <Button
@@ -323,9 +372,9 @@ function RolesPage() {
         </Modal>
     );
 
-    // Update the Edit Modal JSX to use selectedPermissions instead of formData.permissions
+    // Update the edit modal to use the new select renderer
     const renderEditModal = () => (
-        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
+        <Modal isOpen={isEditModalOpen} onClose={handleEditModalClose}>
             <ModalContent>
                 {(onClose) => (
                     <>
@@ -353,8 +402,8 @@ function RolesPage() {
                                 <Select
                                     label="Entity Type"
                                     placeholder="Select entity type"
-                                    value={selectedEntityType}
-                                    onChange={(e) => setSelectedEntityType(e.target.value as typeof entityTypes[number])}
+                                    selectedKeys={selectedEntityType ? [selectedEntityType] : []}
+                                    onChange={(e) => handleEntityTypeChange(e.target.value)}
                                     isRequired
                                 >
                                     {entityTypes.map((type) => (
@@ -376,7 +425,7 @@ function RolesPage() {
                                                     className="cursor-pointer transition-colors"
                                                     onClick={() => togglePermission(permission.id)}
                                                 >
-                                                    {permission.name}
+                                                    {permission.description || permission.name}
                                                 </Chip>
                                             ))}
                                         </div>
@@ -385,8 +434,18 @@ function RolesPage() {
                             </div>
                         </ModalBody>
                         <ModalFooter>
-                            <Button variant="light" onPress={onClose}>
+                            <Button variant="light" onPress={handleEditModalClose}>
                                 Cancel
+                            </Button>
+                            <Button 
+                                color="danger"
+                                variant="flat"
+                                onPress={() => {
+                                    onClose();
+                                    handleDeleteClick(editingRole!);
+                                }}
+                            >
+                                Delete Role
                             </Button>
                             <Button 
                                 color="primary"
@@ -402,24 +461,6 @@ function RolesPage() {
         </Modal>
     );
 
-    const renderRolePermissions = (role: Role) => {
-        const permissions = permissionsByType[role.entity_type] || [];
-        const rolePermissionIds = role.permission_ids || [];
-    
-        return permissions
-          .filter(p => rolePermissionIds.includes(p.id))
-          .map((permission) => (
-            <Chip
-              key={permission.id}
-              size="sm"
-              variant="flat"
-              className="max-w-[200px] truncate"
-            >
-              {permission.description}
-            </Chip>
-          ));
-      };
-
     return (
         <div className="w-full p-6">
             <Card>
@@ -428,7 +469,7 @@ function RolesPage() {
                     <Button
                         color="primary"
                         endContent={<PlusIcon className="w-4 h-4" />}
-                        onClick={onOpen}
+                        onClick={handleCreateClick}  // Changed from onOpen to handleCreateClick
                     >
                         Add Role
                     </Button>

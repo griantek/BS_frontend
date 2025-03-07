@@ -19,8 +19,6 @@ import {
 } from "@heroui/react";
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-// Remove MOCK_ROLES constant since we'll load from backend
-
 interface ExecutiveFormData {
   username: string;
   password: string;
@@ -32,13 +30,14 @@ export default function CreateExecutive() {
   const router = useRouter();
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [selectedRole, setSelectedRole] = React.useState(new Set<string>([]));
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors }
   } = useForm<ExecutiveFormData>();
 
-  // Add useEffect to fetch roles
   React.useEffect(() => {
     const fetchRoles = async () => {
       try {
@@ -57,12 +56,11 @@ export default function CreateExecutive() {
 
   const onSubmit = async (data: ExecutiveFormData) => {
     try {
-      // Ensure the data matches the DB schema
       const executiveData = {
         username: data.username.trim(),
         password: data.password,
         email: data.email.trim().toLowerCase(),
-        role: data.role?.trim() || 'executive' // Default role if not specified
+        role: data.role?.trim() || 'executive'
       };
 
       console.log('Creating executive with data:', executiveData);
@@ -80,6 +78,16 @@ export default function CreateExecutive() {
 
   const handleBack = () => {
     router.push('/admin/users/executives');
+  };
+
+  const handleRoleChange = (keys: any) => {
+    const selectedKey = Array.from(keys)[0] as string;
+    setSelectedRole(new Set([selectedKey]));
+    setValue('role', selectedKey); // Update form value
+  };
+
+  const renderSelectValue = (role: Role) => {
+    return role.name; // Only show role name when selected
   };
 
   if (isLoading) {
@@ -135,14 +143,22 @@ export default function CreateExecutive() {
               <Select
                 label="Role"
                 placeholder="Select a role"
+                selectedKeys={selectedRole}
+                onSelectionChange={handleRoleChange}
                 isRequired
-                {...register('role', { required: 'Role is required' })}
                 isInvalid={!!errors.role}
                 errorMessage={errors.role?.message}
+                classNames={{
+                    value: "truncate"
+                }}
+                renderValue={(items) => {
+                    const foundRole = roles.find(role => role.id.toString() === Array.from(selectedRole)[0]);
+                    return foundRole ? renderSelectValue(foundRole) : null;
+                }}
               >
                 {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.name}>
-                    {role.name}
+                  <SelectItem key={role.id.toString()} value={role.id.toString()}>
+                    {role.name} ({role.entity_type})
                   </SelectItem>
                 ))}
               </Select>

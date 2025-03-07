@@ -51,6 +51,7 @@ const ExecutivesPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [roles, setRoles] = React.useState<Role[]>([]);
     const [isLoadingRoles, setIsLoadingRoles] = React.useState(false);
+    const [selectedRole, setSelectedRole] = React.useState(new Set<string>([]));
 
     const formatDate = (dateString: string) => {
         try {
@@ -95,12 +96,12 @@ const ExecutivesPage: React.FC = () => {
         setEditForm({
             username: executive.username,
             email: executive.email,
-            role: executive.role_details.name, // This is correct
+            role: executive.role_details.id.toString(), // Use role ID instead of name
         });
+        setSelectedRole(new Set([executive.role_details.id.toString()]));
         
-        // Fetch roles when opening modal
-        setIsLoadingRoles(true);
         try {
+            setIsLoadingRoles(true);
             const rolesResponse = await api.getAllRoles();
             setRoles(rolesResponse.data);
         } catch (error) {
@@ -120,10 +121,12 @@ const ExecutivesPage: React.FC = () => {
         }));
     };
 
-    const handleRoleChange = (value: string) => {
+    const handleRoleChange = (keys: any) => {
+        const selectedKey = Array.from(keys)[0] as string;
+        setSelectedRole(new Set([selectedKey]));
         setEditForm(prev => ({
             ...prev,
-            role: value
+            role: selectedKey
         }));
     };
 
@@ -139,20 +142,14 @@ const ExecutivesPage: React.FC = () => {
         try {
             setIsSubmitting(true);
             
-            // Prepare update data
-            const updateData: any = {
+            const updateData = {
                 username: editForm.username,
                 email: editForm.email,
-                role: editForm.role,
+                role: editForm.role, // This will be the role ID
+                ...(editForm.password ? { password: editForm.password } : {})
             };
 
-            // Only include password if it's being changed
-            if (editForm.password) {
-                updateData.password = editForm.password;
-            }
-
-            // Update executive
-            await api.axiosInstance.put(`/executive/${selectedExecutive.id}`, updateData);
+            await api.axiosInstance.put(`/entity/${selectedExecutive.id}`, updateData);
             
             // Refresh executives list
             const response = await api.getAllExecutives();
@@ -169,6 +166,10 @@ const ExecutivesPage: React.FC = () => {
 
     const handleAddExecutive = () => {
         router.push('/admin/users/executives/create_exec');
+    };
+
+    const renderSelectValue = (role: Role) => {
+        return role.name; // Only show role name when selected
     };
 
     if (isLoading) {
@@ -215,19 +216,18 @@ const ExecutivesPage: React.FC = () => {
                                     <TableCell>{executive.username}</TableCell>
                                     <TableCell>{executive.email}</TableCell>
                                     <TableCell>
-                                        <Chip
-                                            size="sm"
-                                            variant="flat"
-                                            // Change color based on role name
-                                            color={
-                                                executive.role_details.name === 'Manager' ? 'primary' :
-                                                executive.role_details.name === 'Administrator' ? 'warning' :
-                                                'default'
-                                            }
-                                        >
-                                            {/* Display the role name with proper capitalization */}
-                                            {executive.role_details.name}
-                                        </Chip>
+                                        <div className="flex flex-col">
+                                            <Chip
+                                                variant="flat"
+                                                color={
+                                                    executive.role_details?.name.toLowerCase().includes('admin') ? 'danger' :
+                                                    executive.role_details?.entity_type === 'Editor' ? 'warning' : 'primary'
+                                                }
+                                                size="sm"
+                                            >
+                                                {executive.role_details?.name} ({executive.role_details?.entity_type})
+                                            </Chip>
+                                        </div>
                                     </TableCell>
                                     <TableCell>{formatDate(executive.created_at)}</TableCell>
                                 </TableRow>
@@ -264,12 +264,17 @@ const ExecutivesPage: React.FC = () => {
                                     />
                                     <Select 
                                         label="Role"
-                                        name="role"
-                                        // Update this part
-                                        defaultSelectedKeys={[editForm.role]}
-                                        value={editForm.role}
-                                        onChange={(e) => handleRoleChange(e.target.value)}
+                                        selectedKeys={selectedRole}
+                                        onSelectionChange={handleRoleChange}
                                         isDisabled={isLoadingRoles}
+                                        // Add this prop for custom selected value display
+                                        classNames={{
+                                            value: "truncate"
+                                        }}
+                                        renderValue={(items) => {
+                                            const foundRole = roles.find(role => role.id.toString() === Array.from(selectedRole)[0]);
+                                            return foundRole ? renderSelectValue(foundRole) : null;
+                                        }}
                                     >
                                         {isLoadingRoles ? (
                                             <SelectItem key="loading" value="loading">
@@ -278,10 +283,11 @@ const ExecutivesPage: React.FC = () => {
                                         ) : (
                                             roles.map((role) => (
                                                 <SelectItem 
-                                                    key={role.name} // Change this to use name as key
-                                                    value={role.name}
+                                                    key={role.id.toString()}
+                                                    value={role.id.toString()}
                                                 >
-                                                    {role.name}
+                                                    {/* Show both name and entity_type in dropdown list */}
+                                                    {role.name} ({role.entity_type})
                                                 </SelectItem>
                                             ))
                                         )}
