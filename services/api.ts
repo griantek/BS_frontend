@@ -319,30 +319,37 @@ interface PaginatedResponse<T> {
   items: T[];
 }
 
-// Add new Role interface
+// Update the Role interface to handle both old and new formats
 interface Role {
     id: number;
     name: string;
     description: string;
-    permissions: {
+    permissions?: {
         read: boolean;
         create: boolean;
         delete: boolean;
         update: boolean;
     };
+    permission_ids?: number[];  // Make this optional for backward compatibility
+    entity_type: 'Admin' | 'Editor' | 'Executive';
     created_at: string;
     updated_at: string;
 }
 
+// Add these new interfaces
+interface Permission {
+  id: number;
+  name: string;
+  description: string;
+  entity_type: 'Admin' | 'Editor' | 'Executive';
+}
+
+// Update the CreateRoleRequest interface
 interface CreateRoleRequest {
-    name: string;
-    description: string;
-    permissions: {
-        create: boolean;
-        read: boolean;
-        update: boolean;
-        delete: boolean;
-    };
+  name: string;
+  description: string;
+  permissions: number[];  // Changed from object to array of permission IDs
+  entity_type: 'Admin' | 'Editor' | 'Executive';
 }
 
 interface ServerRegistration {
@@ -363,7 +370,7 @@ interface ServerRegistration {
     id: number;
     reg_id: string;
     client_name: string;
-    executive:{
+    entity:{
         id:string;
         username:string;
         email:string;
@@ -515,7 +522,7 @@ interface AssignedRegistration {
     id: number;
     email: string;
     reg_id: string;
-    executive: {
+    entity: {
       id: string;
       email: string;
       username: string;
@@ -623,11 +630,6 @@ const api = {
             const response = await this.axiosInstance.post('/entity/login', credentials);
             return response.data;
         } catch (error: any) {
-            // console.error('API createProspectus error:', {
-            //     status: error.response?.status,
-            //     data: error.response?.data,
-            //     error: error
-            // });
             throw error;
         }
     },
@@ -964,6 +966,15 @@ const api = {
         }
     },
 
+    async getPermissionsByEntityType(entityType: 'Admin' | 'Editor' | 'Executive'): Promise<ApiResponse<Permission[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/permissions/entity-type/${entityType}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     async createRole(data: CreateRoleRequest): Promise<ApiResponse<Role>> {
         try {
             const response = await this.axiosInstance.post('/admin/roles/create', data);
@@ -1206,5 +1217,6 @@ export type {
     ProspectusAssistData,
     DashboardStats,
     ActivityItem,
+    Permission,  // Add this export
 };
 export default api;

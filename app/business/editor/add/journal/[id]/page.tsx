@@ -82,9 +82,6 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
         try {
             const formData = new FormData(e.currentTarget);
             const user = api.getStoredUser();
-            if (!user?.id || user?.entity_type !== 'Editor') {
-                throw new Error('Unauthorized');
-            }
 
             // Determine final status value
             const finalStatus = selectedStatus === 'other' ? customStatus : selectedStatus;

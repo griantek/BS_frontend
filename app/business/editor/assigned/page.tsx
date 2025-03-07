@@ -128,8 +128,8 @@ function AssignedPage() {
                     <TableCell>₹{registration.total_amount.toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{registration.prospectus.executive.username}</span>
-                        <span className="text-sm text-gray-500">{registration.prospectus.executive.email}</span>
+                        <span className="font-medium">{registration.prospectus.entity.username}</span>
+                        <span className="text-sm text-gray-500">{registration.prospectus.entity.email}</span>
                       </div>
                     </TableCell>
                   </TableRow>

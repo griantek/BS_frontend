@@ -194,7 +194,7 @@ function RegistrationsPage() {
                                                 variant="dot"
                                                 color="default"
                                             >
-                                                {registration.prospectus.executive?.username || 'N/A'}
+                                                {registration.prospectus.entity?.username || 'N/A'}
                                             </Chip>
                                         </TableCell>
                                     </TableRow>

@@ -289,14 +289,11 @@ function QuotationContent({ regId }: { regId: string }) {
         amount: 0,
         transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
         additional_info: {},
-
-        // Important: Set both entity_id and client_id to user.id
-        entity_id: user.id,
-        client_id: user.id, // Use user.id instead of user.client_id
-        registered_by: user.id, // Add registered_by field
-        prospectus_id: prospectData.id,
         
-        // ...rest of registration data...
+        entity_id: user.id,
+        client_id: user.id,
+        registered_by: user.id,
+        prospectus_id: prospectData.id,
         services: data.selectedServices
           .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
           .filter(Boolean)
