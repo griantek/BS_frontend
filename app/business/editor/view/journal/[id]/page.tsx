@@ -287,7 +287,7 @@ function JournalContent({ id }: { id: string }) {
                 <div className="relative w-full h-[600px]">
                   <Image
                     src={`${journal.status_link}?t=${new Date().getTime()}`}
-                    alt="Journal Status Screenshot"
+                    alt="Click on the refresh button to load the image"
                     fill
                     className="rounded-lg shadow-lg object-contain"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
