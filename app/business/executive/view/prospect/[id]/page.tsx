@@ -1,4 +1,4 @@
-'use client'
+"use client"
 import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { checkAuth } from '@/utils/authCheck';

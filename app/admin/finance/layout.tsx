@@ -1,4 +1,4 @@
-'use client'
+"use client"
 import { SectionTabs } from '@/components/section-tabs';
 
 const sections = [

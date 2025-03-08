@@ -1,4 +1,4 @@
-'use client'
+"use client"
 import React from 'react';
 import { Tabs, Tab } from "@heroui/react";
 import { useRouter, usePathname } from 'next/navigation';

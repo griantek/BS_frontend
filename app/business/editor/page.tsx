@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React from 'react';
 import { withEditorAuth } from '@/components/withEditorAuth';
 import { Card, CardBody, CardHeader, Divider, Chip } from "@nextui-org/react";

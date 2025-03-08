@@ -1,4 +1,4 @@
-'use client'
+"use client"
 import React from 'react';
 import { usePathname } from 'next/navigation';  // Add this import
 import { getUserRole } from '@/utils/authCheck';  // Add this import
