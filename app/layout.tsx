@@ -7,7 +7,6 @@ import { Navbar } from "@/components/navbar";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
 import { NavigationLoadingProvider } from '@/contexts/NavigationLoadingContext';
-import { Suspense } from 'react';
 
 export const viewport: Viewport = {
   themeColor: [
@@ -34,11 +33,9 @@ export default function RootLayout({
               fontSans.variable,
             )}>
               {!isHomePage && <Navbar />}
-              <Suspense fallback={<div>Loading...</div>}>
-                <main className="flex-grow">
-                  {children}
-                </main>
-              </Suspense>
+              <main className="flex-grow">
+                {children}
+              </main>
             </div>
           </Providers>
         </NavigationLoadingProvider>
