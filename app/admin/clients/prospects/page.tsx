@@ -82,7 +82,7 @@ function ProspectsPage() {
                                                 variant="flat"
                                                 color="primary"
                                             >
-                                                {prospect.executive?.username ?? 'N/A'}
+                                                {prospect.entities?.username ?? 'N/A'}
                                             </Chip>
                                         </TableCell>
                                         <TableCell>
