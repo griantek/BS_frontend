@@ -1,9 +1,9 @@
-"use client"
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+"use client";
+import React, { Suspense } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Input,
   Button,
@@ -24,7 +24,7 @@ interface LoginFormData {
   password: string;
 }
 
-export default function BusinessLogin() {
+function BusinessLoginContent() {
   const [isVisible, setIsVisible] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
@@ -148,5 +148,13 @@ export default function BusinessLogin() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function BusinessLogin() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BusinessLoginContent />
+    </Suspense>
   );
 }

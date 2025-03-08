@@ -25,6 +25,7 @@ import {
   PencilIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 function JournalContent({ id }: { id: string }) {
   const router = useRouter();
@@ -283,12 +284,16 @@ function JournalContent({ id }: { id: string }) {
           <CardBody>
             <div className="flex justify-center">
               {journal.status_link ? (
-                <img
-                  src={`${journal.status_link}?t=${new Date().getTime()}`} // Add cache-busting query parameter
-                  alt="Journal Status Screenshot"
-                  className="rounded-lg shadow-lg max-w-full h-auto"
-                  style={{ maxHeight: "600px" }}
-                />
+                <div className="relative w-full h-[600px]">
+                  <Image
+                    src={`${journal.status_link}?t=${new Date().getTime()}`}
+                    alt="Journal Status Screenshot"
+                    fill
+                    className="rounded-lg shadow-lg object-contain"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                    priority
+                  />
+                </div>
               ) : (
                 <div className="text-gray-500">No screenshot available</div>
               )}

@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { PageLoadingSpinner } from '@/components/LoadingSpinner';
 
@@ -10,7 +10,7 @@ interface NavigationLoadingContextType {
 
 const NavigationLoadingContext = createContext<NavigationLoadingContextType | undefined>(undefined);
 
-export function NavigationLoadingProvider({ children }: { children: React.ReactNode }) {
+function NavigationLoadingContent({ children }: { children: React.ReactNode }) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,6 +24,14 @@ export function NavigationLoadingProvider({ children }: { children: React.ReactN
       {isNavigating && <PageLoadingSpinner text="Loading page..." />}
       {children}
     </NavigationLoadingContext.Provider>
+  );
+}
+
+export function NavigationLoadingProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<PageLoadingSpinner text="Loading..." />}>
+      <NavigationLoadingContent>{children}</NavigationLoadingContent>
+    </Suspense>
   );
 }
 
