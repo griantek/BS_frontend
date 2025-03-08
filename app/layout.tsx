@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
 import { NavigationLoadingProvider } from '@/contexts/NavigationLoadingContext';
+import { Suspense } from "react";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -20,23 +21,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const isHomePage = typeof window !== 'undefined' ? window.location.pathname === '/' : false;
-
   return (
     <html suppressHydrationWarning lang="en">
       <head />
       <body>
         <NavigationLoadingProvider>
           <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-            <div className={clsx(
-              "relative flex flex-col min-h-screen bg-background font-sans antialiased",
-              fontSans.variable,
-            )}>
-              {!isHomePage && <Navbar />}
-              <main className="flex-grow">
-                {children}
-              </main>
-            </div>
+            <Suspense fallback={<div>Loading...</div>}>
+              <div className={clsx(
+                "relative flex flex-col min-h-screen bg-background font-sans antialiased",
+                fontSans.variable,
+              )}>
+                <Navbar />
+                <main className="flex-grow">{children}</main>
+              </div>
+            </Suspense>
           </Providers>
         </NavigationLoadingProvider>
       </body>

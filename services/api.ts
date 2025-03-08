@@ -14,7 +14,7 @@ interface LoginCredentials {
 interface ExecutiveLoginResponse {
     success: boolean;
     token: string;
-    executive: {
+    entities: {
         id: string;
         username: string;
         email: string;
@@ -30,7 +30,7 @@ interface ExecutiveLoginResponse {
     };
 }
 
-interface SupAdminLoginResponse {
+interface AdminLoginResponse {
   success: boolean;
   token: string;
   admin: {
@@ -42,7 +42,7 @@ interface SupAdminLoginResponse {
 
 interface Prospectus {
     id: number;
-    executive_id: string;
+    entity_id: string; // Changed from executive_id
     date: string;
     email: string;
     reg_id: string;
@@ -57,7 +57,7 @@ interface Prospectus {
     services: string;
     notes:string;
     next_follow_up:string;
-    executive?: {
+    entities?: {
         id: string;
         username: string;
         email: string;
@@ -143,6 +143,7 @@ interface ExecutiveWithRoleName {
         id:string;
         name: string;
         description: string;
+        entity_type:string;
     };
     created_at: string;
     password?: string; // Add optional password field
@@ -167,12 +168,12 @@ interface Department {
     id: number;
     name: string;
     created_at: string;
-    exec_id:string;
+    entity_id: string;
 }
 
 interface CreateDepartmentRequest {
     name: string;
-    exec_id?:string;
+    entity_id?: string;
 }
 
 // Update Registration interface
@@ -229,7 +230,7 @@ interface Registration {
   transactions: {  // Changed from transaction to transactions
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string;
     executive: object;
     transaction_id: string;
     additional_info: object;
@@ -247,6 +248,7 @@ interface TransactionInfo {
   additional_info: Record<string, any>;
 }
 
+// Update the CreateRegistrationRequest interface
 interface CreateRegistrationRequest {
   // Transaction details
   transaction_type: TransactionInfo['transaction_type'];
@@ -255,8 +257,8 @@ interface CreateRegistrationRequest {
   transaction_date: string;
   additional_info: Record<string, any>;
   
-  // Executive and prospect details
-  exec_id: string;
+
+  entity_id: string; 
   client_id: string;
   prospectus_id: number;
   services: string;
@@ -271,6 +273,7 @@ interface CreateRegistrationRequest {
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
+  registered_by: string;  // Add this new field
 }
 
 // Add new interface for database registration
@@ -317,30 +320,36 @@ interface PaginatedResponse<T> {
   items: T[];
 }
 
-// Add new Role interface
+// Update the Role interface to match the new response format
 interface Role {
     id: number;
     name: string;
     description: string;
     permissions: {
-        read: boolean;
-        create: boolean;
-        delete: boolean;
-        update: boolean;
-    };
+        id: number;
+        name?: string;
+        description?: string;
+        entity_type?: string;
+    }[];
+    entity_type: 'Admin' | 'Editor' | 'Executive';
     created_at: string;
     updated_at: string;
 }
 
+// Add these new interfaces
+interface Permission {
+  id: number;
+  name: string;
+  description: string;
+  entity_type:string;
+}
+
+// Update the CreateRoleRequest interface
 interface CreateRoleRequest {
-    name: string;
-    description: string;
-    permissions: {
-        create: boolean;
-        read: boolean;
-        update: boolean;
-        delete: boolean;
-    };
+  name: string;
+  description: string;
+  permissions: number[];  // Changed from object to array of permission IDs
+  entity_type: string;
 }
 
 interface ServerRegistration {
@@ -361,7 +370,7 @@ interface ServerRegistration {
     id: number;
     reg_id: string;
     client_name: string;
-    executive:{
+    entity:{
         id:string;
         username:string;
         email:string;
@@ -374,7 +383,7 @@ interface ServerRegistration {
   transaction: {
     id: number;
     amount: number;
-    exec_id: string;
+    entity_id: string; 
     transaction_id: string;
     transaction_type: string;
   };
@@ -388,8 +397,8 @@ interface Transaction {
   amount: number;
   transaction_date: string;
   additional_info: Record<string, any>;
-  exec_id: string;
-  executive: {
+  entity_id: string;
+  enities: { 
     id: string;
     username: string;
   };
@@ -434,7 +443,7 @@ interface JournalData {
   paper_title: string;
   created_at: string;
   updated_at: string;
-  executive: {
+  entities: {
     id: string;
     email: string;
     username: string;
@@ -513,7 +522,7 @@ interface AssignedRegistration {
     id: number;
     email: string;
     reg_id: string;
-    executive: {
+    entity: {
       id: string;
       email: string;
       username: string;
@@ -530,10 +539,32 @@ interface ProspectusAssistData {
     requirement: string;
 }
 
+// Add new interfaces for dashboard
+interface DashboardStats {
+    total_journals: number;
+    published_count: number;
+    pending_count: number;
+    under_review_count: number;
+    approved_count: number;
+    rejected_count: number;
+    total_assigned: number;
+}
+
+interface ActivityItem {
+    id: number;
+    journal_id: number;
+    journal_name: string;
+    client_name: string;
+    action: 'created' | 'updated' | 'status_changed';
+    old_status?: string;
+    new_status?: string;
+    timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
-    '/executive/create',
-    '/executive/login',
-    '/superadmin/login'
+    '/entity/login',     // Add the new entity login endpoint
+    '/entity/create',    // Add entity creation endpoint
+    '/admin/login'
 ];
 
 // API service
@@ -548,30 +579,24 @@ const api = {
     init() {
         this.axiosInstance.interceptors.request.use(
             (config) => {
+                // Check if the endpoint is public before requiring authentication
                 const isPublicEndpoint = PUBLIC_ENDPOINTS.some(
                     endpoint => config.url?.includes(endpoint)
                 );
 
-                if (!isPublicEndpoint) {
-                    const token = this.getStoredToken();
-                    const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
-                    
-                    // console.log('Request Config:', {
-                    //     url: config.url,
-                    //     token: token,
-                    //     isLoggedIn: isLoggedIn
-                    // });
-
-                    if (!token || isLoggedIn !== 'true') {
-                        // Reject the request if not authenticated
-                        return Promise.reject(new Error('Not authenticated'));
-                    }
-
-                    // Ensure token has Bearer prefix
-                    const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-                    config.headers.Authorization = finalToken;
-                    // console.log('Final headers:', config.headers);
+                if (isPublicEndpoint) {
+                    return config; // Allow public endpoints without auth
                 }
+
+                const token = this.getStoredToken();
+                const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
+                
+                if (!token || isLoggedIn !== 'true') {
+                    return Promise.reject(new Error('Not authenticated'));
+                }
+
+                const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                config.headers.Authorization = finalToken;
                 return config;
             },
             (error) => {
@@ -582,17 +607,17 @@ const api = {
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
-                // Only redirect on auth errors if not on login pages
-                if (error?.response?.status === 401 || error?.message === 'Not authenticated') {
-                    const userRole = localStorage.getItem(USER_ROLE_KEY);
+                // Only handle auth errors for non-public endpoints
+                if (error?.response?.status === 401 && 
+                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.endsWith(endpoint))) {
+                    const userRole = localStorage.getItem(USER_ROLE_KEY) || 'executive';
                     const path = window.location.pathname;
                     
-                    // Don't redirect if already on a login page
                     if (!path.includes('/login')) {
                         this.clearStoredAuth();
-                        window.location.href = userRole === 'supAdmin' 
-                            ? '/supAdmin/login' 
-                            : '/business/login';
+                        window.location.href = userRole === 'admin' 
+                            ? '/admin/login' 
+                            : '/business/executive/login';
                     }
                 }
                 return Promise.reject(error);
@@ -602,21 +627,16 @@ const api = {
 
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/executive/login', credentials);
+            const response = await this.axiosInstance.post('/entity/login', credentials);
             return response.data;
         } catch (error: any) {
-            // console.error('API createProspectus error:', {
-            //     status: error.response?.status,
-            //     data: error.response?.data,
-            //     error: error
-            // });
             throw error;
         }
     },
 
-    async loginSupAdmin(credentials: LoginCredentials): Promise<SupAdminLoginResponse> {
+    async loginAdmin(credentials: LoginCredentials): Promise<AdminLoginResponse> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/login', credentials);
+            const response = await this.axiosInstance.post('/admin/login', credentials);
             return response.data;
         } catch (error: any) {
             // Don't transform the error, let the component handle it
@@ -626,7 +646,7 @@ const api = {
 
     async createProspectus(data: ProspectusCreateRequest): Promise<Prospectus> {
         try {
-            const response = await this.axiosInstance.post('/executive/prospectus/create', data);
+            const response = await this.axiosInstance.post('/entity/prospectus/create', data);
             return response.data;
         } catch (error: any) {
             console.error('API createProspectus error:', {
@@ -640,7 +660,7 @@ const api = {
 
     async getAllProspectus(): Promise<ApiResponse<Prospectus[]>> {
         try {
-            const response = await this.axiosInstance.get('/executive/prospectus/all');
+            const response = await this.axiosInstance.get('/entity/prospectus/all');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -649,7 +669,7 @@ const api = {
 
     async createExecutive(data: CreateExecutiveRequest) {
         try {
-            const response = await this.axiosInstance.post('/executive/create', data);
+            const response = await this.axiosInstance.post('/entity/create', data);
             return response.data;
         } catch (error: any) {
             console.error('API Error:', error.response || error);
@@ -660,7 +680,7 @@ const api = {
     // Get prospects by executive's clientId
     async getProspectusByClientId(clientId: string): Promise<ApiResponse<Prospectus[]>> {
         try {
-            const response = await this.axiosInstance.get(`/executive/prospectus/${clientId}`);
+            const response = await this.axiosInstance.get(`/entity/prospectus/${clientId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -671,8 +691,7 @@ const api = {
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
             console.log('Fetching prospect by regId:', regId);
-            const response = await this.axiosInstance.get(`/executive/prospectus/register/${regId}`);
-            console.log('Prospect response:', response.data);
+            const response = await this.axiosInstance.get(`/entity/prospectus/register/${regId}`);
             return response.data;
         } catch (error: any) {
             console.error('Error in getProspectusByRegId:', {
@@ -752,7 +771,7 @@ const api = {
     async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
             // Try one of these endpoints based on your backend structure:
-            const response = await this.axiosInstance.get('/executive/all');
+            const response = await this.axiosInstance.get('/entity/all');
             
             return response.data;
         } catch (error: any) {
@@ -825,7 +844,11 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            const response = await this.axiosInstance.post('/common/registration/create', data);
+            // Ensure we're using entity_id in the request
+            const response = await this.axiosInstance.post('/common/registration/create', {
+                ...data,
+                entity_id: data.entity_id,
+            });
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -871,16 +894,16 @@ const api = {
     // Add new method for getting registrations by executive ID
     async getRegistrationsByExecutive(executiveId: string): Promise<ApiResponse<Registration[]>> {
         try {
-            const response = await this.axiosInstance.get(`/executive/registrations/${executiveId}`);
+            const response = await this.axiosInstance.get(`/entity/registrations/${executiveId}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
         }
     },
 
-    async getAssignedRegistrations(executiveId: string): Promise<ApiResponse<AssignedRegistration[]>> {
+    async getAssignedRegistrations(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
         try {
-            const response = await this.axiosInstance.get(`/editor/assigned-registrations/${executiveId}`);
+            const response = await this.axiosInstance.get(`/editor/assigned-registrations/${entityId}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching assigned registrations:', error);
@@ -896,7 +919,10 @@ const api = {
 
     async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
         try {
-            const response = await this.axiosInstance.post('/common/departments/create', data);
+            const response = await this.axiosInstance.post('/common/departments/create', {
+                ...data,
+                entity_id: data.entity_id // Ensure this field is included
+            });
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -923,7 +949,7 @@ const api = {
     
     async updateProspectus(id: number, data: Partial<ProspectusCreateRequest>): Promise<ApiResponse<Prospectus>> {
         try {
-            const response = await this.axiosInstance.put(`/executive/prospectus/${id}`, data);
+            const response = await this.axiosInstance.put(`/entity/prospectus/${id}`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -933,7 +959,16 @@ const api = {
     // Add new method for getting all roles
     async getAllRoles(): Promise<ApiResponse<Role[]>> {
         try {
-            const response = await this.axiosInstance.get('/superadmin/roles/all');
+            const response = await this.axiosInstance.get('/admin/roles/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getPermissionsByEntityType(entityType: 'Admin' | 'Editor' | 'Executive'): Promise<ApiResponse<Permission[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/permissions/entity-type/${entityType}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -942,7 +977,7 @@ const api = {
 
     async createRole(data: CreateRoleRequest): Promise<ApiResponse<Role>> {
         try {
-            const response = await this.axiosInstance.post('/superadmin/roles/create', data);
+            const response = await this.axiosInstance.post('/admin/roles/create', data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -951,7 +986,7 @@ const api = {
 
     async updateRole(id: number, data: CreateRoleRequest): Promise<ApiResponse<Role>> {
         try {
-            const response = await this.axiosInstance.put(`/superadmin/roles/${id}`, data);
+            const response = await this.axiosInstance.put(`/admin/roles/${id}`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -960,7 +995,7 @@ const api = {
 
     async deleteRole(id: number): Promise<ApiResponse<void>> {
         try {
-            const response = await this.axiosInstance.delete(`/superadmin/roles/${id}`);
+            const response = await this.axiosInstance.delete(`/admin/roles/${id}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -991,7 +1026,7 @@ const api = {
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
         try {
-                        const response = await this.axiosInstance.get(                `/editor/journal-data/${id}`            );
+                        const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data:', error);
@@ -1047,7 +1082,7 @@ const api = {
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
             console.log('Fetching all editors');
-            const response = await this.axiosInstance.get('/executive/editors/all'); // Changed from /editor/editors/all
+            const response = await this.axiosInstance.get('/entity/editors/all'); // Changed from /editor/editors/all
             console.log('Editors response:', response.data);
             return response.data;
         } catch (error: any) {
@@ -1072,6 +1107,24 @@ const api = {
         }
     },
 
+    async getEditorDashboardStats(): Promise<ApiResponse<DashboardStats>> {
+        try {
+            const response = await this.axiosInstance.get('/editor/dashboard/stats');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getEditorRecentActivity(): Promise<ApiResponse<ActivityItem[]>> {
+        try {
+            const response = await this.axiosInstance.get('/editor/dashboard/recent-activity');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1081,14 +1134,17 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'supAdmin') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin') {
+        if (!token || !role) {
+            throw new Error('Invalid auth data: missing token or role');
+        }
+
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         localStorage.setItem(USER_ROLE_KEY, role);
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
         
-        // Dispatch a custom event for login
         window.dispatchEvent(new Event('auth-change'));
     },
 
@@ -1162,5 +1218,8 @@ export type {
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
+    DashboardStats,
+    ActivityItem,
+    Permission,  // Add this export
 };
 export default api;

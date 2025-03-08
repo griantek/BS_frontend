@@ -15,35 +15,35 @@ export const siteConfig = {
   name: "Business suite",
   
   // Super Admin Navigation
-  supAdminLinks: [
+  adminLinks: [
     {
       label: "Dashboard",
-      href: "/supAdmin",
+      href: "/admin",
       icon: ChartBarIcon,
     },
     {
       label: "Users",
-      href: "/supAdmin/users/executives",
+      href: "/admin/users/executives",
       icon: UsersIcon,
     },
     {
       label: "Services",
-      href: "/supAdmin/services",
+      href: "/admin/services",
       icon: WrenchScrewdriverIcon,
     },
     {
       label: "Clients",
-      href: "/supAdmin/clients",
+      href: "/admin/clients",
       icon: UserGroupIcon,
     },
     {
       label: "Finance",
-      href: "/supAdmin/finance",
+      href: "/admin/finance",
       icon: BanknotesIcon,
     },
     {
       label: "Departments",
-      href: "/supAdmin/department",
+      href: "/admin/department",
       icon: BuildingOfficeIcon,
     }
   ],
@@ -52,7 +52,7 @@ export const siteConfig = {
   executiveLinks: [
     {
       label: "Dashboard",
-      href: "/business",
+      href: "/business/executive",
       icon: HomeIcon,
     }
   ],
@@ -61,12 +61,12 @@ export const siteConfig = {
   editorLinks: [
     {
       label: "Dashboard",
-      href: "/editor",
+      href: "/business/editor",
       icon: HomeIcon,
     },
     {
       label: "Journals",
-      href: "/editor/journals",
+      href: "/business/editor/journals",
       icon: NewspaperIcon,
     }
   ],
