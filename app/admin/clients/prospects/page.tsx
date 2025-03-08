@@ -1,20 +1,22 @@
 "use client";
 import React from "react";
+
 import {
   Card,
-  CardHeader,
   CardBody,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
+  CardHeader,
   Chip,
   Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/react";
 import { WithAdminAuth } from "@/components/withAdminAuth";
 import api, { type Prospectus } from "@/services/api";
+import { toast } from "react-toastify";
 
 function ProspectsPage() {
   const [prospects, setProspects] = React.useState<Prospectus[]>([]);
@@ -26,7 +28,7 @@ function ProspectsPage() {
         const response = await api.getAllProspectus();
         setProspects(response.data);
       } catch (error) {
-        console.error("Error fetching prospects:", error);
+        toast.error("Failed to fetch prospects");
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +78,7 @@ function ProspectsPage() {
                     <TableCell>{prospect.state}</TableCell>
                     <TableCell>{prospect.department}</TableCell>
                     <TableCell>
-                      <Chip size="sm" variant="flat" color="primary">
+                      <Chip color="primary" size="sm" variant="flat">
                         {prospect.entities?.username ?? "N/A"}
                       </Chip>
                     </TableCell>

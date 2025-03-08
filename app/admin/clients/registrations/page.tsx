@@ -1,21 +1,21 @@
-"use client"
-import React from 'react';
+"use client";
+import React from "react";
+
 import {
-    Card,
-    CardHeader,
-    CardBody,
-    Table,
-    TableHeader,
-    TableColumn,
-    TableBody,
-    TableRow,
-    TableCell,
-    Chip,
-    Spinner,
-    Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/react";
-import { WithAdminAuth } from '@/components/withAdminAuth';
-import api, { ServerRegistration } from '@/services/api';
+import { WithAdminAuth } from "@/components/withAdminAuth";
+import api, { type ServerRegistration } from "@/services/api";
 
 // Helper functions
 const getBankInfo = (registration: ServerRegistration) => {
