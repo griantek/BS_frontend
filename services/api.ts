@@ -610,7 +610,7 @@ const api = {
                 // Only handle auth errors for non-public endpoints
                 if (error?.response?.status === 401 && 
                     !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.endsWith(endpoint))) {
-                    const userRole = localStorage.getItem(USER_ROLE_KEY);
+                    const userRole = localStorage.getItem(USER_ROLE_KEY) || 'executive';
                     const path = window.location.pathname;
                     
                     if (!path.includes('/login')) {
@@ -1135,13 +1135,16 @@ const api = {
     },
 
     setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin') {
+        if (!token || !role) {
+            throw new Error('Invalid auth data: missing token or role');
+        }
+
         const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         localStorage.setItem(TOKEN_KEY, finalToken);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         localStorage.setItem(USER_ROLE_KEY, role);
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
         
-        // Dispatch a custom event for login
         window.dispatchEvent(new Event('auth-change'));
     },
 
