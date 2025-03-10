@@ -14,13 +14,26 @@ function NavigationLoadingContent({ children }: { children: React.ReactNode }) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const prevPathRef = React.useRef(pathname);
 
   useEffect(() => {
-    setIsNavigating(false);
+    if (prevPathRef.current !== pathname) {
+      console.log('Navigation completed:', pathname);
+      setIsNavigating(false);
+    }
+    prevPathRef.current = pathname;
   }, [pathname, searchParams]);
 
+  const contextValue = React.useMemo(() => ({
+    isNavigating, 
+    setIsNavigating: (value: boolean) => {
+      console.log('Setting navigation state:', value);
+      setIsNavigating(value);
+    }
+  }), [isNavigating]);
+
   return (
-    <NavigationLoadingContext.Provider value={{ isNavigating, setIsNavigating }}>
+    <NavigationLoadingContext.Provider value={contextValue}>
       {isNavigating && <PageLoadingSpinner text="Loading page..." />}
       {children}
     </NavigationLoadingContext.Provider>

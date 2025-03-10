@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 import {
   Card,
@@ -80,6 +81,7 @@ function AmountTooltip({
 }
 
 function RegistrationsPage() {
+  const router = useRouter(); // Add router
   const [registrations, setRegistrations] = React.useState<
     ServerRegistration[]
   >([]);
@@ -88,6 +90,7 @@ function RegistrationsPage() {
   const [total, setTotal] = React.useState(0);
   const [searchTerm, setSearchTerm] = React.useState("");
   const PER_PAGE = 10;
+  const [clickedRowId, setClickedRowId] = React.useState<number | null>(null);
 
   const fetchRegistrations = React.useCallback(async (pageNum: number) => {
     try {
@@ -151,6 +154,16 @@ function RegistrationsPage() {
     });
   };
 
+  // Add click handler
+  const handleRowClick = (registrationId: number) => {
+    console.log('Row clicked, navigating to:', `/admin/clients/registrations/${registrationId}`);
+    setClickedRowId(registrationId);
+    
+    setTimeout(() => {
+      router.push(`/admin/clients/registrations/${registrationId}`);
+    }, 100);
+  };
+
   return (
     <>
       <div className="w-full p-6">
@@ -186,7 +199,11 @@ function RegistrationsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredRegistrations.map((registration) => (
-                    <TableRow key={registration.id}>
+                    <TableRow 
+                      key={registration.id}
+                      className="cursor-pointer hover:bg-default-100 transition-colors"
+                      onClick={() => handleRowClick(registration.id)}
+                    >
                       <TableCell>{registration.prospectus.reg_id}</TableCell>
                       <TableCell>
                         {registration.prospectus.client_name}

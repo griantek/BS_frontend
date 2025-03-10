@@ -1,7 +1,7 @@
 "use client";
-import { Card } from "@heroui/react";
 import { Tabs, Tab } from "@heroui/react";
 import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 const tabs = [
   { id: "prospects", label: "Prospects", href: "/admin/clients/prospects" },
@@ -15,23 +15,50 @@ export default function ClientsLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const currentTab = pathname?.split('/').pop() || 'prospects';
+  const navigationInProgressRef = useRef(false);
+  
+  // Extract the base tab from pathname
+  const isDetailsPage = pathname?.includes('/registrations/') || pathname?.includes('/prospects/');
+  const currentTab = isDetailsPage
+    ? pathname?.includes('/registrations/') ? 'registrations' : 'prospects'
+    : pathname?.split('/').pop() || 'prospects';
+
+  // If we're on a details page, we shouldn't perform a tab selection redirect
+  // This prevents the unwanted redirect when viewing a registration detail
+  const shouldAllowTabNavigation = !isDetailsPage;
+  
+  // Prevent tab navigation from redirecting when on a detail page
+  const handleSelectionChange = (key: React.Key) => {
+    // Skip navigation if we're in a details page
+    if (navigationInProgressRef.current || !shouldAllowTabNavigation) return;
+    
+    const tab = tabs.find(t => t.id === key);
+    if (tab) {
+      navigationInProgressRef.current = true;
+      router.push(tab.href);
+      
+      // Reset flag after navigation
+      setTimeout(() => {
+        navigationInProgressRef.current = false;
+      }, 500);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen p-6">
-        <div className="px-4">
+      {/* Do not render tabs on detail pages */}
+      {!isDetailsPage && (
+        <div className="px-4 mb-6">
           <Tabs 
             selectedKey={currentTab}
-            onSelectionChange={(key) => {
-              const tab = tabs.find(t => t.id === key);
-              if (tab) router.push(tab.href);
-            }}
+            onSelectionChange={handleSelectionChange}
           >
             {tabs.map((tab) => (
               <Tab key={tab.id} title={tab.label} />
             ))}
           </Tabs>
         </div>
+      )}
       <div className="flex-grow">{children}</div>
     </div>
   );
