@@ -18,7 +18,6 @@ function NavigationLoadingContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (prevPathRef.current !== pathname) {
-      console.log('Navigation completed:', pathname);
       setIsNavigating(false);
     }
     prevPathRef.current = pathname;
@@ -27,7 +26,6 @@ function NavigationLoadingContent({ children }: { children: React.ReactNode }) {
   const contextValue = React.useMemo(() => ({
     isNavigating, 
     setIsNavigating: (value: boolean) => {
-      console.log('Setting navigation state:', value);
       setIsNavigating(value);
     }
   }), [isNavigating]);

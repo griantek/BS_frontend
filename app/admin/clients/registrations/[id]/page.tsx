@@ -41,17 +41,14 @@ function RegistrationContent({ regId }: RegistrationContent) {
   React.useEffect(() => {
     // Mark component as mounted
     isMounted.current = true;
-    console.log('Registration detail page mounted, ID:', regId);
 
     const fetchData = async () => {
       if (!regId) return;
       
       try {
         setIsLoading(true);
-        console.log('Fetching registration data for ID:', regId);
         
         const registrationResponse = await api.getRegistrationById(parseInt(regId));
-        console.log('Registration data received:', registrationResponse.success);
         
         // Check if component is still mounted before updating state
         if (!isMounted.current) return;
@@ -94,7 +91,6 @@ function RegistrationContent({ regId }: RegistrationContent) {
 
     // Clean up function to prevent state updates after unmount
     return () => {
-      console.log('Registration detail page unmounting');
       isMounted.current = false;
     };
   }, [regId]);
@@ -119,7 +115,6 @@ function RegistrationContent({ regId }: RegistrationContent) {
       
       if (response.success) {
         toast.success('Registration deleted successfully');
-        console.log('Navigation after delete: /admin/clients/registrations');
         
         // Force navigation using window.location to avoid routing issues
         window.location.href = '/admin/clients/registrations';

@@ -1094,8 +1094,7 @@ const api = {
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
             console.log('Fetching all editors');
-            const response = await this.axiosInstance.get('/entity/editors/all'); // Changed from /editor/editors/all
-            console.log('Editors response:', response.data);
+            const response = await this.axiosInstance.get('/entity/editors/all');
             return response.data;
         } catch (error: any) {
             console.error('Error in getAllEditors:', {

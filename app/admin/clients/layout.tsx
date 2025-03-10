@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 const tabs = [
   { id: "prospects", label: "Prospects", href: "/admin/clients/prospects" },
   { id: "registrations", label: "Registrations", href: "/admin/clients/registrations" },
+  { id: "journals", label: "Journals", href: "/admin/clients/journals" }, // Add new journals tab
 ];
 
 export default function ClientsLayout({
@@ -18,13 +19,17 @@ export default function ClientsLayout({
   const navigationInProgressRef = useRef(false);
   
   // Extract the base tab from pathname
-  const isDetailsPage = pathname?.includes('/registrations/') || pathname?.includes('/prospects/');
+  const isDetailsPage = pathname?.includes('/registrations/') || 
+                        pathname?.includes('/prospects/') || 
+                        pathname?.includes('/journals/'); // Add journals to details pages
+  
   const currentTab = isDetailsPage
-    ? pathname?.includes('/registrations/') ? 'registrations' : 'prospects'
+    ? pathname?.includes('/registrations/') ? 'registrations' 
+    : pathname?.includes('/journals/') ? 'journals' 
+    : 'prospects'
     : pathname?.split('/').pop() || 'prospects';
 
   // If we're on a details page, we shouldn't perform a tab selection redirect
-  // This prevents the unwanted redirect when viewing a registration detail
   const shouldAllowTabNavigation = !isDetailsPage;
   
   // Prevent tab navigation from redirecting when on a detail page
