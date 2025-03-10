@@ -81,6 +81,13 @@ export const Navbar = () => {
     if (path === '/admin' || path === '/business/executive' || path === '/business/editor') {
       return pathname === path;
     }
+  
+    // Special handling for admin sections
+    if (path.startsWith('/admin/')) {
+      const section = path.split('/')[2]; // Get 'users', 'clients', etc.
+      return pathname.startsWith('/admin/' + section);
+    }
+  
     // For other sections, match the section prefix
     return pathname.startsWith(path) && !pathname.match(/^\/(admin|executive|editor)$/);
   };
