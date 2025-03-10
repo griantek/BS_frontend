@@ -57,6 +57,7 @@ interface Prospectus {
     services: string;
     notes:string;
     next_follow_up:string;
+    isregistered:boolean;
     entities?: {
         id: string;
         username: string;
@@ -362,6 +363,7 @@ interface ServerRegistration {
   total_amount: number;
   accept_period: string;
   pub_period: string;
+  assigned_to: string;
   status: 'pending' | 'registered';
   month: number;
   year: number;
@@ -370,12 +372,13 @@ interface ServerRegistration {
     id: number;
     reg_id: string;
     client_name: string;
-    entity:{
+    entities:{
         id:string;
         username:string;
         email:string;
     };
   };
+  assigned_username:string;
   bank_account: {
     bank: string;
     account_number: string;
@@ -561,6 +564,13 @@ interface ActivityItem {
     timestamp: string;
 }
 
+interface ProspectusResponse {
+  data: Prospectus[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -658,9 +668,11 @@ const api = {
         }
     },
 
-    async getAllProspectus(): Promise<ApiResponse<Prospectus[]>> {
+    async getAllProspectus(page: number = 1, per_page: number = 10): Promise<ApiResponse<ProspectusResponse>> {
         try {
-            const response = await this.axiosInstance.get('/entity/prospectus/all');
+            const response = await this.axiosInstance.get('/entity/prospectus/all', {
+                params: { page, per_page }
+            });
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
