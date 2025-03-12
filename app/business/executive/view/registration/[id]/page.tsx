@@ -25,7 +25,8 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import { useForm } from "react-hook-form";
-import type { Registration, BankAccount, TransactionInfo,Editor } from '@/services/api';
+import type { Registration, BankAccount, TransactionInfo, Editor } from '@/services/api';
+import { hasPermission, PERMISSIONS, UserWithPermissions } from '@/utils/permissions';
 
 interface ExtendedRegistration extends Registration {
   date: string;
@@ -98,6 +99,13 @@ function RegistrationContent({ regId }: { regId: string }) {
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [editors, setEditors] = React.useState<Editor[]>([]);
 
+  // Add permission states
+  const [permissions, setPermissions] = React.useState({
+    canEditRegistration: false,
+    canDeleteRegistration: false,
+    canApproveRegistration: false
+  });
+
   const {
     register,
     handleSubmit,
@@ -115,6 +123,18 @@ function RegistrationContent({ regId }: { regId: string }) {
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
+    
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    
+    const userData: UserWithPermissions = JSON.parse(userStr);
+    
+    // Check permissions
+    setPermissions({
+      canEditRegistration: hasPermission(userData, PERMISSIONS.SHOW_EDIT_REGISTRATION_BUTTON),
+      canDeleteRegistration: hasPermission(userData, PERMISSIONS.SHOW_DELETE_REGISTRATION_BUTTON),
+      canApproveRegistration: hasPermission(userData, PERMISSIONS.SHOW_APPROVE_BUTTON)
+    });
 
     const fetchData = async () => {
       try {
@@ -401,7 +421,8 @@ function RegistrationContent({ regId }: { regId: string }) {
               <p className="text-small text-default-500">ID: {registrationData.prospectus.reg_id}</p>
             </div>
             <div className="flex gap-3">
-              {registrationData.status === 'pending' && (
+              {/* Check both registration status and permission */}
+              {registrationData.status === 'pending' && permissions.canApproveRegistration && (
                 <Button
                   color="success"
                   variant="flat"
@@ -410,20 +431,24 @@ function RegistrationContent({ regId }: { regId: string }) {
                   Approve Registration
                 </Button>
               )}
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={() => router.push(`/business/executive/edit/registration/${regId}`)}
-              >
-                Edit Registration
-              </Button>
-              <Button
-                color="danger"
-                variant="flat"
-                onPress={onDeleteModalOpen}
-              >
-                Delete Registration
-              </Button>
+              {permissions.canEditRegistration && (
+                <Button
+                  color="primary"
+                  variant="flat"
+                  onPress={() => router.push(`/business/executive/edit/registration/${regId}`)}
+                >
+                  Edit Registration
+                </Button>
+              )}
+              {permissions.canDeleteRegistration && (
+                <Button
+                  color="danger"
+                  variant="flat"
+                  onPress={onDeleteModalOpen}
+                >
+                  Delete Registration
+                </Button>
+              )}
             </div>
           </CardHeader>
         </Card>

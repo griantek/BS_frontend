@@ -28,6 +28,7 @@ import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 import { ProfileMenu } from '@/components/ProfileMenu';
+import { currentUserHasRecordsAccess, currentUserHasPermission, getCurrentUser, PERMISSIONS } from '@/utils/permissions';
 
 interface NavItem {
   label: string;
@@ -44,6 +45,8 @@ export const Navbar = () => {
   const { setIsNavigating } = useNavigationLoading();
   const [username, setUsername] = React.useState<string>("");
   const [userRole, setUserRole] = React.useState<string>("");
+  const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
+  const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
 
@@ -58,12 +61,29 @@ export const Navbar = () => {
       // Get role information
       const roleInfo = userData?.role?.name || localStorage.getItem('userRole') || '';
       setUserRole(roleInfo);
+      
+      // Check permissions
+      setHasRecordsAccess(currentUserHasRecordsAccess());
+      setHasDashboardPermission(currentUserHasPermission(PERMISSIONS.VIEW_DASHBOARD_EXECUTIVE));
     }
   }, [isLoggedIn]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const path = isAdmin ? '/admin' : isExecutive ? '/business/executive' : '/';
+    let path = '/';
+    
+    if (isAdmin) {
+      path = '/admin';
+    } else if (isExecutive) {
+      // If executive has dashboard permission, go to dashboard,
+      // otherwise go to records if they have records access
+      path = hasDashboardPermission 
+        ? '/business/executive'
+        : hasRecordsAccess 
+          ? '/business/executive/records'
+          : '/business/executive'; // Fallback to dashboard if no records access
+    }
+    
     setIsNavigating(true);
     router.push(path);
   };
@@ -94,18 +114,34 @@ export const Navbar = () => {
   };
 
   const getNavigationLinks = () => {
+    // For executive role, filter links based on permissions
+    if (isExecutive) {
+      return siteConfig.executiveLinks.filter(link => {
+        // Filter out the dashboard link if user doesn't have permission
+        if (link.href === '/business/executive') {
+          return hasDashboardPermission;
+        }
+        
+        // Filter out the records link if user doesn't have permission
+        if (link.href === '/business/executive/records') {
+          return hasRecordsAccess;
+        }
+        
+        return true;
+      });
+    }
+    
     // Now using the properly declared isEditorPath variable
     if (isAdmin) {
       return siteConfig.adminLinks;
     }
-    if (isExecutive) {
-      return siteConfig.executiveLinks;
-    }
+    
     const role = getUserRole();
     if (role === 'editor') {
       // Only return links if we're in mobile view or not in editor section
       return !isEditorPath ? siteConfig.editorLinks : [];
     }
+    
     return [];
   };
 
@@ -217,9 +253,11 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarMenu>
-        {/* Remove the username section from here since we have it in the mobile ProfileMenu */}
-        {/* Show all navigation links in mobile menu, including editor links */}
-        {isLoggedIn && (getUserRole() === 'editor' ? siteConfig.editorLinks : getNavigationLinks()).map((link) => (
+        {/* Filter the navigation links for mobile menu as well */}
+        {isLoggedIn && (getUserRole() === 'editor' ? 
+          siteConfig.editorLinks : 
+          getNavigationLinks()
+        ).map((link) => (
           <NavbarMenuItem key={link.href}>
             <NextLink 
               className={clsx(

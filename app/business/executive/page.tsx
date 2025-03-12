@@ -22,6 +22,13 @@ import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import type { Prospectus, Registration } from '@/services/api';
 import { Spinner } from "@nextui-org/react";
 import { format } from 'date-fns';
+import { 
+  PERMISSIONS,
+  hasPermission, 
+  hasRecordsAccess,
+  UserWithPermissions,
+  currentUserHasPermission
+} from '@/utils/permissions';
 
 function BusinessDashboard() {
   const router = useRouter();
@@ -34,7 +41,10 @@ function BusinessDashboard() {
     totalRevenue: 0,
     pendingAmount: 0,
   });
+  const [userData, setUserData] = React.useState<UserWithPermissions | null>(null);
   const [hasAddProspectPermission, setHasAddProspectPermission] = React.useState(false);
+  const [hasAnyRecordsPermission, setHasAnyRecordsPermission] = React.useState(false);
+  const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -44,14 +54,31 @@ function BusinessDashboard() {
     
     if (!token || !userStr) return;
     
-    const userData = JSON.parse(userStr);
+    const userDataParsed = JSON.parse(userStr);
+    setUserData(userDataParsed);
+
+    // Check dashboard permission immediately
+    const dashboardPermission = hasPermission(
+      userDataParsed, 
+      PERMISSIONS.VIEW_DASHBOARD_EXECUTIVE
+    );
+    setHasDashboardPermission(dashboardPermission);
+
+    // If no dashboard permission but has records access, redirect to records
+    if (!dashboardPermission) {
+      const recordsAccess = hasRecordsAccess(userDataParsed);
+      if (recordsAccess) {
+        router.replace('/business/executive/records');
+        return;
+      }
+    }
     
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const [prospectsResponse, registrationsResponse] = await Promise.all([
-          api.getProspectusByClientId(userData.id),
-          api.getRegistrationsByExecutive(userData.id)
+          api.getProspectusByClientId(userDataParsed.id),
+          api.getRegistrationsByExecutive(userDataParsed.id)
         ]);
         
         const prospects = prospectsResponse.data || [];
@@ -72,13 +99,14 @@ function BusinessDashboard() {
           pendingAmount: pendingAmount,
         });
 
-        // Check if user has the specific permission
-        if (userData.permissions) {
-          const hasPermission = userData.permissions.some(
-            (permission: { name: string; }) => permission.name === 'show_add_prosp_btn'
-          );
-          setHasAddProspectPermission(hasPermission);
-        }
+        // Check permissions using our utility
+        setHasAddProspectPermission(
+          hasPermission(userDataParsed, PERMISSIONS.SHOW_ADD_PROSPECT)
+        );
+        setHasAnyRecordsPermission(
+          hasRecordsAccess(userDataParsed)
+        );
+        
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load dashboard data');
@@ -112,13 +140,15 @@ function BusinessDashboard() {
         <CardHeader className="flex justify-between items-center px-6 py-4">
           <h1 className="text-2xl font-bold">Business Executive Dashboard</h1>
           <div className="flex gap-2">
-            <Button 
-              color="secondary"
-              onClick={() => router.push('/business/executive/records')}
-              startContent={<TableCellsIcon className="h-5 w-5" />}
-            >
-              View Records
-            </Button>
+            {hasAnyRecordsPermission && (
+              <Button 
+                color="secondary"
+                onClick={() => router.push('/business/executive/records')}
+                startContent={<TableCellsIcon className="h-5 w-5" />}
+              >
+                View Records
+              </Button>
+            )}
             {hasAddProspectPermission && (
               <Button 
                 color="primary" 
@@ -204,15 +234,17 @@ function BusinessDashboard() {
                 <span className="text-default-500">Registered Clients</span>
                 <span className="font-semibold">{dashboardData.completedRegistrations}</span>
               </div>
-              <Button 
-                color="primary" 
-                variant="flat" 
-                className="w-full mt-4"
-                onClick={() => router.push('/business/executive/records')}
-                startContent={<TableCellsIcon className="h-4 w-4" />}
-              >
-                View All Records
-              </Button>
+              {hasAnyRecordsPermission && (
+                <Button 
+                  color="primary" 
+                  variant="flat" 
+                  className="w-full mt-4"
+                  onClick={() => router.push('/business/executive/records')}
+                  startContent={<TableCellsIcon className="h-4 w-4" />}
+                >
+                  View All Records
+                </Button>
+              )}
             </div>
           </CardBody>
         </Card>

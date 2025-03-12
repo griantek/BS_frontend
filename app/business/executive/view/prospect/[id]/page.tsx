@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
+import { hasPermission, PERMISSIONS, UserWithPermissions } from '@/utils/permissions';
 
 // Define params type
 interface PageParams {
@@ -67,9 +68,30 @@ function ProspectContent({ regId }: { regId: string }) {
   const [prospectData, setProspectData] = React.useState<ProspectData | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = React.useState(false);
+  
+  // Add permission states
+  const [permissions, setPermissions] = React.useState({
+    canSendQuotation: false,
+    canRegister: false,
+    canEdit: false,
+    canDelete: false
+  });
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
+
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    
+    const userData: UserWithPermissions = JSON.parse(userStr);
+    
+    // Check permissions
+    setPermissions({
+      canSendQuotation: hasPermission(userData, PERMISSIONS.SHOW_SEND_QUOTE_BTN),
+      canRegister: hasPermission(userData, PERMISSIONS.SHOW_REGISTER_BTN),
+      canEdit: hasPermission(userData, PERMISSIONS.SHOW_EDIT_BUTTON_EXECUTIVE),
+      canDelete: hasPermission(userData, PERMISSIONS.SHOW_DELETE_BUTTON_EXECUTIVE)
+    });
 
     const fetchProspectData = async () => {
       try {
@@ -145,35 +167,43 @@ function ProspectContent({ regId }: { regId: string }) {
               <p className="text-small text-default-500">ID: {prospectData.reg_id}</p>
             </div>
             <div className="flex gap-3">
-              <Button
-                color="secondary"
-                variant="flat"
-                onClick={() => router.push(`/business/executive/quotation/${regId}`)}
-              >
-                Send Quotation
-              </Button>
-              <Button
-                color="success"
-                variant="flat"
-                onPress={() => router.push(`/business/executive/register/${regId}`)}
-              >
-                Register
-              </Button>
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={() => router.push(`/business/executive/edit/prospect/${regId}`)}
-              >
-                Edit Details
-              </Button>
-              <Button
-                color="danger"
-                variant="flat"
-                onPress={onOpen}
-                startContent={<TrashIcon className="h-5 w-5" />}
-              >
-                Delete
-              </Button>
+              {permissions.canSendQuotation && (
+                <Button
+                  color="secondary"
+                  variant="flat"
+                  onClick={() => router.push(`/business/executive/quotation/${regId}`)}
+                >
+                  Send Quotation
+                </Button>
+              )}
+              {permissions.canRegister && (
+                <Button
+                  color="success"
+                  variant="flat"
+                  onPress={() => router.push(`/business/executive/register/${regId}`)}
+                >
+                  Register
+                </Button>
+              )}
+              {permissions.canEdit && (
+                <Button
+                  color="primary"
+                  variant="flat"
+                  onPress={() => router.push(`/business/executive/edit/prospect/${regId}`)}
+                >
+                  Edit Details
+                </Button>
+              )}
+              {permissions.canDelete && (
+                <Button
+                  color="danger"
+                  variant="flat"
+                  onPress={onOpen}
+                  startContent={<TrashIcon className="h-5 w-5" />}
+                >
+                  Delete
+                </Button>
+              )}
             </div>
           </CardHeader>
         </Card>
