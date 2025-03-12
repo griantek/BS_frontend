@@ -1,12 +1,13 @@
 "use client";
 import React from 'react';
-import { withEditorAuth } from '@/components/withEditorAuth';
+import { withEditorAuth, withDashboardAuth } from '@/components/withEditorAuth';
 import { Card, CardBody, CardHeader, Divider, Chip } from "@nextui-org/react";
 import { format } from 'date-fns';
 import api from '@/services/api';
 import { useRouter } from "next/navigation";
-import type { DashboardStats, ActivityItem } from '@/services/api'; // Change to type-only import
+import type { DashboardStats, ActivityItem } from '@/services/api';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 
 // Mock data
 const MOCK_STATS: DashboardStats = {
@@ -177,4 +178,6 @@ const ActivityItem = ({ activity }: { activity: ActivityItem }) => (
     </div>
 );
 
-export default withEditorAuth(EditorPage);
+// Use withDashboardAuth which includes the dashboard permission check
+export default withDashboardAuth(EditorPage);
+// Alternatively, you can use: withEditorAuth(EditorPage, PERMISSIONS.VIEW_DASHBOARD_EDITOR);

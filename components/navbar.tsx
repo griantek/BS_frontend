@@ -47,6 +47,7 @@ export const Navbar = () => {
   const [userRole, setUserRole] = React.useState<string>("");
   const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
   const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
+  const [hasNotificationsPermission, setHasNotificationsPermission] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
 
@@ -65,6 +66,8 @@ export const Navbar = () => {
       // Check permissions
       setHasRecordsAccess(currentUserHasRecordsAccess());
       setHasDashboardPermission(currentUserHasPermission(PERMISSIONS.VIEW_DASHBOARD_EXECUTIVE));
+      // Check for notification permission
+      setHasNotificationsPermission(currentUserHasPermission(PERMISSIONS.VIEW_NOTIFICATIONS));
     }
   }, [isLoggedIn]);
 
@@ -235,7 +238,7 @@ export const Navbar = () => {
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2 items-center">
-          {isEditorPath && <NotificationButton />}
+          {isEditorPath && hasNotificationsPermission && <NotificationButton />}
           <ThemeSwitch />
           {isLoggedIn && username && (
             <ProfileMenu username={username} userRole={userRole} />
@@ -244,7 +247,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        {isEditorPath && <NotificationButton />}
+        {isEditorPath && hasNotificationsPermission && <NotificationButton />}
         <ThemeSwitch />
         {isLoggedIn && username && (
           <ProfileMenu username={username} userRole={userRole} isMobile={true} />

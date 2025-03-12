@@ -4,6 +4,7 @@
 
 // Permission constants
 export const PERMISSIONS = {
+//   EXECUTIVE PERMISSIONS
   SHOW_ADD_PROSPECT: 'show_add_prosp_btn',
   SHOW_PROSPECTUS_TABLE: 'show_prosp_table',
   SHOW_REGISTRATION_TAB: 'show_reg_tab_ex',
@@ -17,6 +18,16 @@ export const PERMISSIONS = {
   SHOW_EDIT_REGISTRATION_BUTTON: 'show_edit_reg_btn',
   SHOW_DELETE_REGISTRATION_BUTTON: 'show_del_reg_btn',
   SHOW_APPROVE_BUTTON: 'show_approve_btn',
+  
+  // Editor permissions
+  VIEW_NOTIFICATIONS: 'view_notifs',
+  VIEW_DASHBOARD_EDITOR: 'view_dash_ed',
+  
+  // New editor permissions
+  SHOW_ASSIGNED_TABLE: 'show_assigned_table',
+  CLICK_ASSIGNED_ROWS: 'click_assigned_rows',
+  SHOW_JOURNAL_TABLE: 'show_journal_table',
+  CLICK_JOURNAL_ROWS: 'click_journal_rows',
 };
 
 /**
