@@ -401,7 +401,7 @@ interface Transaction {
   transaction_date: string;
   additional_info: Record<string, any>;
   entity_id: string;
-  enities: { 
+  entities: { 
     id: string;
     username: string;
   };

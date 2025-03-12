@@ -268,17 +268,19 @@ function JournalContent({ id }: { id: string }) {
         <Card className="w-full">
           <CardHeader className="flex justify-between items-center">
             <p className="text-md font-semibold">Journal Status Screenshot</p>
-            <Button
-              isIconOnly
-              size="sm"
-              variant="light"
-              onClick={handleRefreshStatus}
-              isLoading={isRefreshing}
-            >
-              <ArrowPathIcon
-                className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
+            {journal.journal_link && journal.username && journal.password && (
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onClick={handleRefreshStatus}
+                isLoading={isRefreshing}
+              >
+                <ArrowPathIcon
+                  className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
           </CardHeader>
           <Divider />
           <CardBody>

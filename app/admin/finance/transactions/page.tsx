@@ -10,7 +10,8 @@ import {
   Card,
   CardBody,
   Spinner,
-  Chip
+  Chip,
+  Pagination
 } from "@heroui/react";
 import api from '@/services/api';
 import type { Transaction } from '@/services/api';
@@ -46,6 +47,8 @@ const getClientName = (transaction: Transaction) => {
 export default function TransactionsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 10;
 
   React.useEffect(() => {
     const fetchTransactions = async () => {
@@ -63,6 +66,13 @@ export default function TransactionsPage() {
     fetchTransactions();
   }, []);
 
+  const pages = Math.ceil(transactions.length / rowsPerPage);
+  const paginatedTransactions = React.useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return transactions.slice(start, end);
+  }, [page, transactions]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
@@ -74,11 +84,28 @@ export default function TransactionsPage() {
   return (
     <Card className="w-full">
       <CardBody>
-        <Table aria-label="Transactions table">
+        <Table 
+          aria-label="Transactions table"
+          bottomContent={
+            pages > 0 ? (
+              <div className="flex w-full justify-center">
+                <Pagination
+                  isCompact
+                  showControls
+                  showShadow
+                  color="primary"
+                  page={page}
+                  total={pages}
+                  onChange={(page) => setPage(page)}
+                />
+              </div>
+            ) : null
+          }
+        >
           <TableHeader>
             <TableColumn>ID</TableColumn>
             <TableColumn>Date</TableColumn>
-            <TableColumn>Client Name</TableColumn>
+            {/* <TableColumn>Client Name</TableColumn> */}
             <TableColumn>Type</TableColumn>
             <TableColumn>Transaction ID</TableColumn>
             <TableColumn>Amount</TableColumn>
@@ -86,11 +113,11 @@ export default function TransactionsPage() {
             <TableColumn>Executive</TableColumn>
           </TableHeader>
           <TableBody>
-            {transactions.map((transaction) => (
+            {paginatedTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
                 <TableCell>{transaction.id}</TableCell>
                 <TableCell>{formatDate(transaction.transaction_date)}</TableCell>
-                <TableCell>{getClientName(transaction)}</TableCell>
+                {/* <TableCell>{getClientName(transaction)}</TableCell> */}
                 <TableCell>
                   <Chip
                     color={getStatusColor(transaction.transaction_type)}
@@ -108,7 +135,7 @@ export default function TransactionsPage() {
                     </div>
                   ))}
                 </TableCell>
-                <TableCell>{transaction.executive_name}</TableCell>
+                <TableCell>{transaction.entities.username}</TableCell>
               </TableRow>
             ))}
           </TableBody>

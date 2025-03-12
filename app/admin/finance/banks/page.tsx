@@ -21,6 +21,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  Pagination,
 } from "@heroui/react";
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
@@ -32,6 +33,8 @@ function BanksPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedBank, setSelectedBank] = React.useState<BankAccount | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 10;
   
   const { 
     isOpen: isAddModalOpen, 
@@ -153,6 +156,13 @@ function BanksPage() {
 
   const accountTypes = ['Savings', 'Current', 'Other'] as const;
 
+  const pages = Math.ceil(banks.length / rowsPerPage);
+  const paginatedBanks = React.useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return banks.slice(start, end);
+  }, [page, banks]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
@@ -179,7 +189,24 @@ function BanksPage() {
 
       <Card>
         <CardBody>
-          <Table aria-label="Bank accounts table">
+          <Table 
+            aria-label="Bank accounts table"
+            bottomContent={
+              pages > 0 ? (
+                <div className="flex w-full justify-center">
+                  <Pagination
+                    isCompact
+                    showControls
+                    showShadow
+                    color="primary"
+                    page={page}
+                    total={pages}
+                    onChange={(page) => setPage(page)}
+                  />
+                </div>
+              ) : null
+            }
+          >
             <TableHeader>
               <TableColumn>Account Name</TableColumn>
               <TableColumn>Account Holder</TableColumn>
@@ -191,7 +218,7 @@ function BanksPage() {
               <TableColumn>UPI ID</TableColumn>
             </TableHeader>
             <TableBody>
-              {banks.map((bank) => (
+              {paginatedBanks.map((bank) => (
                 <TableRow 
                   key={bank.id} 
                   className="cursor-pointer hover:bg-default-100"
