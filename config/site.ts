@@ -6,7 +6,8 @@ import {
   BanknotesIcon,
   BuildingOfficeIcon,
   NewspaperIcon,
-  HomeIcon
+  HomeIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 export type SiteConfig = typeof siteConfig;
@@ -54,6 +55,11 @@ export const siteConfig = {
       label: "Dashboard",
       href: "/business/executive",
       icon: HomeIcon,
+    },
+    {
+      label: "Records",
+      href: "/business/executive/records",
+      icon: TableCellsIcon,
     }
   ],
 

@@ -387,7 +387,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         isIconOnly
         variant="light"
         className="fixed top-4 left-4 z-50"
-        onClick={() => router.push('/business/executive')}
+        onClick={() => router.push('/business/executive/records')}  // Changed from '/business/executive' to '/business/executive/records'
       >
         <ArrowLeftIcon className="h-5 w-5" />
       </Button>
