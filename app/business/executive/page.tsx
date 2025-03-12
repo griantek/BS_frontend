@@ -68,6 +68,7 @@ function BusinessDashboard() {
   const [registrations, setRegistrations] = React.useState<Registration[]>([]);
   const [selectedTab, setSelectedTab] = React.useState("prospects");
   const [clickedRowId, setClickedRowId] = React.useState<string | null>(null);
+  const [hasAddProspectPermission, setHasAddProspectPermission] = React.useState(false);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -89,6 +90,14 @@ function BusinessDashboard() {
         
         setProspects(prospectsResponse.data || []);
         setRegistrations(registrationsResponse.data || []); // Remove .items since the response structure is different
+
+        // Check if user has the specific permission
+        if (userData.permissions) {
+          const hasPermission = userData.permissions.some(
+            (permission: { name: string; }) => permission.name === 'show_add_prosp_btn'
+          );
+          setHasAddProspectPermission(hasPermission);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load data');
@@ -269,14 +278,16 @@ function BusinessDashboard() {
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center px-6 py-4">
           <h1 className="text-2xl font-bold">Prospects Dashboard</h1>
-          <Button 
-            isIconOnly
-            color="primary" 
-            onClick={() => router.push('/business/executive/add_prospect')}
-            title="Add Prospect"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Button>
+          {hasAddProspectPermission && (
+            <Button 
+              isIconOnly
+              color="primary" 
+              onClick={() => router.push('/business/executive/add_prospect')}
+              title="Add Prospect"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </Button>
+          )}
         </CardHeader>
       </Card>
 

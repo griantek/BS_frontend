@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
-import { usePathname } from 'next/navigation';  // Add this import
-import { getUserRole } from '@/utils/authCheck';  // Add this import
+import { usePathname } from 'next/navigation';
+import { getUserRole } from '@/utils/authCheck';
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -18,19 +18,16 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'; // Updated import
-import { Badge } from "@heroui/badge";
 import { BellIcon } from "@heroicons/react/24/outline";
+import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import {
-  SearchIcon,
-  Logo,
-} from "@/components/icons";
+import { SearchIcon, Logo } from "@/components/icons";
 import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
+import { ProfileMenu } from '@/components/ProfileMenu';
 
 interface NavItem {
   label: string;
@@ -42,23 +39,27 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isAdmin, isExecutive } = useAuth();  // Changed from isAdmin
-  const [notificationCount, setNotificationCount] = React.useState(5); // Example count
+  const { isLoggedIn, isAdmin, isExecutive } = useAuth();
+  const [notificationCount, setNotificationCount] = React.useState(5);
   const { setIsNavigating } = useNavigationLoading();
+  const [username, setUsername] = React.useState<string>("");
+  const [userRole, setUserRole] = React.useState<string>("");
   
-  // Add this line to declare isEditorPath
   const isEditorPath = pathname?.startsWith('/business/editor');
 
-  const handleLogout = () => {
-    const userRole = localStorage.getItem('userRole');
-    api.clearStoredAuth();
-    
-    if (userRole === 'admin') {
-      router.replace('/admin/login');
-    } else {
-      router.replace('/business/executive/login');
+  React.useEffect(() => {
+    // Get username from stored auth data
+    if (isLoggedIn) {
+      const userData = api.getStoredAuth()?.user;
+      if (userData?.username) {
+        setUsername(userData.username);
+      }
+      
+      // Get role information
+      const roleInfo = userData?.role?.name || localStorage.getItem('userRole') || '';
+      setUserRole(roleInfo);
     }
-  };
+  }, [isLoggedIn]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -195,21 +196,13 @@ export const Navbar = () => {
                 {link.label}
               </NextLink>
             ))}
-            {/* {isEditorPath && <NotificationButton />} */}
           </NavbarItem>
         )}
-        <NavbarItem className="hidden sm:flex gap-2">
+        <NavbarItem className="hidden sm:flex gap-2 items-center">
           {isEditorPath && <NotificationButton />}
           <ThemeSwitch />
-          {isLoggedIn && (
-            <Button
-              color="danger"
-              variant="light"
-              onClick={handleLogout}
-              startContent={<ArrowRightStartOnRectangleIcon className="h-5 w-5" />}
-            >
-              Logout
-            </Button>
+          {isLoggedIn && username && (
+            <ProfileMenu username={username} userRole={userRole} />
           )}
         </NavbarItem>
       </NavbarContent>
@@ -217,21 +210,14 @@ export const Navbar = () => {
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         {isEditorPath && <NotificationButton />}
         <ThemeSwitch />
-        {isLoggedIn && (
-          <Button
-            isIconOnly
-            color="danger"
-            variant="light"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
-          </Button>
+        {isLoggedIn && username && (
+          <ProfileMenu username={username} userRole={userRole} isMobile={true} />
         )}
         <NavbarMenuToggle />
       </NavbarContent>
 
       <NavbarMenu>
+        {/* Remove the username section from here since we have it in the mobile ProfileMenu */}
         {/* Show all navigation links in mobile menu, including editor links */}
         {isLoggedIn && (getUserRole() === 'editor' ? siteConfig.editorLinks : getNavigationLinks()).map((link) => (
           <NavbarMenuItem key={link.href}>

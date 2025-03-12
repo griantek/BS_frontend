@@ -57,6 +57,8 @@ function BusinessLoginContent() {
         return;
       }
 
+      console.log('Login response:', response);
+
       // Get the entity data from the new response structure
       const entityData = response.entities;
       
@@ -64,12 +66,13 @@ function BusinessLoginContent() {
       const entityType = entityData.entity_type.toLowerCase();
       const userRole = entityData.role.name.toLowerCase();
 
-      // Store auth data including role information
+      // Store auth data including role information and permissions
       api.setStoredAuth(
         response.token, 
         {
           ...entityData,
           role: entityData.role,
+          permissions: entityData.role.permissions, // Store permissions for RBAC
           entity_type: entityType
         }, 
         entityType as 'editor' | 'executive'
