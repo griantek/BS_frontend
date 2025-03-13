@@ -29,7 +29,7 @@ import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { WithAdminAuth } from '@/components/withAdminAuth';
 import api, { Role, CreateRoleRequest, Permission } from '@/services/api';
-
+import {PERMISSIONS } from '@/utils/permissions';
 // Update the RoleFormData interface
 interface RoleFormData {
   name: string;
@@ -615,4 +615,5 @@ function RolesPage() {
     );
 }
 
-export default WithAdminAuth(RolesPage);
+// Update the export to use the SHOW_ROLES permission
+export default WithAdminAuth(RolesPage, PERMISSIONS.SHOW_ROLES);

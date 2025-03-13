@@ -37,6 +37,14 @@ export const PERMISSIONS = {
   VIEW_EXECUTIVE_DETAILS: 'view_exec',
   UPDATE_USERS: 'update_users',
   SHOW_ADD_EXECUTIVE_BUTTON: 'show_add_exec_btn',
+  SHOW_ROLES: 'show_roles', 
+  SHOW_SERVICES_TAB: 'show_svc_tab',
+  SHOW_ADD_SERVICE_BUTTON: 'show_add_svc_btn',
+  SHOW_CLIENTS_TAB: 'show_clients_tab',
+  SHOW_PROSPECTS_TAB: 'show_prosp_tab',
+  SHOW_REGISTRATIONS_TAB_ADMIN: 'show_reg_tab_adm',
+  SHOW_JOURNALS_TAB_ADMIN: 'show_journals_tab_adm',
+  CLICK_JOURNAL_ROWS_ADMIN: 'click_journal_rows_adm',
 };
 
 /**
@@ -110,7 +118,17 @@ export const currentUserHasPermission = (permissionName: string): boolean => {
     return true;
   }
   
-  return hasPermission(currentUser, permissionName);
+  const result = hasPermission(currentUser, permissionName);
+  
+  // Add debug logs for critical navigation permissions
+  if (permissionName === 'show_users_nav' || 
+      permissionName === 'show_svc_tab' || 
+      permissionName === 'show_clients_tab') {
+    console.log(`Permission check: ${permissionName} => ${result}`, 
+      { currentUser, permissions: currentUser?.permissions });
+  }
+  
+  return result;
 };
 
 /**

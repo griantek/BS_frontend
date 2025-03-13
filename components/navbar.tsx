@@ -48,7 +48,9 @@ export const Navbar = () => {
   const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
   const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
   const [hasNotificationsPermission, setHasNotificationsPermission] = React.useState(false);
-  const [showUsersNav, setShowUsersNav] = React.useState(false);
+  const [showUsersNav, setShowUsersNav] = React.useState(false); // Default to false
+  const [showServicesTab, setShowServicesTab] = React.useState(false); // Default to false
+  const [showClientsTab, setShowClientsTab] = React.useState(false); // Default to false
   
   const isEditorPath = pathname?.startsWith('/business/editor');
 
@@ -79,16 +81,23 @@ export const Navbar = () => {
       
       // Check if user is superadmin first
       if (userData?.role?.entity_type === 'SupAdmin') {
+        // SuperAdmin has access to everything
         setShowUsersNav(true);
+        setShowServicesTab(true);
+        setShowClientsTab(true);
         return;
       }
       
-      // For regular admins, check the specific permission
+      // For regular admins, default to false and only enable when permission is confirmed
       if (userData?.role?.entity_type === 'Admin') {
+        // Check for users nav permission
         setShowUsersNav(currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV));
-      } else {
-        // Non-admin users don't see the users tab
-        setShowUsersNav(false);
+        
+        // Check for services tab permission
+        setShowServicesTab(currentUserHasPermission(PERMISSIONS.SHOW_SERVICES_TAB));
+        
+        // Check for clients tab permission
+        setShowClientsTab(currentUserHasPermission(PERMISSIONS.SHOW_CLIENTS_TAB));
       }
     };
     
@@ -97,8 +106,16 @@ export const Navbar = () => {
     
     // Listen for permission changes
     const handleNavPermissionsChange = (event: CustomEvent) => {
-      if (event.detail && typeof event.detail.showUsersNav === 'boolean') {
-        setShowUsersNav(event.detail.showUsersNav);
+      if (event.detail) {
+        if (typeof event.detail.showUsersNav === 'boolean') {
+          setShowUsersNav(event.detail.showUsersNav);
+        }
+        if (typeof event.detail.showServicesTab === 'boolean') {
+          setShowServicesTab(event.detail.showServicesTab);
+        }
+        if (typeof event.detail.showClientsTab === 'boolean') {
+          setShowClientsTab(event.detail.showClientsTab);
+        }
       }
     };
 
@@ -176,15 +193,29 @@ export const Navbar = () => {
     
     // For admin role
     if (isAdmin) {
-      // Start with a fresh array of admin links
-      let adminLinks = [...siteConfig.adminLinks];
+      // Start with all admin links
+      const adminLinks = [...siteConfig.adminLinks];
       
-      // Filter out the Users link if user doesn't have permission
-      if (!showUsersNav) {
-        adminLinks = adminLinks.filter(link => !link.href.includes('/admin/users'));
-      }
-      
-      return adminLinks;
+      // Filter out links based on permissions
+      return adminLinks.filter(link => {
+        // Users section
+        if (link.href.includes('/admin/users')) {
+          return showUsersNav;
+        }
+        
+        // Services section
+        if (link.href.includes('/admin/services')) {
+          return showServicesTab;
+        }
+        
+        // Clients section
+        if (link.href.includes('/admin/clients')) {
+          return showClientsTab;
+        }
+        
+        // All other tabs are shown by default
+        return true;
+      });
     }
     
     const role = getUserRole();
@@ -265,23 +296,26 @@ export const Navbar = () => {
         {isLoggedIn && (
           <NavbarItem className="hidden sm:flex gap-4">
             {getNavigationLinks().map((link) => (
-              <NextLink
-                key={link.href}
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium flex items-center gap-2",
-                  isActiveMainPath(link.href) && "text-primary font-medium"
-                )}
-                color="foreground"
-                href={link.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavigation(link.href);
-                }}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </NextLink>
+              // Add null check for link before rendering
+              link && (
+                <NextLink
+                  key={link.href}
+                  className={clsx(
+                    linkStyles({ color: "foreground" }),
+                    "data-[active=true]:text-primary data-[active=true]:font-medium flex items-center gap-2",
+                    isActiveMainPath(link.href) && "text-primary font-medium"
+                  )}
+                  color="foreground"
+                  href={link.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavigation(link.href);
+                  }}
+                >
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </NextLink>
+              )
             ))}
           </NavbarItem>
         )}
@@ -309,19 +343,22 @@ export const Navbar = () => {
           siteConfig.editorLinks : 
           getNavigationLinks()
         ).map((link) => (
-          <NavbarMenuItem key={link.href}>
-            <NextLink 
-              className={clsx(
-                linkStyles(),
-                "flex items-center gap-2",
-                isActiveMainPath(link.href) && "text-primary font-medium"
-              )} 
-              href={link.href}
-            >
-              <link.icon className="w-4 h-4" />
-              {link.label}
-            </NextLink>
-          </NavbarMenuItem>
+          // Add null check for link before rendering
+          link && (
+            <NavbarMenuItem key={link.href}>
+              <NextLink 
+                className={clsx(
+                  linkStyles(),
+                  "flex items-center gap-2",
+                  isActiveMainPath(link.href) && "text-primary font-medium"
+                )} 
+                href={link.href}
+              >
+                <link.icon className="w-4 h-4" />
+                {link.label}
+              </NextLink>
+            </NavbarMenuItem>
+          )
         ))}
       </NavbarMenu>
     </HeroUINavbar>

@@ -29,8 +29,10 @@ export const ProfileMenu = ({ username, isMobile = false, userRole = '' }: Profi
     const storedUserRole = localStorage.getItem('userRole') || userRole;
     api.clearStoredAuth();
     
-    if (storedUserRole === 'admin') {
+    if (storedUserRole === 'SupAdmin') {
       router.replace('/admin/login');
+    } else if (storedUserRole === 'admin') {
+      router.replace('/business/executive/login');
     } else {
       router.replace('/business/executive/login');
     }

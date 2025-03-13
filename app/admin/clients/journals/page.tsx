@@ -20,6 +20,7 @@ import { WithAdminAuth } from "@/components/withAdminAuth";
 import api, { JournalData } from "@/services/api";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { currentUserHasPermission, PERMISSIONS, isSuperAdmin } from '@/utils/permissions';
 
 const JournalsAdminPage = () => {
   const [journals, setJournals] = React.useState<JournalData[]>([]);
@@ -27,10 +28,22 @@ const JournalsAdminPage = () => {
   const [filterValue, setFilterValue] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [clickedRowId, setClickedRowId] = React.useState<number | null>(null);
+  const [canClickRows, setCanClickRows] = React.useState(false);
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = React.useState(false);
   const rowsPerPage = 10;
   const router = useRouter();
 
   React.useEffect(() => {
+    // Check permissions
+    const userData = api.getStoredUser();
+    setUserIsSuperAdmin(userData?.role?.entity_type === 'SupAdmin');
+    
+    if (userData?.role?.entity_type !== 'SupAdmin') {
+      setCanClickRows(currentUserHasPermission(PERMISSIONS.CLICK_JOURNAL_ROWS_ADMIN));
+    } else {
+      setCanClickRows(true); // SuperAdmin can always click rows
+    }
+
     const fetchJournals = async () => {
       try {
         setIsLoading(true);
@@ -75,12 +88,14 @@ const JournalsAdminPage = () => {
   }, [page, filteredItems]);
 
   const handleRowClick = (journalId: number) => {
-    console.log('Row clicked, navigating to:', `/admin/clients/journals/${journalId}`);
-    setClickedRowId(journalId);
-    
-    setTimeout(() => {
-      router.push(`/admin/clients/journals/${journalId}`);
-    }, 100);
+    if (userIsSuperAdmin || canClickRows) {
+      console.log('Row clicked, navigating to:', `/admin/clients/journals/${journalId}`);
+      setClickedRowId(journalId);
+      
+      setTimeout(() => {
+        router.push(`/admin/clients/journals/${journalId}`);
+      }, 100);
+    }
   };
 
   const renderCell = (journal: JournalData, key: string): React.ReactNode => {
@@ -168,7 +183,7 @@ const JournalsAdminPage = () => {
                 {items.map((journal) => (
                   <TableRow 
                     key={journal.id}
-                    className="cursor-pointer hover:bg-default-100 transition-colors"
+                    className={`${(userIsSuperAdmin || canClickRows) ? "cursor-pointer hover:bg-default-100" : "cursor-default"}`}
                     onClick={() => handleRowClick(journal.id)}
                   >
                     {columns.map((column) => (
@@ -187,4 +202,4 @@ const JournalsAdminPage = () => {
   );
 };
 
-export default WithAdminAuth(JournalsAdminPage);
+export default WithAdminAuth(JournalsAdminPage, PERMISSIONS.SHOW_JOURNALS_TAB_ADMIN);

@@ -5,10 +5,12 @@ import { checkAuth } from '@/utils/authCheck';
 import { PageLoadingSpinner } from "@/components/LoadingSpinner";
 import { currentUserHasPermission, isSuperAdmin } from '@/utils/permissions';
 
-export function WithAdminAuth<P extends object>(
+// Add generic type parameter P with a constraint
+export function WithAdminAuth<P extends Record<string, any>>(
   WrappedComponent: React.ComponentType<P>,
   requiredPermission?: string
 ) {
+  // Return a component that accepts props of type P
   return function ProtectedRoute(props: P) {
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -56,14 +58,10 @@ export function WithAdminAuth<P extends object>(
       verifyAuth();
     }, [router, requiredPermission]);
 
-    if (isLoading) {
-      return <PageLoadingSpinner text="Loading contents..." />;
-    }
-
-    if (!isAuthenticated || (requiredPermission && !hasPermission)) {
-      return null;
-    }
-
-    return <WrappedComponent {...props} />;
+    return isLoading ? (
+      <PageLoadingSpinner text="Loading contents..." />
+    ) : isAuthenticated && (requiredPermission ? hasPermission : true) ? (
+      <WrappedComponent {...props} />
+    ) : null;
   };
 }

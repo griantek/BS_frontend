@@ -47,24 +47,41 @@ export default function SAdminLayout({
           if (userData) {
             const parsedUser = JSON.parse(userData);
             
-            // SupAdmin always has access to Users nav
+            // SupAdmin always has access to all features
             const isSuperAdmin = parsedUser.role?.entity_type === 'SupAdmin';
             
-            // For regular admins, check the specific permission
-            const hasUsersNavPermission = isSuperAdmin || 
-                                          currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV);
-            
-            console.log('Setting showUsersNav permission:', {
-              isSuperAdmin,
-              hasUsersNavPermission
-            });
-            
-            // Dispatch a custom event to notify navbar of permission changes
-            window.dispatchEvent(new CustomEvent('nav-permissions-change', {
-              detail: {
-                showUsersNav: hasUsersNavPermission
-              }
-            }));
+            if (!isSuperAdmin) {
+              // Check if user has at least one clients-related tab permission
+              const hasProspectsPermission = currentUserHasPermission(PERMISSIONS.SHOW_PROSPECTS_TAB);
+              const hasRegistrationsPermission = currentUserHasPermission(PERMISSIONS.SHOW_REGISTRATIONS_TAB_ADMIN);
+              const hasJournalsPermission = currentUserHasPermission(PERMISSIONS.SHOW_JOURNALS_TAB_ADMIN);
+              
+              // Only show clients tab if at least one subtab is accessible
+              const shouldShowClientsTab = hasProspectsPermission || hasRegistrationsPermission || hasJournalsPermission;
+              
+              // Send explicit permission states for tabs we care about
+              const navPermissions = {
+                showUsersNav: currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV),
+                showServicesTab: currentUserHasPermission(PERMISSIONS.SHOW_SERVICES_TAB),
+                showClientsTab: shouldShowClientsTab ? currentUserHasPermission(PERMISSIONS.SHOW_CLIENTS_TAB) : false,
+              };
+              
+              // Dispatch a custom event to notify navbar of permission changes
+              window.dispatchEvent(new CustomEvent('nav-permissions-change', {
+                detail: navPermissions
+              }));
+              
+              console.log('Dispatching nav permissions:', navPermissions);
+            } else {
+              // For SuperAdmin, explicitly set all permissions to true
+              window.dispatchEvent(new CustomEvent('nav-permissions-change', {
+                detail: {
+                  showUsersNav: true,
+                  showServicesTab: true,
+                  showClientsTab: true
+                }
+              }));
+            }
           }
         };
         

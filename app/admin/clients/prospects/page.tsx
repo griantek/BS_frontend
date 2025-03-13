@@ -18,6 +18,7 @@ import {
 import { WithAdminAuth } from "@/components/withAdminAuth";
 import api, { type Prospectus } from "@/services/api";
 import { toast } from "react-toastify";
+import {PERMISSIONS} from "@/utils/permissions";
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -192,4 +193,5 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-export default WithAdminAuth(ProspectsPage);
+// Update the export to use the SHOW_PROSPECTS_TAB permission
+export default WithAdminAuth(ProspectsPage, PERMISSIONS.SHOW_PROSPECTS_TAB);

@@ -20,6 +20,7 @@ import {
 import { toast } from "react-toastify";
 import { WithAdminAuth } from "@/components/withAdminAuth";
 import api, { type ServerRegistration } from "@/services/api";
+import {PERMISSIONS} from "@/utils/permissions";
 
 // Helper functions
 const getBankInfo = (registration: ServerRegistration) => {
@@ -305,4 +306,5 @@ function RegistrationsPage() {
   );
 }
 
-export default WithAdminAuth(RegistrationsPage);
+// Update the export to use the SHOW_REGISTRATIONS_TAB_ADMIN permission
+export default WithAdminAuth(RegistrationsPage, PERMISSIONS.SHOW_REGISTRATIONS_TAB_ADMIN);
