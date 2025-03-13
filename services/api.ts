@@ -332,7 +332,7 @@ interface Role {
         description?: string;
         entity_type?: string;
     }[];
-    entity_type: 'Admin' | 'Editor' | 'Executive';
+    entity_type: string;
     created_at: string;
     updated_at: string;
 }
@@ -978,7 +978,7 @@ const api = {
         }
     },
 
-    async getPermissionsByEntityType(entityType: 'Admin' | 'Editor' | 'Executive'): Promise<ApiResponse<Permission[]>> {
+    async getPermissionsByEntityType(entityType:string): Promise<ApiResponse<Permission[]>> {
         try {
             const response = await this.axiosInstance.get(`/admin/permissions/entity-type/${entityType}`);
             return response.data;

@@ -34,7 +34,7 @@ import api, { Role, CreateRoleRequest, Permission } from '@/services/api';
 interface RoleFormData {
   name: string;
   description: string;
-  entity_type: 'Admin' | 'Editor' | 'Executive' | '';
+  entity_type: string;
 }
 
 function RolesPage() {
@@ -52,7 +52,7 @@ function RolesPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const [roleToDelete, setRoleToDelete] = React.useState<Role | null>(null);
     const [availablePermissions, setAvailablePermissions] = React.useState<Permission[]>([]);
-    const [selectedEntityType, setSelectedEntityType] = React.useState<'Admin' | 'Editor' | 'Executive' | ''>('');
+    const [selectedEntityType, setSelectedEntityType] = React.useState<string>('');
     const [selectedPermissions, setSelectedPermissions] = React.useState<number[]>([]);
     const [previousEntityType, setPreviousEntityType] = React.useState<string>('');
 
@@ -490,23 +490,31 @@ function RolesPage() {
                             </TableHeader>
                             <TableBody>
                                 {roles.map((role) => (
-                                    <TableRow key={role.id}>
+                                    <TableRow 
+                                        key={role.id} 
+                                        className={role.entity_type === 'SupAdmin' ? "bg-rose-50 dark:bg-rose-900/20" : ""}
+                                    >
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="text-bold">{role.name}</span>
+                                                <span className={`text-bold ${role.entity_type === 'SupAdmin' ? "font-bold text-danger" : ""}`}>
+                                                    {role.name}
+                                                </span>
                                                 <span className="text-xs text-gray-500">{role.description}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Chip
-                                                variant="flat"
+                                                variant={role.entity_type === 'SupAdmin' ? "solid" : "flat"}
                                                 color={
-                                                    role.entity_type === 'Admin' ? 'danger' :
-                                                    role.entity_type === 'Editor' ? 'warning' : 'primary'
+                                                    role.entity_type === 'Admin' ? 'success' :
+                                                    role.entity_type === 'Editor' ? 'warning' : 
+                                                    role.entity_type === 'Executive' ? 'primary' :
+                                                    role.entity_type === 'SupAdmin' ? 'danger' : 
+                                                    'danger'
                                                 }
                                                 size="sm"
                                             >
-                                                {role.entity_type}
+                                                {role.entity_type === 'SupAdmin' ? "Super Admin" : role.entity_type}
                                             </Chip>
                                         </TableCell>
                                         <TableCell>
@@ -524,6 +532,8 @@ function RolesPage() {
                                                     size="sm"
                                                     variant="light"
                                                     onClick={() => handleEditClick(role)}
+                                                    isDisabled={role.entity_type === 'SupAdmin'}
+                                                    className={role.entity_type === 'SupAdmin' ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
                                                     <PencilIcon className="w-4 h-4" />
                                                 </Button>
@@ -533,6 +543,8 @@ function RolesPage() {
                                                     color="danger"
                                                     variant="light"
                                                     onClick={() => handleDeleteClick(role)}
+                                                    isDisabled={role.entity_type === 'SupAdmin'}
+                                                    className={role.entity_type === 'SupAdmin' ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
                                                 </Button>
