@@ -41,20 +41,37 @@ export default function SAdminLayout({
   React.useEffect(() => {
     if (isAuthenticated) {
       try {
-        // Get user data and set permission in a global context
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          const hasUsersNavPermission = parsedUser.role?.entity_type === 'SupAdmin' || 
-                                         currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV);
-          
-          // Dispatch a custom event to notify navbar of permission changes
-          window.dispatchEvent(new CustomEvent('nav-permissions-change', {
-            detail: {
-              showUsersNav: hasUsersNavPermission
-            }
-          }));
-        }
+        const setupNavPermissions = () => {
+          // Get user data and set permission in a global context
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            
+            // SupAdmin always has access to Users nav
+            const isSuperAdmin = parsedUser.role?.entity_type === 'SupAdmin';
+            
+            // For regular admins, check the specific permission
+            const hasUsersNavPermission = isSuperAdmin || 
+                                          currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV);
+            
+            console.log('Setting showUsersNav permission:', {
+              isSuperAdmin,
+              hasUsersNavPermission
+            });
+            
+            // Dispatch a custom event to notify navbar of permission changes
+            window.dispatchEvent(new CustomEvent('nav-permissions-change', {
+              detail: {
+                showUsersNav: hasUsersNavPermission
+              }
+            }));
+          }
+        };
+        
+        // Setup permissions immediately, then again after a delay to ensure it's processed
+        setupNavPermissions();
+        // Small delay to ensure the event is processed after navbar is mounted
+        setTimeout(setupNavPermissions, 100);
       } catch (e) {
         console.error('Error setting navigation permissions:', e);
       }
@@ -78,5 +95,6 @@ export default function SAdminLayout({
     return null;
   }
 
+  // No need for the admin layout to handle navigation, let the navbar do that
   return <>{children}</>;
 }

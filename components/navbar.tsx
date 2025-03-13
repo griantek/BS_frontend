@@ -73,22 +73,37 @@ export const Navbar = () => {
   }, [isLoggedIn]);
 
   React.useEffect(() => {
+    // Initialize the permission state when component mounts
+    const initializePermissions = () => {
+      const userData = api.getStoredUser();
+      
+      // Check if user is superadmin first
+      if (userData?.role?.entity_type === 'SupAdmin') {
+        setShowUsersNav(true);
+        return;
+      }
+      
+      // For regular admins, check the specific permission
+      if (userData?.role?.entity_type === 'Admin') {
+        setShowUsersNav(currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV));
+      } else {
+        // Non-admin users don't see the users tab
+        setShowUsersNav(false);
+      }
+    };
+    
+    // Call initialization function
+    initializePermissions();
+    
+    // Listen for permission changes
     const handleNavPermissionsChange = (event: CustomEvent) => {
       if (event.detail && typeof event.detail.showUsersNav === 'boolean') {
         setShowUsersNav(event.detail.showUsersNav);
       }
     };
 
-    // Add event listener
     window.addEventListener('nav-permissions-change', 
       handleNavPermissionsChange as EventListener);
-
-    // Initial check for permissions
-    const userData = api.getStoredUser();
-    if (userData?.role?.entity_type === 'SupAdmin' || 
-        currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV)) {
-      setShowUsersNav(true);
-    }
 
     return () => {
       window.removeEventListener('nav-permissions-change', 
@@ -161,15 +176,15 @@ export const Navbar = () => {
     
     // For admin role
     if (isAdmin) {
-      // Filter admin links based on permissions
-      const filteredLinks = [...siteConfig.adminLinks];
+      // Start with a fresh array of admin links
+      let adminLinks = [...siteConfig.adminLinks];
       
-      // Only include Users link if permission exists
+      // Filter out the Users link if user doesn't have permission
       if (!showUsersNav) {
-        return filteredLinks.filter(link => !link.href.includes('/admin/users'));
+        adminLinks = adminLinks.filter(link => !link.href.includes('/admin/users'));
       }
       
-      return filteredLinks;
+      return adminLinks;
     }
     
     const role = getUserRole();
