@@ -1,7 +1,7 @@
 "use client"
+import React, { useRef, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { Tabs, Tab } from "@heroui/react";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const tabs = [
@@ -33,7 +33,7 @@ export default function FinanceLayout({
   
   // Prevent tab navigation from redirecting when on a detail page
   const handleSelectionChange = (key: React.Key) => {
-    // Skip navigation if we're in a details page
+    // Skip navigation if we're in a details page or navigation already in progress
     if (navigationInProgressRef.current || !shouldAllowTabNavigation) return;
     
     const tab = tabs.find(t => t.id === key);
@@ -50,12 +50,23 @@ export default function FinanceLayout({
     }
   };
 
+  // If we're on the /admin/finance path directly, redirect to transactions
+  React.useEffect(() => {
+    if (pathname === '/admin/finance') {
+      router.replace('/admin/finance/transactions');
+    } else {
+      // Set loading to false if we're already on a specific finance tab
+      setIsLoading(false);
+    }
+  }, [pathname, router]);
+
   return (
     <div className="flex flex-col min-h-screen p-6">
       {/* Do not render tabs on detail pages */}
       {!isDetailsPage && (
         <div className="px-4 mb-6">
           <Tabs 
+            aria-label="Finance tabs" 
             selectedKey={currentTab}
             onSelectionChange={handleSelectionChange}
           >

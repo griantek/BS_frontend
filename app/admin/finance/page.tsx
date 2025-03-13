@@ -1,14 +1,31 @@
-"use client"
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { WithAdminAuth } from "@/components/withAdminAuth";
+import { Spinner } from "@heroui/react";
 
-export default function FinanceDefaultPage() {
+function FinancePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to transactions page by default
-    router.replace('/admin/finance/transactions');
+    // Use a short timeout to ensure this runs after component mount
+    const redirectTimer = setTimeout(() => {
+      router.replace("/admin/finance/transactions", { scroll: false });
+    }, 100);
+    
+    return () => {
+      clearTimeout(redirectTimer);
+    };
   }, [router]);
 
-  return null; // No need to render anything as we're redirecting
+  // Return a loading indicator with proper styling
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <Spinner size="lg" />
+      <p>Loading finance data...</p>
+    </div>
+  );
 }
+
+// Wrap with admin auth to ensure protection
+export default WithAdminAuth(FinancePage);
