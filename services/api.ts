@@ -332,7 +332,7 @@ interface Role {
         description?: string;
         entity_type?: string;
     }[];
-    entity_type: 'Admin' | 'Editor' | 'Executive';
+    entity_type: string;
     created_at: string;
     updated_at: string;
 }
@@ -978,7 +978,7 @@ const api = {
         }
     },
 
-    async getPermissionsByEntityType(entityType: 'Admin' | 'Editor' | 'Executive'): Promise<ApiResponse<Permission[]>> {
+    async getPermissionsByEntityType(entityType:string): Promise<ApiResponse<Permission[]>> {
         try {
             const response = await this.axiosInstance.get(`/admin/permissions/entity-type/${entityType}`);
             return response.data;
@@ -1167,6 +1167,31 @@ const api = {
         
         // Dispatch a custom event for logout
         window.dispatchEvent(new Event('auth-change'));
+    },
+
+    /**
+     * Get stored authentication data including user and token
+     * @returns Object containing token and user data
+     */
+    getStoredAuth() {
+      if (typeof window === 'undefined') return null;
+      
+      try {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        
+        if (!token || !userStr) return null;
+        
+        const user = JSON.parse(userStr);
+        
+        return {
+          token,
+          user
+        };
+      } catch (error) {
+        console.error('Error retrieving stored auth data:', error);
+        return null;
+      }
     },
 
     handleError(error: any) {

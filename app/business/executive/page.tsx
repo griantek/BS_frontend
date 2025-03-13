@@ -3,71 +3,48 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { checkAuth } from '@/utils/authCheck';
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableColumn,
-  TableRow,
-  TableCell,
-  Input,
-  Button,
   Card,
   CardHeader,
   CardBody,
-  Chip,
-  useDisclosure,
-  Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Tabs,
-  Tab,
+  Button,
 } from "@heroui/react";
-import { SearchIcon } from './SearchIcon';
-import { format } from 'date-fns';
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { 
+  PlusIcon, 
+  DocumentTextIcon,
+  CurrencyRupeeIcon,
+  ClockIcon,
+  DocumentDuplicateIcon,
+  TableCellsIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
 import { withExecutiveAuth } from '@/components/withExecutiveAuth';
 import type { Prospectus, Registration } from '@/services/api';
-import { Spinner } from "@nextui-org/react"; // Add this import
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-
-interface Prospect {
-  id: number;
-  entity_id: string;
-  date: string;
-  email: string;
-  reg_id: string;
-  client_name: string;
-  phone: string;
-  department: string;
-  state: string;
-  tech_person: string;
-  requirement: string;
-  proposed_service_period: string;
-  created_at: string;
-  services: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: Prospect[];
-  timestamp: string;
-}
+import { Spinner } from "@nextui-org/react";
+import { format } from 'date-fns';
+import { 
+  PERMISSIONS,
+  hasPermission, 
+  hasRecordsAccess,
+  UserWithPermissions,
+  currentUserHasPermission
+} from '@/utils/permissions';
 
 function BusinessDashboard() {
   const router = useRouter();
-  const [filterValue, setFilterValue] = React.useState("");
-  const [page, setPage] = React.useState(1);
-  const rowsPerPage = 10;
-  const [prospects, setProspects] = React.useState<Prospectus[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [registrations, setRegistrations] = React.useState<Registration[]>([]);
-  const [selectedTab, setSelectedTab] = React.useState("prospects");
-  const [clickedRowId, setClickedRowId] = React.useState<string | null>(null);
+  const [dashboardData, setDashboardData] = React.useState({
+    totalProspects: 0,
+    totalRegistrations: 0,
+    pendingRegistrations: 0,
+    completedRegistrations: 0,
+    totalRevenue: 0,
+    pendingAmount: 0,
+  });
+  const [userData, setUserData] = React.useState<UserWithPermissions | null>(null);
+  const [hasAddProspectPermission, setHasAddProspectPermission] = React.useState(false);
+  const [hasAnyRecordsPermission, setHasAnyRecordsPermission] = React.useState(false);
+  const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
@@ -77,21 +54,62 @@ function BusinessDashboard() {
     
     if (!token || !userStr) return;
     
-    const userData = JSON.parse(userStr);
+    const userDataParsed = JSON.parse(userStr);
+    setUserData(userDataParsed);
+
+    // Check dashboard permission immediately
+    const dashboardPermission = hasPermission(
+      userDataParsed, 
+      PERMISSIONS.VIEW_DASHBOARD_EXECUTIVE
+    );
+    setHasDashboardPermission(dashboardPermission);
+
+    // If no dashboard permission but has records access, redirect to records
+    if (!dashboardPermission) {
+      const recordsAccess = hasRecordsAccess(userDataParsed);
+      if (recordsAccess) {
+        router.replace('/business/executive/records');
+        return;
+      }
+    }
     
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const [prospectsResponse, registrationsResponse] = await Promise.all([
-          api.getProspectusByClientId(userData.id),
-          api.getRegistrationsByExecutive(userData.id)  // Changed this line
+          api.getProspectusByClientId(userDataParsed.id),
+          api.getRegistrationsByExecutive(userDataParsed.id)
         ]);
         
-        setProspects(prospectsResponse.data || []);
-        setRegistrations(registrationsResponse.data || []); // Remove .items since the response structure is different
+        const prospects = prospectsResponse.data || [];
+        const registrations = registrationsResponse.data || [];
+        
+        // Calculate dashboard metrics
+        const pendingRegs = registrations.filter(reg => reg.status === 'pending');
+        const completedRegs = registrations.filter(reg => reg.status === 'registered');
+        const totalRevenue = completedRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
+        const pendingAmount = pendingRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
+
+        setDashboardData({
+          totalProspects: prospects.length,
+          totalRegistrations: registrations.length,
+          pendingRegistrations: pendingRegs.length,
+          completedRegistrations: completedRegs.length,
+          totalRevenue: totalRevenue,
+          pendingAmount: pendingAmount,
+        });
+
+        // Check permissions using our utility
+        setHasAddProspectPermission(
+          hasPermission(userDataParsed, PERMISSIONS.SHOW_ADD_PROSPECT)
+        );
+        setHasAnyRecordsPermission(
+          hasRecordsAccess(userDataParsed)
+        );
+        
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
+        toast.error('Failed to load dashboard data');
       } finally {
         setIsLoading(false);
       }
@@ -100,375 +118,161 @@ function BusinessDashboard() {
     fetchData();
   }, [router]);
 
-  const filteredItems = React.useMemo(() => {
-    if (!Array.isArray(prospects)) return [];
-    
-    return prospects.filter((prospect: Prospectus) =>
-      prospect?.client_name?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      prospect?.email?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      prospect?.reg_id?.toLowerCase().includes(filterValue.toLowerCase())
-    );
-  }, [filterValue, prospects]);
+  const formatCurrency = (value: number) => {
+    return `₹${value.toLocaleString('en-IN')}`;
+  };
 
-  const pages = Math.ceil(filteredItems.length / rowsPerPage);
-  const items = React.useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filteredItems.slice(start, end);
-  }, [page, filteredItems]);
+  const getFormattedDate = () => {
+    return format(new Date(), "EEEE, MMMM d, yyyy");
+  };
 
-  const registrationColumns = React.useMemo(() => [
-    { key: "created_at", label: "DATE" },
-    { key: "reg_id", label: "REG ID" }, // Add registration ID
-    { key: "client", label: "CLIENT" },
-    { key: "services", label: "SERVICES" },
-    { key: "amounts", label: "AMOUNT" }, // Changed label
-    // { key: "periods", label: "PERIODS" }, // Combined column for periods
-    { key: "payment", label: "PAYMENT" }, // Combined payment info
-    { key: "status", label: "STATUS" },
-    // Removed actions column
-  ], []);
-
-  // Add a tooltip component for amount details
-  const AmountTooltip = ({ 
-    initial, 
-    accept, 
-    discount, 
-    total 
-  }: { 
-    initial: number, 
-    accept: number, 
-    discount: number, 
-    total: number 
-  }) => (
-    <div className="group relative">
-      <div className="text-sm">₹{total.toLocaleString()}</div>
-      <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
-        <div className="space-y-1 text-xs">
-          <div>Initial: ₹{initial.toLocaleString()}</div>
-          <div>Accept: ₹{accept.toLocaleString()}</div>
-          {discount > 0 && <div>Discount: ₹{discount.toLocaleString()}</div>}
-          <div className="font-bold border-t border-gray-600 mt-1 pt-1">
-            Total: ₹{total.toLocaleString()}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Add a tooltip component for payment details
-  const PaymentTooltip = ({ 
-    type, 
-    amount, 
-    status 
-  }: { 
-    type: string, 
-    amount: number,
-    status: string 
-  }) => (
-    <div className="group relative">
-      <div className="text-sm">
-        {status === 'pending' ? (
-          '-'
-        ) : (
-          <Chip
-            color={type === 'Cash' ? 'warning' : 'primary'}
-            variant="flat"
-            size="sm"
-          >
-            {type}
-          </Chip>
-        )}
-      </div>
-      {status !== 'pending' && amount > 0 && (
-        <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
-          <div className="text-xs">
-            Amount Paid: ₹{amount.toLocaleString()}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const formatAmount = (initial: number, accept: number, discount: number, total: number) => {
+  if (isLoading) {
     return (
-      <div className="space-y-1 text-sm">
-        <div>Initial: ₹{initial.toLocaleString()}</div>
-        <div>Accept: ₹{accept.toLocaleString()}</div>
-        {discount > 0 && <div>Discount: ₹{discount.toLocaleString()}</div>}
-        <div className="font-bold">Total: ₹{total.toLocaleString()}</div>
+      <div className="flex justify-center items-center h-[400px]">
+        <Spinner size="lg" label="Loading dashboard..." />
       </div>
     );
-  };
-
-  const formatPeriods = (accept: string, pub: string) => {
-    return (
-      <div className="space-y-1 text-sm">
-        <div>Accept: {accept}</div>
-        <div>Publish: {pub}</div>
-      </div>
-    );
-  };
-
-  const filteredRegistrations = React.useMemo(() => {
-    // Add null check before filtering
-    if (!Array.isArray(registrations)) return [];
-    
-    const filtered = registrations.filter((reg) =>
-      reg.prospectus?.client_name?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      reg.prospectus?.reg_id?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      reg.services?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      reg.status?.toLowerCase().includes(filterValue.toLowerCase()) ||
-      reg.prospectus?.department?.toLowerCase().includes(filterValue.toLowerCase())
-    );
-    return filtered;
-  }, [filterValue, registrations]);
-
-  const columns = React.useMemo(() => [
-    { key: "date", label: "DATE" },
-    { key: "reg_id", label: "REG ID" },
-    { key: "client_name", label: "CLIENT NAME" },
-    { key: "email", label: "EMAIL" },
-    { key: "phone", label: "PHONE" },
-    { key: "department", label: "DEPARTMENT" },
-    { key: "state", label: "STATE" },
-  ], []);
-
-  const formatDate = React.useCallback((dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy');
-    } catch {
-      return dateString;
-    }
-  }, []);
-
-  const formatBankDetails = (bankAccount: Registration['bank_accounts']) => {
-    if (!bankAccount) return 'N/A';
-    const lastFourDigits = bankAccount.account_number.slice(-4);
-    return `${bankAccount.bank} (*${lastFourDigits})`;
-  };
-
-  const handleRowClick = async (route: string, id: string) => {
-    setClickedRowId(id);
-    await router.push(route);
-  };
-
-  const renderLoadingRow = (colspan: number) => (
-    <TableRow>
-      <TableCell colSpan={colspan}>
-        <div className="flex justify-center items-center h-16">
-          <Spinner size="sm" />
-          <span className="ml-2">Loading...</span>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
+  }
 
   return (
     <div className="w-full p-6">
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center px-6 py-4">
-          <h1 className="text-2xl font-bold">Prospects Dashboard</h1>
-          <Button 
-            isIconOnly
-            color="primary" 
-            onClick={() => router.push('/business/executive/add_prospect')}
-            title="Add Prospect"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Button>
+          <h1 className="text-2xl font-bold">Business Executive Dashboard</h1>
+          <div className="flex gap-2">
+            {hasAnyRecordsPermission && (
+              <Button 
+                color="secondary"
+                onClick={() => router.push('/business/executive/records')}
+                startContent={<TableCellsIcon className="h-5 w-5" />}
+              >
+                View Records
+              </Button>
+            )}
+            {hasAddProspectPermission && (
+              <Button 
+                color="primary" 
+                onClick={() => router.push('/business/executive/add_prospect')}
+                startContent={<PlusIcon className="h-5 w-5" />}
+              >
+                Add Prospect
+              </Button>
+            )}
+          </div>
         </CardHeader>
       </Card>
 
-      <Tabs 
-        selectedKey={selectedTab} 
-        onSelectionChange={setSelectedTab as any}
-      >
-        <Tab key="prospects" title="Prospects">
-          <Card>
-            <CardHeader className="flex justify-between items-center px-6 py-4">
-              <div className="flex-1 max-w-md">
-                <Input
-                  isClearable
-                  classNames={{
-                    base: "w-full",
-                    inputWrapper: "border-1",
-                  }}
-                  placeholder="Search by name, email, or registration ID..."
-                  startContent={<SearchIcon />}
-                  value={filterValue}
-                  onClear={() => setFilterValue("")}
-                  onValueChange={setFilterValue}
-                />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card className="border-l-4 border-primary">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Total Prospects</p>
+              <h3 className="text-2xl font-bold">{dashboardData.totalProspects}</h3>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-full">
+              <DocumentTextIcon className="w-6 h-6 text-primary" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border-l-4 border-success">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Registrations</p>
+              <h3 className="text-2xl font-bold">{dashboardData.totalRegistrations}</h3>
+            </div>
+            <div className="bg-success/10 p-3 rounded-full">
+              <DocumentDuplicateIcon className="w-6 h-6 text-success" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border-l-4 border-warning">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Pending Registrations</p>
+              <h3 className="text-2xl font-bold">{dashboardData.pendingRegistrations}</h3>
+            </div>
+            <div className="bg-warning/10 p-3 rounded-full">
+              <ClockIcon className="w-6 h-6 text-warning" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border-l-4 border-danger">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Revenue</p>
+              <h3 className="text-2xl font-bold">{formatCurrency(dashboardData.totalRevenue)}</h3>
+            </div>
+            <div className="bg-danger/10 p-3 rounded-full">
+              <CurrencyRupeeIcon className="w-6 h-6 text-danger" />
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="flex justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Revenue Overview</h3>
+              <p className="text-default-500 text-sm">Financial summary</p>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-default-500">Total Revenue</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.totalRevenue)}</span>
               </div>
-            </CardHeader>
-            <CardBody>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[400px]">
-                  <Spinner size="lg" label="Loading prospects..." />
-                </div>
-              ) : (
-                <Table
-                  aria-label="Prospects table"
-                  bottomContent={
-                    <div className="flex w-full justify-center">
-                      <Pagination
-                        isCompact
-                        showControls
-                        showShadow
-                        color="primary"
-                        page={page}
-                        total={pages}
-                        onChange={setPage}
-                      />
-                    </div>
-                  }
-                  className="min-h-[400px]"
-                >
-                  <TableHeader>
-                    {columns.map((column) => (
-                      <TableColumn 
-                        key={column.key}
-                        align={column.key === "actions" ? "center" : "start"}
-                      >
-                        {column.label}
-                      </TableColumn>
-                    ))}
-                  </TableHeader>
-                  <TableBody
-                    items={items}
-                    emptyContent="No prospects found"
-                  >
-                    {(item) => (
-                      clickedRowId === item.reg_id ? (
-                        renderLoadingRow(columns.length)
-                      ) : (
-                        <TableRow 
-                          key={item.id}
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => handleRowClick(`/business/executive/view/prospect/${item.reg_id}`, item.reg_id)}
-                        >
-                          <TableCell>{formatDate(item.date)}</TableCell>
-                          <TableCell>{item.reg_id}</TableCell>
-                          <TableCell>{item.client_name}</TableCell>
-                          <TableCell>{item.email}</TableCell>
-                          <TableCell>{item.phone}</TableCell>
-                          <TableCell>{item.department}</TableCell>
-                          <TableCell>{item.state}</TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardBody>
-          </Card>
-        </Tab>
-        <Tab key="registrations" title="Registrations">
-          <Card>
-            <CardHeader className="flex justify-between items-center px-6 py-4">
-              <div className="flex-1 max-w-md">
-                <Input
-                  isClearable
-                  classNames={{
-                    base: "w-full",
-                    inputWrapper: "border-1",
-                  }}
-                  placeholder="Search registrations..."
-                  startContent={<SearchIcon />}
-                  value={filterValue}
-                  onClear={() => setFilterValue("")}
-                  onValueChange={setFilterValue}
-                />
+              <div className="flex justify-between items-center">
+                <span className="text-default-500">Pending Amount</span>
+                <span className="font-semibold">{formatCurrency(dashboardData.pendingAmount)}</span>
               </div>
-            </CardHeader>
-            <CardBody>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[400px]">
-                  <Spinner size="lg" label="Loading registrations..." />
-                </div>
-              ) : (
-                <Table
-                  aria-label="Registrations table"
-                  bottomContent={
-                    <div className="flex w-full justify-center">
-                      <Pagination
-                        isCompact
-                        showControls
-                        showShadow
-                        color="primary"
-                        page={page}
-                        total={Math.ceil(filteredRegistrations.length / rowsPerPage)}
-                        onChange={setPage}
-                      />
-                    </div>
-                  }
+              <div className="flex justify-between items-center">
+                <span className="text-default-500">Registered Clients</span>
+                <span className="font-semibold">{dashboardData.completedRegistrations}</span>
+              </div>
+              {hasAnyRecordsPermission && (
+                <Button 
+                  color="primary" 
+                  variant="flat" 
+                  className="w-full mt-4"
+                  onClick={() => router.push('/business/executive/records')}
+                  startContent={<TableCellsIcon className="h-4 w-4" />}
                 >
-                  <TableHeader>
-                    {registrationColumns.map((column) => (
-                      <TableColumn key={column.key}>
-                        {column.label}
-                      </TableColumn>
-                    ))}
-                  </TableHeader>
-                  <TableBody
-                    items={filteredRegistrations.slice(
-                      (page - 1) * rowsPerPage,
-                      page * rowsPerPage
-                    )}
-                    emptyContent="No registrations found"
-                  >
-                    {(registration) => (
-                      clickedRowId === registration.id.toString() ? (
-                        renderLoadingRow(registrationColumns.length)
-                      ) : (
-                        <TableRow 
-                          key={registration.id}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => handleRowClick(`/business/executive/view/registration/${registration.id}`, registration.id.toString())}
-                        >
-                          <TableCell>{formatDate(registration.created_at)}</TableCell>
-                          <TableCell>{registration.prospectus.reg_id}</TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">{registration.prospectus.client_name}</div>
-                              <div className="text-sm text-gray-500">{registration.prospectus.department}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{registration.services}</TableCell>
-                          <TableCell>
-                            <AmountTooltip
-                              initial={registration.init_amount}
-                              accept={registration.accept_amount}
-                              discount={registration.discount}
-                              total={registration.total_amount}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <PaymentTooltip
-                              type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
-                              amount={registration.transactions?.amount || 0}
-                              status={registration.status}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              color={registration.status === 'registered' ? 'success' : 'warning'}
-                              variant="flat"
-                            >
-                              {registration.status}
-                            </Chip>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </Table>
+                  View All Records
+                </Button>
               )}
-            </CardBody>
-          </Card>
-        </Tab>
-      </Tabs>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Recent Activity</h3>
+              <p className="text-default-500 text-sm">{getFormattedDate()}</p>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-4">
+              <p>Your recent activities will appear here.</p>
+              {hasAddProspectPermission && (
+                <Button 
+                  color="primary" 
+                  className="w-full mt-4"
+                  onClick={() => router.push('/business/executive/add_prospect')}
+                  startContent={<PlusIcon className="h-4 w-4" />}
+                >
+                  Add New Prospect
+                </Button>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

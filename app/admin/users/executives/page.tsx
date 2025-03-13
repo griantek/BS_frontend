@@ -28,6 +28,7 @@ import {
 } from "@heroui/react";
 import { toast } from 'react-toastify';
 import api, { Executive,ExecutiveWithRoleName, Role } from '@/services/api';
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 
 interface EditExecutiveForm {
     username: string;
@@ -52,6 +53,10 @@ const ExecutivesPage: React.FC = () => {
     const [roles, setRoles] = React.useState<Role[]>([]);
     const [isLoadingRoles, setIsLoadingRoles] = React.useState(false);
     const [selectedRole, setSelectedRole] = React.useState(new Set<string>([]));
+    const [canViewExecDetails, setCanViewExecDetails] = React.useState(true);
+    const [canUpdateUsers, setCanUpdateUsers] = React.useState(true);
+    const [canAddExecutive, setCanAddExecutive] = React.useState(true);
+    const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
 
     const formatDate = (dateString: string) => {
         try {
@@ -91,7 +96,26 @@ const ExecutivesPage: React.FC = () => {
         fetchExecutives();
     }, [router]);
 
+    React.useEffect(() => {
+        // Check if user is SuperAdmin (implicit all permissions)
+        const userData = api.getStoredUser();
+        const isSuperAdminUser = userData?.role?.entity_type === 'SupAdmin';
+        setIsSuperAdmin(isSuperAdminUser);
+        
+        // For non-SuperAdmin users, check specific permissions
+        if (!isSuperAdminUser) {
+            setCanViewExecDetails(currentUserHasPermission(PERMISSIONS.VIEW_EXECUTIVE_DETAILS));
+            setCanUpdateUsers(currentUserHasPermission(PERMISSIONS.UPDATE_USERS));
+            setCanAddExecutive(currentUserHasPermission(PERMISSIONS.SHOW_ADD_EXECUTIVE_BUTTON));
+        }
+    }, []);
+
     const handleRowClick = async (executive: ExecutiveWithRoleName) => {
+        // Only allow opening the details modal if they have permission
+        if (!isSuperAdmin && !canViewExecDetails) {
+            return;
+        }
+        
         setSelectedExecutive(executive);
         setEditForm({
             username: executive.username,
@@ -185,12 +209,14 @@ const ExecutivesPage: React.FC = () => {
             <Card>
                 <CardHeader className="flex justify-between items-center px-6 py-4">
                     <h1 className="text-2xl font-bold">Executives Management</h1>
-                    <Button 
-                        color="primary"
-                        onPress={handleAddExecutive}
-                    >
-                        Add Executive
-                    </Button>
+                    {(isSuperAdmin || canAddExecutive) && (
+                        <Button 
+                            color="primary"
+                            onPress={handleAddExecutive}
+                        >
+                            Add Executive
+                        </Button>
+                    )}
                 </CardHeader>
                 <CardBody>
                     <Table 
@@ -198,7 +224,9 @@ const ExecutivesPage: React.FC = () => {
                         selectionMode="none"
                         classNames={{
                             wrapper: "min-h-[auto]",
-                            tr: "cursor-pointer hover:bg-default-100",
+                            tr: isSuperAdmin || canViewExecDetails 
+                                ? "cursor-pointer hover:bg-default-100" 
+                                : "cursor-default",
                         }}
                     >
                         <TableHeader>
@@ -246,7 +274,7 @@ const ExecutivesPage: React.FC = () => {
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>Edit Executive</ModalHeader>
+                            <ModalHeader>Executive Details</ModalHeader>
                             <ModalBody>
                                 <div className="space-y-4">
                                     <Input
@@ -322,15 +350,17 @@ const ExecutivesPage: React.FC = () => {
                             </ModalBody>
                             <ModalFooter>
                                 <Button variant="light" onPress={onClose}>
-                                    Cancel
+                                    Close
                                 </Button>
-                                <Button 
-                                    color="primary" 
-                                    onPress={handleSubmit}
-                                    isLoading={isSubmitting}
-                                >
-                                    Save Changes
-                                </Button>
+                                {(isSuperAdmin || canUpdateUsers) && (
+                                    <Button 
+                                        color="primary" 
+                                        onPress={handleSubmit}
+                                        isLoading={isSubmitting}
+                                    >
+                                        Save Changes
+                                    </Button>
+                                )}
                             </ModalFooter>
                         </>
                     )}
@@ -340,4 +370,5 @@ const ExecutivesPage: React.FC = () => {
     );
 };
 
-export default WithAdminAuth(ExecutivesPage);
+// Add permission requirement to the HOC
+export default WithAdminAuth(ExecutivesPage, PERMISSIONS.SHOW_EXECUTIVES_TAB);

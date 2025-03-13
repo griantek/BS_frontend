@@ -8,13 +8,18 @@ import api from '@/services/api';
 import { withEditorAuth } from '@/components/withEditorAuth';
 import type { AssignedRegistration } from '@/services/api';
 import { PageLoadingSpinner, LoadingSpinner } from "@/components/LoadingSpinner";
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 
 function AssignedViewContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
   const [registration, setRegistration] = React.useState<AssignedRegistration | null>(null);
+  const [canAddJournal, setCanAddJournal] = React.useState(false);
 
   React.useEffect(() => {
+    // Check if user has permission to add journal
+    setCanAddJournal(currentUserHasPermission(PERMISSIONS.SHOW_ADD_JOURNAL_BUTTON));
+    
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -66,13 +71,15 @@ function AssignedViewContent({ regId }: { regId: string }) {
               <p className="text-small text-default-500">ID: {registration.prospectus.reg_id}</p>
             </div>
             <div className="flex gap-3">
-              <Button
-                color="primary"
-                variant="solid"
-                onPress={() => router.push(`/business/editor/add/journal/${registration.id}`)}
-              >
-                Add Journal Details
-              </Button>
+              {canAddJournal && (
+                <Button
+                  color="primary"
+                  variant="solid"
+                  onPress={() => router.push(`/business/editor/add/journal/${registration.id}`)}
+                >
+                  Add Journal Details
+                </Button>
+              )}
             </div>
           </CardHeader>
         </Card>

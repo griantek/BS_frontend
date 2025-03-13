@@ -1,39 +1,67 @@
 "use client"
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Spinner } from "@heroui/react";
 import { checkAuth } from '@/utils/authCheck';
+import { PageLoadingSpinner } from "@/components/LoadingSpinner";
+import { currentUserHasPermission, isSuperAdmin } from '@/utils/permissions';
 
-export function WithAdminAuth<P extends object>(
-  WrappedComponent: React.ComponentType<P>
+// Add generic type parameter P with a constraint
+export function WithAdminAuth<P extends Record<string, any>>(
+  WrappedComponent: React.ComponentType<P>,
+  requiredPermission?: string
 ) {
+  // Return a component that accepts props of type P
   return function ProtectedRoute(props: P) {
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+    const [hasPermission, setHasPermission] = React.useState(true);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
       const verifyAuth = () => {
+        // Check basic authentication
         const isAuthed = checkAuth(router, 'admin');
         setIsAuthenticated(isAuthed);
+        
+        if (isAuthed) {
+          try {
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            // If user is SuperAdmin, they automatically have all permissions
+            if (isSuperAdmin(userData)) {
+              setHasPermission(true);
+            } 
+            // Otherwise, check the specific permission
+            else if (requiredPermission) {
+              const hasRequiredPermission = currentUserHasPermission(requiredPermission);
+              setHasPermission(hasRequiredPermission);
+              
+              // If permission is missing, redirect to admin dashboard
+              if (!hasRequiredPermission) {
+                router.replace('/admin');
+              }
+            }
+          } catch (error) {
+            console.error('Error checking admin type:', error);
+            
+            // If there was an error and a permission is required, be safe and deny access
+            if (requiredPermission) {
+              setHasPermission(false);
+              router.replace('/admin');
+            }
+          }
+        }
+        
         setIsLoading(false);
       };
 
       verifyAuth();
-    }, [router]);
+    }, [router, requiredPermission]);
 
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center min-h-screen">
-          <Spinner size="lg" />
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      return null; // Return null as the checkAuth will handle the redirect
-    }
-
-    return <WrappedComponent {...props} />;
+    return isLoading ? (
+      <PageLoadingSpinner text="Loading contents..." />
+    ) : isAuthenticated && (requiredPermission ? hasPermission : true) ? (
+      <WrappedComponent {...props} />
+    ) : null;
   };
 }

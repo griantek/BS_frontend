@@ -27,6 +27,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api, { BankAccount, BankAccountRequest } from '@/services/api';
 import { WithAdminAuth } from '@/components/withAdminAuth';
+import {PERMISSIONS, currentUserHasPermission} from '@/utils/permissions';
 
 function BanksPage() {
   const [banks, setBanks] = React.useState<BankAccount[]>([]);
@@ -35,6 +36,8 @@ function BanksPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 10;
+  const [canAddBank, setCanAddBank] = React.useState(false);
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = React.useState(false);
   
   const { 
     isOpen: isAddModalOpen, 
@@ -59,6 +62,17 @@ function BanksPage() {
   };
 
   React.useEffect(() => {
+    // Check permissions
+    const userData = api.getStoredUser();
+    setUserIsSuperAdmin(userData?.role?.entity_type === 'SupAdmin');
+    
+    if (userData?.role?.entity_type !== 'SupAdmin') {
+      setCanAddBank(currentUserHasPermission(PERMISSIONS.SHOW_ADD_BANK_BUTTON));
+    } else {
+      setCanAddBank(true);  // SuperAdmin can always add banks
+    }
+    
+    // Rest of initialization
     const fetchBanks = async () => {
       try {
         setIsLoading(true);
@@ -176,14 +190,17 @@ function BanksPage() {
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center px-6 py-4">
           <h1 className="text-2xl font-bold">Bank Accounts</h1>
-          <Button
-            isIconOnly
-            color="primary"
-            onClick={onAddModalOpen}
-            title="Add Bank Account"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Button>
+          {/* Only show Add Bank button if user has permission or is SuperAdmin */}
+          {(userIsSuperAdmin || canAddBank) && (
+            <Button
+              isIconOnly
+              color="primary"
+              onClick={onAddModalOpen}
+              title="Add Bank Account"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </Button>
+          )}
         </CardHeader>
       </Card>
 
@@ -401,4 +418,5 @@ function BanksPage() {
   );
 }
 
-export default WithAdminAuth(BanksPage);
+// Update the export to use the SHOW_BANK_ACCOUNTS_TAB permission
+export default WithAdminAuth(BanksPage, PERMISSIONS.SHOW_BANK_ACCOUNTS_TAB);

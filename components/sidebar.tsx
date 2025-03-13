@@ -9,23 +9,49 @@ import {
     ChartBarIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    ClipboardDocumentListIcon // Add this import
+    ClipboardDocumentListIcon
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
-
-const sidebarItems = [
-    { name: 'Dashboard', icon: HomeIcon, path: '/business/editor' },
-    { name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' }, 
-    { name: 'Journal Details', icon: NewspaperIcon, path: '/business/editor/journals' },
-    // { name: 'Reports', icon: ChartBarIcon, path: '/editor/reports' },
-];
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 
 export const Sidebar = () => {
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const { setIsNavigating } = useNavigationLoading();
+    const [hasDashboardPermission, setHasDashboardPermission] = React.useState(true);
+    const [showAssignedTable, setShowAssignedTable] = React.useState(true);
+    const [showJournalTable, setShowJournalTable] = React.useState(true);
+
+    React.useEffect(() => {
+        // Check if the user has permissions for the various sections
+        setHasDashboardPermission(currentUserHasPermission(PERMISSIONS.VIEW_DASHBOARD_EDITOR));
+        setShowAssignedTable(currentUserHasPermission(PERMISSIONS.SHOW_ASSIGNED_TABLE));
+        setShowJournalTable(currentUserHasPermission(PERMISSIONS.SHOW_JOURNAL_TABLE));
+    }, []);
+
+    // Generate sidebar items based on permissions
+    const sidebarItems = React.useMemo(() => {
+        const items = [];
+        
+        // Only add Dashboard if user has permission
+        if (hasDashboardPermission) {
+            items.push({ name: 'Dashboard', icon: HomeIcon, path: '/business/editor' });
+        }
+        
+        // Only add Assigned to me if user has permission
+        if (showAssignedTable) {
+            items.push({ name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' });
+        }
+        
+        // Only add Journal Details if user has permission
+        if (showJournalTable) {
+            items.push({ name: 'Journal Details', icon: NewspaperIcon, path: '/business/editor/journals' });
+        }
+        
+        return items;
+    }, [hasDashboardPermission, showAssignedTable, showJournalTable]);
 
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -37,7 +63,7 @@ export const Sidebar = () => {
         }
         if (path === '/business/editor/assigned') {
             return pathname === path || 
-                   pathname.startsWith('/business/editor/view/assigned/') ||  // Add this line
+                   pathname.startsWith('/business/editor/view/assigned/') ||
                    pathname.startsWith('/business/editor/assigned/');
         }
         return pathname === path;
@@ -59,10 +85,10 @@ export const Sidebar = () => {
     return (
         <Card 
             className={clsx(
-                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-50", // Increased z-index
+                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-50",
                 isCollapsed ? "w-16" : "w-64",
                 "hidden md:block",
-                "border-t-0 rounded-none bg-background/80 backdrop-blur-md", // Added blur effect
+                "border-t-0 rounded-none bg-background/80 backdrop-blur-md",
                 "shadow-sm border-r border-divider"
             )}
         >
@@ -95,7 +121,7 @@ export const Sidebar = () => {
                             className={clsx(
                                 "justify-start w-full",
                                 isCollapsed ? "px-2" : "px-4",
-                                "h-10" // Match navbar button height
+                                "h-10"
                             )}
                             startContent={
                                 <item.icon className={clsx(

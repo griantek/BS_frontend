@@ -28,6 +28,7 @@ import { toast } from 'react-toastify';
 import api, { Service } from '@/services/api';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { WithAdminAuth } from '@/components/withAdminAuth';
+import { currentUserHasPermission, PERMISSIONS, isSuperAdmin } from '@/utils/permissions';
 
 function ServicesDashboard() {
   const router = useRouter();
@@ -40,8 +41,19 @@ function ServicesDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [editingService, setEditingService] = React.useState<Service | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [canAddService, setCanAddService] = React.useState(false);
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = React.useState(false);
 
   React.useEffect(() => {
+    // Check permissions
+    const userData = api.getStoredUser();
+    setUserIsSuperAdmin(userData?.role?.entity_type === 'SupAdmin');
+    
+    if (userData?.role?.entity_type !== 'SupAdmin') {
+      setCanAddService(currentUserHasPermission(PERMISSIONS.SHOW_ADD_SERVICE_BUTTON));
+    }
+    
+    // Rest of initialization
     const initializePage = async () => {
       try {
         setIsLoading(true);
@@ -162,14 +174,17 @@ function ServicesDashboard() {
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center px-6 py-4">
           <h1 className="text-2xl font-bold">Services Dashboard</h1>
-          <Button 
-            isIconOnly
-            color="primary" 
-            onClick={() => router.push('/admin/services/add_service')}
-            title="Add Service"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Button>
+          {/* Only show Add Service button if user has permission or is SuperAdmin */}
+          {(userIsSuperAdmin || canAddService) && (
+            <Button 
+              isIconOnly
+              color="primary" 
+              onClick={() => router.push('/admin/services/add_service')}
+              title="Add Service"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </Button>
+          )}
         </CardHeader>
       </Card>
 
@@ -343,5 +358,6 @@ function ServicesDashboard() {
   );
 }
 
-export default WithAdminAuth(ServicesDashboard);
+// Update the export to use the SHOW_SERVICES_TAB permission
+export default WithAdminAuth(ServicesDashboard, PERMISSIONS.SHOW_SERVICES_TAB);
 
