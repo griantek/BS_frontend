@@ -19,15 +19,19 @@ export const PERMISSIONS = {
   SHOW_DELETE_REGISTRATION_BUTTON: 'show_del_reg_btn',
   SHOW_APPROVE_BUTTON: 'show_approve_btn',
   
-  // Editor permissions
+  // EDITOR PERMISSIONS
   VIEW_NOTIFICATIONS: 'view_notifs',
   VIEW_DASHBOARD_EDITOR: 'view_dash_ed',
-  
-  // New editor permissions
   SHOW_ASSIGNED_TABLE: 'show_assigned_table',
   CLICK_ASSIGNED_ROWS: 'click_assigned_rows',
   SHOW_JOURNAL_TABLE: 'show_journal_table',
   CLICK_JOURNAL_ROWS: 'click_journal_rows',
+  
+  // EDITOR BUTTON PERMISSIONS
+  SHOW_EDIT_BUTTON_EDITOR: 'show_edit_btn_ed',
+  SHOW_DELETE_BUTTON_EDITOR: 'show_del_btn_ed',
+  SHOW_UPDATE_SCREENSHOT_BUTTON: 'show_update_scr_btn',
+  SHOW_ADD_JOURNAL_BUTTON: 'show_add_journal_btn',
 };
 
 /**

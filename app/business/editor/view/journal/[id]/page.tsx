@@ -26,6 +26,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { currentUserHasPermission, PERMISSIONS } from "@/utils/permissions";
 
 function JournalContent({ id }: { id: string }) {
   const router = useRouter();
@@ -34,8 +35,18 @@ function JournalContent({ id }: { id: string }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // Add permission state variables
+  const [canEdit, setCanEdit] = React.useState(false);
+  const [canDelete, setCanDelete] = React.useState(false);
+  const [canUpdateScreenshot, setCanUpdateScreenshot] = React.useState(false);
 
   React.useEffect(() => {
+    // Check permissions
+    setCanEdit(currentUserHasPermission(PERMISSIONS.SHOW_EDIT_BUTTON_EDITOR));
+    setCanDelete(currentUserHasPermission(PERMISSIONS.SHOW_DELETE_BUTTON_EDITOR));
+    setCanUpdateScreenshot(currentUserHasPermission(PERMISSIONS.SHOW_UPDATE_SCREENSHOT_BUTTON));
+    
     const fetchJournal = async () => {
       try {
         const response = await api.getJournalById(Number(id));
@@ -155,24 +166,28 @@ function JournalContent({ id }: { id: string }) {
               </div>
             </div>
             <div className="flex gap-3">
-              <Button
-                color="primary"
-                variant="flat"
-                startContent={<PencilIcon className="h-5 w-5" />}
-                onPress={() =>
-                  router.push(`/business/editor/edit/journal/${journal.id}`)
-                }
-              >
-                Edit Details
-              </Button>
-              <Button
-                color="danger"
-                variant="flat"
-                startContent={<TrashIcon className="h-5 w-5" />}
-                onPress={onOpen}
-              >
-                Delete
-              </Button>
+              {canEdit && (
+                <Button
+                  color="primary"
+                  variant="flat"
+                  startContent={<PencilIcon className="h-5 w-5" />}
+                  onPress={() =>
+                    router.push(`/business/editor/edit/journal/${journal.id}`)
+                  }
+                >
+                  Edit Details
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  color="danger"
+                  variant="flat"
+                  startContent={<TrashIcon className="h-5 w-5" />}
+                  onPress={onOpen}
+                >
+                  Delete
+                </Button>
+              )}
             </div>
           </CardHeader>
         </Card>
@@ -268,7 +283,7 @@ function JournalContent({ id }: { id: string }) {
         <Card className="w-full">
           <CardHeader className="flex justify-between items-center">
             <p className="text-md font-semibold">Journal Status Screenshot</p>
-            {journal.journal_link && journal.username && journal.password && (
+            {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
               <Button
                 isIconOnly
                 size="sm"

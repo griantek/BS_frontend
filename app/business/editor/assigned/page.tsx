@@ -121,7 +121,7 @@ function AssignedPage() {
                 {(registration) => (
                   <TableRow
                     key={registration.id}
-                    className={`${canClickRows && "cursor-pointer hover:bg-gray-300"}, ${
+                    className={`${canClickRows && "cursor-pointer hover:bg-gray-500"}, ${
                       !canClickRows && "cursor-default"
                     }`}
                     onClick={() => handleRowClick(registration.id)}
