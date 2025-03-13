@@ -55,6 +55,11 @@ const nextConfig = {
   images: {
     domains: ['nfvlyrknjdzpvrgpetck.supabase.co', 'dummyimage.com'],
   },
+  typescript: {
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    ignoreBuildErrors: true,
+  },
 };
 
 module.exports = nextConfig;

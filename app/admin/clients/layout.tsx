@@ -16,20 +16,39 @@ export default function ClientsLayout({
   const [showRegistrations, setShowRegistrations] = useState(true);
   const [showJournals, setShowJournals] = useState(true);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
+  const [shouldRedirectToAdmin, setShouldRedirectToAdmin] = useState(false);
 
+  // Check user permissions
   useEffect(() => {
     // Check if user is SuperAdmin (they have all permissions implicitly)
     const userData = api.getStoredUser();
     // Store isSuperAdmin result in state
-    setUserIsSuperAdmin(userData?.role?.entity_type === 'SupAdmin');
+    const isSuperAdminUser = userData?.role?.entity_type === 'SupAdmin';
+    setUserIsSuperAdmin(isSuperAdminUser);
     
     // SuperAdmin always has all permissions, only check for non-superadmins
-    if (userData?.role?.entity_type !== 'SupAdmin') {
-      setShowProspects(currentUserHasPermission(PERMISSIONS.SHOW_PROSPECTS_TAB));
-      setShowRegistrations(currentUserHasPermission(PERMISSIONS.SHOW_REGISTRATIONS_TAB_ADMIN));
-      setShowJournals(currentUserHasPermission(PERMISSIONS.SHOW_JOURNALS_TAB_ADMIN));
+    if (!isSuperAdminUser) {
+      const hasProspectsAccess = currentUserHasPermission(PERMISSIONS.SHOW_PROSPECTS_TAB);
+      const hasRegistrationsAccess = currentUserHasPermission(PERMISSIONS.SHOW_REGISTRATIONS_TAB_ADMIN);
+      const hasJournalsAccess = currentUserHasPermission(PERMISSIONS.SHOW_JOURNALS_TAB_ADMIN);
+      
+      setShowProspects(hasProspectsAccess);
+      setShowRegistrations(hasRegistrationsAccess);
+      setShowJournals(hasJournalsAccess);
+      
+      // If no tabs are accessible, set redirect flag
+      if (!hasProspectsAccess && !hasRegistrationsAccess && !hasJournalsAccess) {
+        setShouldRedirectToAdmin(true);
+      }
     }
   }, []);
+
+  // Redirect to admin home if no tabs are accessible
+  useEffect(() => {
+    if (shouldRedirectToAdmin) {
+      router.replace('/admin');
+    }
+  }, [shouldRedirectToAdmin, router]);
 
   // Preload routes
   useEffect(() => {
@@ -86,12 +105,8 @@ export default function ClientsLayout({
     }
   }, [userIsSuperAdmin, showProspects, showRegistrations, showJournals, selectedTab, router]);
 
-  // If no tabs are accessible and not SuperAdmin, don't render anything
-  if (!userIsSuperAdmin && !showProspects && !showRegistrations && !showJournals) {
-    // Redirect to admin homepage
-    useEffect(() => {
-      router.replace('/admin');
-    }, [router]);
+  // If no permissions and redirect flag is set, render nothing while redirect happens
+  if (shouldRedirectToAdmin) {
     return null;
   }
 
