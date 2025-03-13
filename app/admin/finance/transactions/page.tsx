@@ -17,7 +17,7 @@ import {
 } from "@heroui/react";
 import api from '@/services/api';
 import type { Transaction } from '@/services/api';
-
+import {PERMISSIONS} from '@/utils/permissions';
 // Keep the helper functions
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -152,4 +152,4 @@ function TransactionsPage() {
   );
 }
 
-export default WithAdminAuth(TransactionsPage);
+export default WithAdminAuth(TransactionsPage, PERMISSIONS.SHOW_TRANSACTIONS_TAB);

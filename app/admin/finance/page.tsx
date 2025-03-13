@@ -3,14 +3,30 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { WithAdminAuth } from "@/components/withAdminAuth";
 import { Spinner } from "@heroui/react";
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 
 function FinancePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Use a short timeout to ensure this runs after component mount
+    const redirectToAvailableTab = () => {
+      const hasTransactionsPermission = currentUserHasPermission(PERMISSIONS.SHOW_TRANSACTIONS_TAB);
+      const hasBankAccountsPermission = currentUserHasPermission(PERMISSIONS.SHOW_BANK_ACCOUNTS_TAB);
+      
+      // Redirect to first available tab
+      if (hasTransactionsPermission) {
+        router.replace("/admin/finance/transactions", { scroll: false });
+      } else if (hasBankAccountsPermission) {
+        router.replace("/admin/finance/banks", { scroll: false });
+      } else {
+        // If no tabs are accessible, redirect to admin home
+        router.replace("/admin", { scroll: false });
+      }
+    };
+    
+    // Use a short timeout to ensure proper execution
     const redirectTimer = setTimeout(() => {
-      router.replace("/admin/finance/transactions", { scroll: false });
+      redirectToAvailableTab();
     }, 100);
     
     return () => {

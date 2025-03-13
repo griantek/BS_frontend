@@ -1,51 +1,46 @@
+import { Home, Users, Building2, Banknote, Briefcase, BookOpen } from "lucide-react";
 import {
-  ChartBarIcon,
-  UsersIcon,
-  WrenchScrewdriverIcon,
-  UserGroupIcon,
-  BanknotesIcon,
-  BuildingOfficeIcon,
   NewspaperIcon,
-  HomeIcon,
   TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Business suite",
+  name: "Griantek Business Management",
+  description: "Manage your business operations",
   
   // Super Admin Navigation
   adminLinks: [
     {
       label: "Dashboard",
       href: "/admin",
-      icon: ChartBarIcon,
+      icon: Home
     },
     {
       label: "Users",
       href: "/admin/users/executives",
-      icon: UsersIcon,
+      icon: Users
     },
     {
       label: "Services",
       href: "/admin/services",
-      icon: WrenchScrewdriverIcon,
+      icon: Briefcase
     },
     {
       label: "Clients",
       href: "/admin/clients",
-      icon: UserGroupIcon,
+      icon: Building2
     },
     {
       label: "Finance",
       href: "/admin/finance",
-      icon: BanknotesIcon,
+      icon: Banknote
     },
     {
       label: "Departments",
       href: "/admin/department",
-      icon: BuildingOfficeIcon,
+      icon: BookOpen
     }
   ],
 
@@ -54,7 +49,7 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/executive",
-      icon: HomeIcon,
+      icon: Home,
     },
     {
       label: "Records",
@@ -68,7 +63,7 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/editor",
-      icon: HomeIcon,
+      icon: Home,
     },
     {
       label: "Journals",

@@ -45,6 +45,16 @@ export const PERMISSIONS = {
   SHOW_REGISTRATIONS_TAB_ADMIN: 'show_reg_tab_adm',
   SHOW_JOURNALS_TAB_ADMIN: 'show_journals_tab_adm',
   CLICK_JOURNAL_ROWS_ADMIN: 'click_journal_rows_adm',
+
+  // FINANCE PERMISSIONS
+  SHOW_FINANCE_TAB: 'show_fin_tab',
+  SHOW_TRANSACTIONS_TAB: 'show_txn_tab',
+  SHOW_BANK_ACCOUNTS_TAB: 'show_bank_tab',
+  SHOW_ADD_BANK_BUTTON: 'show_add_bank_btn',
+
+  // DEPARTMENT PERMISSIONS
+  SHOW_DEPARTMENT_TAB: 'show_dept_tab',
+  SHOW_ADD_DEPARTMENT_BUTTON: 'show_add_dept_btn',
 };
 
 /**

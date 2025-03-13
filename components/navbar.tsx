@@ -51,6 +51,9 @@ export const Navbar = () => {
   const [showUsersNav, setShowUsersNav] = React.useState(false); // Default to false
   const [showServicesTab, setShowServicesTab] = React.useState(false); // Default to false
   const [showClientsTab, setShowClientsTab] = React.useState(false); // Default to false
+  // Add new permission state variables for finance and department tabs
+  const [showFinanceTab, setShowFinanceTab] = React.useState(false);
+  const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
 
@@ -85,6 +88,8 @@ export const Navbar = () => {
         setShowUsersNav(true);
         setShowServicesTab(true);
         setShowClientsTab(true);
+        setShowFinanceTab(true);  // SuperAdmin has finance tab access
+        setShowDepartmentTab(true);  // SuperAdmin has department tab access
         return;
       }
       
@@ -98,6 +103,12 @@ export const Navbar = () => {
         
         // Check for clients tab permission
         setShowClientsTab(currentUserHasPermission(PERMISSIONS.SHOW_CLIENTS_TAB));
+
+        // Check for finance tab permission
+        setShowFinanceTab(currentUserHasPermission(PERMISSIONS.SHOW_FINANCE_TAB));
+
+        // Check for department tab permission
+        setShowDepartmentTab(currentUserHasPermission(PERMISSIONS.SHOW_DEPARTMENT_TAB));
       }
     };
     
@@ -115,6 +126,13 @@ export const Navbar = () => {
         }
         if (typeof event.detail.showClientsTab === 'boolean') {
           setShowClientsTab(event.detail.showClientsTab);
+        }
+        // Add handlers for new permission states
+        if (typeof event.detail.showFinanceTab === 'boolean') {
+          setShowFinanceTab(event.detail.showFinanceTab);
+        }
+        if (typeof event.detail.showDepartmentTab === 'boolean') {
+          setShowDepartmentTab(event.detail.showDepartmentTab);
         }
       }
     };
@@ -211,6 +229,16 @@ export const Navbar = () => {
         // Clients section
         if (link.href.includes('/admin/clients')) {
           return showClientsTab;
+        }
+        
+        // Finance section - new permission check
+        if (link.href.includes('/admin/finance')) {
+          return showFinanceTab;
+        }
+        
+        // Department section - new permission check
+        if (link.href.includes('/admin/department')) {
+          return showDepartmentTab;
         }
         
         // All other tabs are shown by default
