@@ -9,6 +9,7 @@ import {
   Divider,
   Spinner,
   Progress,
+  Skeleton
 } from "@heroui/react";
 import { 
   UsersIcon, 
@@ -39,6 +40,16 @@ interface DashboardMetrics {
   };
 }
 
+// Loading state interface to track individual data components
+interface LoadingState {
+  executives: boolean;
+  services: boolean;
+  transactions: boolean;
+  registrations: boolean;
+  journals: boolean;
+  prospects: boolean;
+}
+
 function AdminDashboard() {
   const router = useRouter();
   const [metrics, setMetrics] = React.useState<DashboardMetrics>({
@@ -59,66 +70,146 @@ function AdminDashboard() {
       submitted: 0
     }
   });
-  const [isLoading, setIsLoading] = React.useState(true);
+  
+  // Replace single loading state with granular loading states
+  const [loadingState, setLoadingState] = React.useState<LoadingState>({
+    executives: true,
+    services: true,
+    transactions: true,
+    registrations: true,
+    journals: true,
+    prospects: true
+  });
 
   React.useEffect(() => {
     const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        const [executivesRes, servicesRes, transactionsRes, registrationsRes, journalsRes] = await Promise.all([
-          api.getAllExecutives(),
-          api.getAllServices(),
-          api.getAllTransactions(),
-          api.getAllRegistrations(),
-          api.getAllJournalData()
-        ]);
-
-        let prospectsCount = 0;
-        try {
-          const prospectsRes = await api.getAllProspectus();
-          prospectsCount = Array.isArray(prospectsRes.data) ? prospectsRes.data.length : 0;
-        } catch (error) {
-          console.error('Error fetching prospects:', error);
-        }
-
-        // Calculate total revenue from transactions
-        const totalRevenue = transactionsRes.data.reduce((sum, transaction) => sum + transaction.amount, 0);
-
-        // Count journals by status
-        const journalsByStatus = {
-          pending: 0,
-          under_review: 0,
-          approved: 0,
-          rejected: 0,
-          submitted: 0
-        };
-
-        if (journalsRes.data && Array.isArray(journalsRes.data)) {
-          journalsRes.data.forEach(journal => {
-            const status = journal.status.replace(' ', '_').toLowerCase();
-            if (journalsByStatus.hasOwnProperty(status)) {
-              journalsByStatus[status as keyof typeof journalsByStatus]++;
-            }
-          });
-        }
-
-        setMetrics({
-          executivesCount: executivesRes.data.length,
-          servicesCount: servicesRes.data.length,
-          prospectsCount: prospectsCount,
-          registrationsCount: registrationsRes.data && registrationsRes.data.items ? registrationsRes.data.items.length : 0,
-          journalsCount: journalsRes.data ? journalsRes.data.length : 0,
-          totalRevenue: totalRevenue,
-          recentExecutives: executivesRes.data.slice(0, 5),
-          recentServices: servicesRes.data.slice(0, 5),
-          recentTransactions: transactionsRes.data.slice(0, 5),
-          journalsByStatus
+      // Start all requests in parallel
+      const executivesPromise = api.getAllExecutives()
+        .then(res => {
+          setMetrics(prev => ({
+            ...prev,
+            executivesCount: res.data.length,
+            recentExecutives: res.data.slice(0, 5)
+          }));
+          setLoadingState(prev => ({ ...prev, executives: false }));
+          return res;
+        })
+        .catch(error => {
+          console.error('Error fetching executives:', error);
+          setLoadingState(prev => ({ ...prev, executives: false }));
+          return { data: [] };
         });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+
+      const servicesPromise = api.getAllServices()
+        .then(res => {
+          setMetrics(prev => ({
+            ...prev,
+            servicesCount: res.data.length,
+            recentServices: res.data.slice(0, 5)
+          }));
+          setLoadingState(prev => ({ ...prev, services: false }));
+          return res;
+        })
+        .catch(error => {
+          console.error('Error fetching services:', error);
+          setLoadingState(prev => ({ ...prev, services: false }));
+          return { data: [] };
+        });
+
+      const transactionsPromise = api.getAllTransactions()
+        .then(res => {
+          // Calculate total revenue from transactions
+          const totalRevenue = res.data.reduce((sum, transaction) => sum + transaction.amount, 0);
+          
+          setMetrics(prev => ({
+            ...prev,
+            totalRevenue,
+            recentTransactions: res.data.slice(0, 5)
+          }));
+          setLoadingState(prev => ({ ...prev, transactions: false }));
+          return res;
+        })
+        .catch(error => {
+          console.error('Error fetching transactions:', error);
+          setLoadingState(prev => ({ ...prev, transactions: false }));
+          return { data: [] };
+        });
+
+      const registrationsPromise = api.getAllRegistrations()
+        .then(res => {
+          const registrationsCount = res.data && res.data.items ? res.data.items.length : 0;
+          
+          setMetrics(prev => ({
+            ...prev,
+            registrationsCount
+          }));
+          setLoadingState(prev => ({ ...prev, registrations: false }));
+          return res;
+        })
+        .catch(error => {
+          console.error('Error fetching registrations:', error);
+          setLoadingState(prev => ({ ...prev, registrations: false }));
+          return { data: { items: [] } };
+        });
+
+      const journalsPromise = api.getAllJournalData()
+        .then(res => {
+          const journalsByStatus = {
+            pending: 0,
+            under_review: 0,
+            approved: 0,
+            rejected: 0,
+            submitted: 0
+          };
+
+          if (res.data && Array.isArray(res.data)) {
+            res.data.forEach(journal => {
+              const status = journal.status.replace(' ', '_').toLowerCase();
+              if (journalsByStatus.hasOwnProperty(status)) {
+                journalsByStatus[status as keyof typeof journalsByStatus]++;
+              }
+            });
+          }
+
+          setMetrics(prev => ({
+            ...prev,
+            journalsCount: res.data ? res.data.length : 0,
+            journalsByStatus
+          }));
+          setLoadingState(prev => ({ ...prev, journals: false }));
+          return res;
+        })
+        .catch(error => {
+          console.error('Error fetching journals:', error);
+          setLoadingState(prev => ({ ...prev, journals: false }));
+          return { data: [] };
+        });
+
+      // Fetch prospects data
+      api.getAllProspectus()
+        .then(res => {
+          const prospectsCount = Array.isArray(res.data) ? res.data.length : 0;
+          
+          setMetrics(prev => ({
+            ...prev,
+            prospectsCount
+          }));
+        })
+        .catch(error => {
+          console.error('Error fetching prospects:', error);
+        })
+        .finally(() => {
+          setLoadingState(prev => ({ ...prev, prospects: false }));
+        });
+
+      // Still wait for all primary data sources to be loaded
+      await Promise.all([
+        executivesPromise, 
+        servicesPromise, 
+        transactionsPromise, 
+        registrationsPromise, 
+        journalsPromise
+      ]);
     };
 
     fetchDashboardData();
@@ -132,14 +223,6 @@ function AdminDashboard() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
   const journalStatusColors = {
     pending: "bg-amber-500",
     under_review: "bg-blue-500",
@@ -148,59 +231,104 @@ function AdminDashboard() {
     submitted: "bg-indigo-500"
   };
 
+  // Utility components for skeletons
+  const MetricCardSkeleton = () => (
+    <Card>
+      <CardBody className="flex items-center gap-4">
+        <div className="p-3 bg-default-100 rounded-lg">
+          <Skeleton className="w-6 h-6 rounded-lg" />
+        </div>
+        <div className="w-full">
+          <Skeleton className="h-3 w-24 rounded-lg mb-2" />
+          <Skeleton className="h-6 w-12 rounded-lg" />
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  const RecentItemSkeleton = () => (
+    <div className="flex justify-between items-center py-2">
+      <div className="w-3/4">
+        <Skeleton className="h-4 w-32 rounded-lg mb-2" />
+        <Skeleton className="h-3 w-20 rounded-lg" />
+      </div>
+      <Skeleton className="h-5 w-5 rounded-full" />
+    </div>
+  );
+
   return (
     <div className="w-full p-6 space-y-6">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
       
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-primary-50 dark:bg-primary-900/20">
-          <CardBody className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <UsersIcon className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Total Executives</p>
-              <h3 className="text-2xl font-bold">{metrics.executivesCount}</h3>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Executives Card */}
+        {loadingState.executives ? (
+          <MetricCardSkeleton />
+        ) : (
+          <Card className="bg-primary-50 dark:bg-primary-900/20">
+            <CardBody className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <UsersIcon className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Total Executives</p>
+                <h3 className="text-2xl font-bold">{metrics.executivesCount}</h3>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
-        <Card className="bg-success-50 dark:bg-success-900/20">
-          <CardBody className="flex items-center gap-4">
-            <div className="p-3 bg-success/10 rounded-lg">
-              <WrenchScrewdriverIcon className="w-6 h-6 text-success" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Active Services</p>
-              <h3 className="text-2xl font-bold">{metrics.servicesCount}</h3>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Services Card */}
+        {loadingState.services ? (
+          <MetricCardSkeleton />
+        ) : (
+          <Card className="bg-success-50 dark:bg-success-900/20">
+            <CardBody className="flex items-center gap-4">
+              <div className="p-3 bg-success/10 rounded-lg">
+                <WrenchScrewdriverIcon className="w-6 h-6 text-success" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Active Services</p>
+                <h3 className="text-2xl font-bold">{metrics.servicesCount}</h3>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
-        <Card className="bg-warning-50 dark:bg-warning-900/20">
-          <CardBody className="flex items-center gap-4">
-            <div className="p-3 bg-warning/10 rounded-lg">
-              <DocumentDuplicateIcon className="w-6 h-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Total Prospects</p>
-              <h3 className="text-2xl font-bold">{metrics.prospectsCount}</h3>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Prospects Card */}
+        {loadingState.prospects ? (
+          <MetricCardSkeleton />
+        ) : (
+          <Card className="bg-warning-50 dark:bg-warning-900/20">
+            <CardBody className="flex items-center gap-4">
+              <div className="p-3 bg-warning/10 rounded-lg">
+                <DocumentDuplicateIcon className="w-6 h-6 text-warning" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Total Prospects</p>
+                <h3 className="text-2xl font-bold">{metrics.prospectsCount}</h3>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
-        <Card className="bg-secondary-50 dark:bg-secondary-900/20">
-          <CardBody className="flex items-center gap-4">
-            <div className="p-3 bg-secondary/10 rounded-lg">
-              <BanknotesIcon className="w-6 h-6 text-secondary" />
-            </div>
-            <div>
-              <p className="text-sm text-default-500">Total Revenue</p>
-              <h3 className="text-2xl font-bold">₹{metrics.totalRevenue.toLocaleString()}</h3>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Revenue Card */}
+        {loadingState.transactions ? (
+          <MetricCardSkeleton />
+        ) : (
+          <Card className="bg-secondary-50 dark:bg-secondary-900/20">
+            <CardBody className="flex items-center gap-4">
+              <div className="p-3 bg-secondary/10 rounded-lg">
+                <BanknotesIcon className="w-6 h-6 text-secondary" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Total Revenue</p>
+                <h3 className="text-2xl font-bold">₹{metrics.totalRevenue.toLocaleString()}</h3>
+              </div>
+            </CardBody>
+          </Card>
+        )}
       </div>
 
       {/* Business Overview */}
@@ -213,25 +341,43 @@ function AdminDashboard() {
           </CardHeader>
           <Divider/>
           <CardBody>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-sm">Total Journals</span>
-                <span className="font-semibold">{metrics.journalsCount}</span>
-              </div>
-              
-              {Object.entries(metrics.journalsByStatus).map(([status, count]) => (
-                <div key={status} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="capitalize">{status.replace('_', ' ')}</span>
-                    <span>{count} ({metrics.journalsCount > 0 ? Math.round((count / metrics.journalsCount) * 100) : 0}%)</span>
-                  </div>
-                  <Progress 
-                    value={metrics.journalsCount > 0 ? (count / metrics.journalsCount) * 100 : 0} 
-                    className={`h-2 ${journalStatusColors[status as keyof typeof journalStatusColors]}`} 
-                  />
+            {loadingState.journals ? (
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24 rounded-lg" />
+                  <Skeleton className="h-4 w-6 rounded-lg" />
                 </div>
-              ))}
-            </div>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-32 rounded-lg" />
+                      <Skeleton className="h-3 w-12 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm">Total Journals</span>
+                  <span className="font-semibold">{metrics.journalsCount}</span>
+                </div>
+                
+                {Object.entries(metrics.journalsByStatus).map(([status, count]) => (
+                  <div key={status} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="capitalize">{status.replace('_', ' ')}</span>
+                      <span>{count} ({metrics.journalsCount > 0 ? Math.round((count / metrics.journalsCount) * 100) : 0}%)</span>
+                    </div>
+                    <Progress 
+                      value={metrics.journalsCount > 0 ? (count / metrics.journalsCount) * 100 : 0} 
+                      className={`h-2 ${journalStatusColors[status as keyof typeof journalStatusColors]}`} 
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
         
@@ -243,48 +389,88 @@ function AdminDashboard() {
           <Divider/>
           <CardBody>
             <div className="grid grid-cols-2 gap-6">
+              {/* Prospects Stats */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-primary"></div>
                   <span className="text-sm">Prospects</span>
                 </div>
-                <p className="text-2xl font-bold">{metrics.prospectsCount}</p>
-                <p className="text-xs text-success">
-                  {metrics.prospectsCount > 0 ? Math.round((metrics.registrationsCount / metrics.prospectsCount) * 100) : 0}% conversion rate
-                </p>
+                {loadingState.prospects ? (
+                  <>
+                    <Skeleton className="h-8 w-16 rounded-lg mb-1" />
+                    <Skeleton className="h-3 w-24 rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">{metrics.prospectsCount}</p>
+                    <p className="text-xs text-success">
+                      {metrics.prospectsCount > 0 ? Math.round((metrics.registrationsCount / metrics.prospectsCount) * 100) : 0}% conversion rate
+                    </p>
+                  </>
+                )}
               </div>
               
+              {/* Registrations Stats */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-success"></div>
                   <span className="text-sm">Registrations</span>
                 </div>
-                <p className="text-2xl font-bold">{metrics.registrationsCount}</p>
-                <p className="text-xs text-primary">
-                  {metrics.registrationsCount > 0 ? Math.round((metrics.journalsCount / metrics.registrationsCount) * 100) : 0}% journal submission
-                </p>
+                {loadingState.registrations ? (
+                  <>
+                    <Skeleton className="h-8 w-16 rounded-lg mb-1" />
+                    <Skeleton className="h-3 w-24 rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">{metrics.registrationsCount}</p>
+                    <p className="text-xs text-primary">
+                      {metrics.registrationsCount > 0 ? Math.round((metrics.journalsCount / metrics.registrationsCount) * 100) : 0}% journal submission
+                    </p>
+                  </>
+                )}
               </div>
               
+              {/* Journals Stats */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-secondary"></div>
                   <span className="text-sm">Journals</span>
                 </div>
-                <p className="text-2xl font-bold">{metrics.journalsCount}</p>
-                <p className="text-xs text-warning">
-                  {metrics.journalsByStatus.approved} approved
-                </p>
+                {loadingState.journals ? (
+                  <>
+                    <Skeleton className="h-8 w-16 rounded-lg mb-1" />
+                    <Skeleton className="h-3 w-24 rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">{metrics.journalsCount}</p>
+                    <p className="text-xs text-warning">
+                      {metrics.journalsByStatus.approved} approved
+                    </p>
+                  </>
+                )}
               </div>
               
+              {/* Average Revenue Stats */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-warning"></div>
                   <span className="text-sm">Avg. Revenue</span>
                 </div>
-                <p className="text-2xl font-bold">
-                  ₹{metrics.registrationsCount > 0 ? Math.round(metrics.totalRevenue / metrics.registrationsCount).toLocaleString() : 0}
-                </p>
-                <p className="text-xs text-default-500">per registration</p>
+                {loadingState.transactions || loadingState.registrations ? (
+                  <>
+                    <Skeleton className="h-8 w-24 rounded-lg mb-1" />
+                    <Skeleton className="h-3 w-20 rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">
+                      ₹{metrics.registrationsCount > 0 ? Math.round(metrics.totalRevenue / metrics.registrationsCount).toLocaleString() : 0}
+                    </p>
+                    <p className="text-xs text-default-500">per registration</p>
+                  </>
+                )}
               </div>
             </div>
           </CardBody>
@@ -301,18 +487,23 @@ function AdminDashboard() {
           <Divider/>
           <CardBody>
             <div className="space-y-4">
-              {metrics.recentExecutives.map((executive) => (
-                <div key={executive.id} className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{executive.username}</p>
-                    <p className="text-sm text-default-400">
-                      {formatDate(executive.created_at)}
-                    </p>
+              {loadingState.executives ? (
+                <>
+                  {[1, 2, 3, 4, 5].map(i => <RecentItemSkeleton key={i} />)}
+                </>
+              ) : metrics.recentExecutives.length > 0 ? (
+                metrics.recentExecutives.map((executive) => (
+                  <div key={executive.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{executive.username}</p>
+                      <p className="text-sm text-default-400">
+                        {formatDate(executive.created_at)}
+                      </p>
+                    </div>
+                    <ArrowTrendingUpIcon className="w-5 h-5 text-success" />
                   </div>
-                  <ArrowTrendingUpIcon className="w-5 h-5 text-success" />
-                </div>
-              ))}
-              {metrics.recentExecutives.length === 0 && (
+                ))
+              ) : (
                 <p className="text-center text-default-400">No executives found</p>
               )}
             </div>
@@ -336,13 +527,23 @@ function AdminDashboard() {
           <Divider/>
           <CardBody>
             <div className="space-y-4">
-              {metrics.recentServices.map((service) => (
-                <div key={service.id} className="flex justify-between items-center">
-                  <p className="font-medium">{service.service_name}</p>
-                  <p className="text-success">₹{service.fee.toLocaleString()}</p>
-                </div>
-              ))}
-              {metrics.recentServices.length === 0 && (
+              {loadingState.services ? (
+                <>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="flex justify-between items-center py-2">
+                      <Skeleton className="h-5 w-32 rounded-lg" />
+                      <Skeleton className="h-5 w-16 rounded-lg" />
+                    </div>
+                  ))}
+                </>
+              ) : metrics.recentServices.length > 0 ? (
+                metrics.recentServices.map((service) => (
+                  <div key={service.id} className="flex justify-between items-center">
+                    <p className="font-medium">{service.service_name}</p>
+                    <p className="text-success">₹{service.fee.toLocaleString()}</p>
+                  </div>
+                ))
+              ) : (
                 <p className="text-center text-default-400">No services found</p>
               )}
             </div>
@@ -366,23 +567,39 @@ function AdminDashboard() {
           <Divider/>
           <CardBody>
             <div className="space-y-4">
-              {metrics.recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">₹{transaction.amount.toLocaleString()}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded">
-                        {transaction.transaction_type}
-                      </p>
-                      <p className="text-xs text-default-400">
-                        {formatDate(transaction.transaction_date)}
-                      </p>
+              {loadingState.transactions ? (
+                <>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="flex justify-between items-center py-2">
+                      <div className="w-3/4">
+                        <Skeleton className="h-5 w-20 rounded-lg mb-1" />
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-3 w-12 rounded-full" />
+                          <Skeleton className="h-3 w-16 rounded-lg" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-4 w-16 rounded-lg" />
                     </div>
+                  ))}
+                </>
+              ) : metrics.recentTransactions.length > 0 ? (
+                metrics.recentTransactions.map((transaction) => (
+                  <div key={transaction.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">₹{transaction.amount.toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded">
+                          {transaction.transaction_type}
+                        </p>
+                        <p className="text-xs text-default-400">
+                          {formatDate(transaction.transaction_date)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm">{transaction.entities.username}</p>
                   </div>
-                  <p className="text-sm">{transaction.entities.username}</p>
-                </div>
-              ))}
-              {metrics.recentTransactions.length === 0 && (
+                ))
+              ) : (
                 <p className="text-center text-default-400">No transactions found</p>
               )}
             </div>
