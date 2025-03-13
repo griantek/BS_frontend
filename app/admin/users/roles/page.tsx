@@ -55,10 +55,30 @@ function RolesPage() {
     const [selectedEntityType, setSelectedEntityType] = React.useState<string>('');
     const [selectedPermissions, setSelectedPermissions] = React.useState<number[]>([]);
     const [previousEntityType, setPreviousEntityType] = React.useState<string>('');
+    const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+    
+    React.useEffect(() => {
+        const checkUserRole = () => {
+            try {
+                const userData = api.getStoredUser();
+                const isSuperAdminUser = userData?.role?.entity_type === 'SupAdmin';
+                setIsSuperAdmin(isSuperAdminUser);
+            } catch (error) {
+                console.error('Error checking user role:', error);
+                setIsSuperAdmin(false);
+            }
+        };
+        
+        checkUserRole();
+    }, []);
 
-    const entityTypes = ['Admin', 'Editor', 'Executive'] as const;
+    const entityTypes = React.useMemo(() => {
+        if (isSuperAdmin) {
+            return ['Admin', 'Editor', 'Executive'] as const;
+        }
+        return ['Editor', 'Executive'] as const;
+    }, [isSuperAdmin]);
 
-    // Add this function to fetch roles
     const fetchRoles = async () => {
         try {
             setIsLoading(true);
@@ -72,12 +92,10 @@ function RolesPage() {
         }
     };
 
-    // Update initial load effect to use fetchRoles
     React.useEffect(() => {
         fetchRoles();
     }, []);
 
-    // Fix: Separate effect for entity type changes
     React.useEffect(() => {
         if (!selectedEntityType) return;
 
@@ -110,7 +128,6 @@ function RolesPage() {
         );
     };
 
-    // Update handleCreateRole to use fetchRoles
     const handleCreateRole = async () => {
         try {
             setIsSubmitting(true);
@@ -128,7 +145,7 @@ function RolesPage() {
             };
 
             await api.createRole(roleData);
-            await fetchRoles(); // Reload data from backend
+            await fetchRoles();
             toast.success('Role created successfully');
             onClose();
             resetFormData();
@@ -139,7 +156,6 @@ function RolesPage() {
         }
     };
 
-    // Update handleEditClick to fetch all permissions for the role's entity type
     const handleEditClick = async (role: Role) => {
         try {
             setEditingRole(role);
@@ -149,14 +165,11 @@ function RolesPage() {
                 entity_type: role.entity_type
             });
             
-            // Set entity type first
             setSelectedEntityType(role.entity_type);
             
-            // Fetch permissions for this entity type
             const response = await api.getPermissionsByEntityType(role.entity_type);
             setAvailablePermissions(response.data);
             
-            // Set selected permissions from the role
             setSelectedPermissions(role.permissions.map(p => p.id));
             
             setIsEditModalOpen(true);
@@ -166,7 +179,6 @@ function RolesPage() {
         }
     };
 
-    // Update handleUpdateRole to use fetchRoles
     const handleUpdateRole = async () => {
         if (!editingRole) return;
         try {
@@ -175,11 +187,11 @@ function RolesPage() {
                 name: formData.name,
                 description: formData.description,
                 permissions: selectedPermissions,
-                entity_type: selectedEntityType // Changed from formData.entity_type
+                entity_type: selectedEntityType
             };
             
             await api.updateRole(editingRole.id, updateData);
-            await fetchRoles(); // Reload data from backend
+            await fetchRoles();
             toast.success('Role updated successfully');
             setIsEditModalOpen(false);
             resetFormData();
@@ -195,13 +207,12 @@ function RolesPage() {
         setIsDeleteModalOpen(true);
     };
 
-    // Update handleDeleteRole to use fetchRoles
     const handleDeleteRole = async () => {
         if (!roleToDelete) return;
         try {
             setIsSubmitting(true);
             await api.deleteRole(roleToDelete.id);
-            await fetchRoles(); // Reload data from backend
+            await fetchRoles();
             toast.success('Role deleted successfully');
             setIsDeleteModalOpen(false);
         } catch (error: any) {
@@ -212,7 +223,6 @@ function RolesPage() {
         }
     };
 
-    // Update the renderRolePermissions function
     const renderRolePermissions = (role: Role) => {
         return role.permissions?.map((permission) => (
             <Chip
@@ -226,7 +236,6 @@ function RolesPage() {
         ));
     };
 
-    // Add this function to reset form state
     const resetFormData = () => {
         setFormData({ 
             name: '', 
@@ -238,13 +247,11 @@ function RolesPage() {
         setAvailablePermissions([]);
     };
 
-    // Update onOpen to reset form
     const handleCreateClick = () => {
         resetFormData();
         onOpen();
     };
 
-    // Update modal close handlers
     const handleCreateModalClose = () => {
         resetFormData();
         onClose();
@@ -255,7 +262,6 @@ function RolesPage() {
         setIsEditModalOpen(false);
     };
 
-    // Fix: Add proper key handling in select components
     const renderSelect = (
         value: string, 
         onChange: (value: string) => void, 
@@ -278,7 +284,6 @@ function RolesPage() {
     );
 
     const handleEntityTypeChange = async (newEntityType: string) => {
-        // Clear previous permissions if entity type changes
         if (previousEntityType !== newEntityType) {
             setSelectedPermissions([]);
         }
@@ -295,7 +300,17 @@ function RolesPage() {
         }
     };
 
-    // Update the create modal to use the new select renderer
+    // Fix the canModifyRole function to correctly handle SuperAdmin permissions
+    const canModifyRole = (role: Role) => {
+        // SuperAdmin can modify any role except other SupAdmin roles
+        if (isSuperAdmin) {
+            return role.entity_type !== 'SupAdmin';
+        }
+        
+        // Regular admins can't modify SupAdmin or Admin roles
+        return role.entity_type !== 'SupAdmin' && role.entity_type !== 'Admin';
+    };
+
     const renderCreateRoleModal = () => (
         <Modal isOpen={isOpen} onClose={handleCreateModalClose} size="lg">
             <ModalContent>
@@ -372,7 +387,6 @@ function RolesPage() {
         </Modal>
     );
 
-    // Update the edit modal to use the new select renderer
     const renderEditModal = () => (
         <Modal isOpen={isEditModalOpen} onClose={handleEditModalClose}>
             <ModalContent>
@@ -405,6 +419,7 @@ function RolesPage() {
                                     selectedKeys={selectedEntityType ? [selectedEntityType] : []}
                                     onChange={(e) => handleEntityTypeChange(e.target.value)}
                                     isRequired
+                                    isDisabled={editingRole?.entity_type === 'Admin' && !isSuperAdmin}
                                 >
                                     {entityTypes.map((type) => (
                                         <SelectItem key={type} value={type}>
@@ -492,11 +507,19 @@ function RolesPage() {
                                 {roles.map((role) => (
                                     <TableRow 
                                         key={role.id} 
-                                        className={role.entity_type === 'SupAdmin' ? "bg-rose-50 dark:bg-rose-900/20" : ""}
+                                        className={
+                                            role.entity_type === 'SupAdmin' ? "bg-rose-50 dark:bg-rose-900/20" :
+                                            role.entity_type === 'Admin' ? "bg-blue-50 dark:bg-blue-900/20" : 
+                                            ""
+                                        }
                                     >
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className={`text-bold ${role.entity_type === 'SupAdmin' ? "font-bold text-danger" : ""}`}>
+                                                <span className={`text-bold ${
+                                                    role.entity_type === 'SupAdmin' ? "font-bold text-danger" : 
+                                                    role.entity_type === 'Admin' ? "font-semibold text-primary" : 
+                                                    ""
+                                                }`}>
                                                     {role.name}
                                                 </span>
                                                 <span className="text-xs text-gray-500">{role.description}</span>
@@ -504,13 +527,15 @@ function RolesPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Chip
-                                                variant={role.entity_type === 'SupAdmin' ? "solid" : "flat"}
+                                                variant={
+                                                    role.entity_type === 'SupAdmin' || role.entity_type === 'Admin' ? "solid" : "flat"
+                                                }
                                                 color={
-                                                    role.entity_type === 'Admin' ? 'success' :
+                                                    role.entity_type === 'Admin' ? 'primary' :
                                                     role.entity_type === 'Editor' ? 'warning' : 
-                                                    role.entity_type === 'Executive' ? 'primary' :
+                                                    role.entity_type === 'Executive' ? 'success' :
                                                     role.entity_type === 'SupAdmin' ? 'danger' : 
-                                                    'danger'
+                                                    'default'
                                                 }
                                                 size="sm"
                                             >
@@ -532,8 +557,8 @@ function RolesPage() {
                                                     size="sm"
                                                     variant="light"
                                                     onClick={() => handleEditClick(role)}
-                                                    isDisabled={role.entity_type === 'SupAdmin'}
-                                                    className={role.entity_type === 'SupAdmin' ? "opacity-50 cursor-not-allowed" : ""}
+                                                    isDisabled={!canModifyRole(role)}
+                                                    className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
                                                     <PencilIcon className="w-4 h-4" />
                                                 </Button>
@@ -543,8 +568,8 @@ function RolesPage() {
                                                     color="danger"
                                                     variant="light"
                                                     onClick={() => handleDeleteClick(role)}
-                                                    isDisabled={role.entity_type === 'SupAdmin'}
-                                                    className={role.entity_type === 'SupAdmin' ? "opacity-50 cursor-not-allowed" : ""}
+                                                    isDisabled={!canModifyRole(role)}
+                                                    className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
                                                 </Button>
@@ -561,7 +586,6 @@ function RolesPage() {
             {renderCreateRoleModal()}
             {renderEditModal()}
 
-            {/* Delete Confirmation Modal */}
             <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
                 <ModalContent>
                     {(onClose) => (

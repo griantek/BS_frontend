@@ -30,6 +30,13 @@ export const PERMISSIONS = {
   SHOW_DELETE_BUTTON_EDITOR: 'show_del_btn_ed',
   SHOW_UPDATE_SCREENSHOT_BUTTON: 'show_update_scr_btn',
   SHOW_ADD_JOURNAL_BUTTON: 'show_add_journal_btn',
+  
+  // ADMIN PERMISSIONS
+  SHOW_USERS_NAV: 'show_users_nav',
+  SHOW_EXECUTIVES_TAB: 'show_execs',
+  VIEW_EXECUTIVE_DETAILS: 'view_exec',
+  UPDATE_USERS: 'update_users',
+  SHOW_ADD_EXECUTIVE_BUTTON: 'show_add_exec_btn',
 };
 
 /**
@@ -41,19 +48,13 @@ export interface UserWithPermissions {
 }
 
 /**
- * Check if the user has a specific permission
+ * Check if the user is a SuperAdmin
  */
-export const hasPermission = (
-  user: UserWithPermissions | null | undefined,
-  permissionName: string
-): boolean => {
-  if (!user || !user.permissions || !Array.isArray(user.permissions)) {
-    return false;
-  }
-
-  return user.permissions.some(
-    (permission) => permission.name === permissionName
-  );
+export const isSuperAdmin = (user: UserWithPermissions | null | undefined): boolean => {
+  if (!user) return false;
+  // Check both entity_type in role and role name for "SupAdmin"
+  return user.role?.entity_type === 'SupAdmin' || 
+         user.role?.name?.toLowerCase().includes('superadmin');
 };
 
 /**
@@ -74,10 +75,41 @@ export const getCurrentUser = (): UserWithPermissions | null => {
 };
 
 /**
+ * Check if the user has a specific permission
+ * SuperAdmin users automatically have all permissions
+ */
+export const hasPermission = (
+  user: UserWithPermissions | null | undefined,
+  permissionName: string
+): boolean => {
+  if (!user) return false;
+  
+  // SuperAdmin has all permissions
+  if (isSuperAdmin(user)) {
+    return true;
+  }
+  
+  if (!user.permissions || !Array.isArray(user.permissions)) {
+    return false;
+  }
+
+  return user.permissions.some(
+    (permission) => permission.name === permissionName
+  );
+};
+
+/**
  * Check if current user has specific permission
+ * SuperAdmin users automatically have all permissions
  */
 export const currentUserHasPermission = (permissionName: string): boolean => {
   const currentUser = getCurrentUser();
+  
+  // SuperAdmin has all permissions
+  if (isSuperAdmin(currentUser)) {
+    return true;
+  }
+  
   return hasPermission(currentUser, permissionName);
 };
 

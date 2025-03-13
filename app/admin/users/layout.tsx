@@ -1,7 +1,9 @@
 "use client"
 import { Tabs, Tab } from "@heroui/react";
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { currentUserHasPermission, PERMISSIONS, isSuperAdmin } from '@/utils/permissions';
+import api from '@/services/api';
 
 export default function UsersLayout({
   children,
@@ -10,6 +12,20 @@ export default function UsersLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [showExecutives, setShowExecutives] = useState(true);
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user is SuperAdmin (they have all permissions implicitly)
+    const userData = api.getStoredUser();
+    // Store isSuperAdmin result in state
+    setUserIsSuperAdmin(userData?.role?.entity_type === 'SupAdmin');
+    
+    // SuperAdmin always has all permissions, only check for non-superadmins
+    if (userData?.role?.entity_type !== 'SupAdmin') {
+      setShowExecutives(currentUserHasPermission(PERMISSIONS.SHOW_EXECUTIVES_TAB));
+    }
+  }, []);
 
   // Preload both routes
   useEffect(() => {
@@ -22,7 +38,15 @@ export default function UsersLayout({
     router.replace(`/admin/users/${key}`, { scroll: false });
   };
 
+  // Get the selected tab from pathname
   const selectedTab = pathname.includes('/executives') ? 'executives' : 'roles';
+
+  // If user doesn't have permission to see executives and they're on the executives page, redirect to roles
+  useEffect(() => {
+    if (!userIsSuperAdmin && !showExecutives && selectedTab === 'executives') {
+      router.replace('/admin/users/roles', { scroll: false });
+    }
+  }, [userIsSuperAdmin, showExecutives, selectedTab, router]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-y-auto">
@@ -32,7 +56,10 @@ export default function UsersLayout({
           onSelectionChange={handleTabChange as any}
           aria-label="User Management"
         >
-          <Tab key="executives" title="Executives" />
+          {/* SuperAdmins always see executives tab, others need permission */}
+          {(userIsSuperAdmin || showExecutives) && (
+            <Tab key="executives" title="Executives" />
+          )}
           <Tab key="roles" title="Roles" />
         </Tabs>
       </div>

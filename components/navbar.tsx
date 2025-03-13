@@ -48,6 +48,7 @@ export const Navbar = () => {
   const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
   const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
   const [hasNotificationsPermission, setHasNotificationsPermission] = React.useState(false);
+  const [showUsersNav, setShowUsersNav] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
 
@@ -70,6 +71,30 @@ export const Navbar = () => {
       setHasNotificationsPermission(currentUserHasPermission(PERMISSIONS.VIEW_NOTIFICATIONS));
     }
   }, [isLoggedIn]);
+
+  React.useEffect(() => {
+    const handleNavPermissionsChange = (event: CustomEvent) => {
+      if (event.detail && typeof event.detail.showUsersNav === 'boolean') {
+        setShowUsersNav(event.detail.showUsersNav);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('nav-permissions-change', 
+      handleNavPermissionsChange as EventListener);
+
+    // Initial check for permissions
+    const userData = api.getStoredUser();
+    if (userData?.role?.entity_type === 'SupAdmin' || 
+        currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV)) {
+      setShowUsersNav(true);
+    }
+
+    return () => {
+      window.removeEventListener('nav-permissions-change', 
+        handleNavPermissionsChange as EventListener);
+    };
+  }, []);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -134,9 +159,17 @@ export const Navbar = () => {
       });
     }
     
-    // Now using the properly declared isEditorPath variable
+    // For admin role
     if (isAdmin) {
-      return siteConfig.adminLinks;
+      // Filter admin links based on permissions
+      const filteredLinks = [...siteConfig.adminLinks];
+      
+      // Only include Users link if permission exists
+      if (!showUsersNav) {
+        return filteredLinks.filter(link => !link.href.includes('/admin/users'));
+      }
+      
+      return filteredLinks;
     }
     
     const role = getUserRole();
