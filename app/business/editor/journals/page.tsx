@@ -23,6 +23,8 @@ import { toast } from 'react-toastify';
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
+import clsx from 'clsx';
 
 const JournalsEditorPage = () => {
     const [journals, setJournals] = React.useState<JournalData[]>([]);
@@ -30,10 +32,14 @@ const JournalsEditorPage = () => {
     const [filterValue, setFilterValue] = React.useState("");
     const [page, setPage] = React.useState(1);
     const [showPassword, setShowPassword] = React.useState<{ [key: number]: boolean }>({});
+    const [canClickRows, setCanClickRows] = React.useState(false);
     const rowsPerPage = 10;
     const router = useRouter();
 
     React.useEffect(() => {
+        // Check permission for clicking rows
+        setCanClickRows(currentUserHasPermission(PERMISSIONS.CLICK_JOURNAL_ROWS));
+        
         const fetchJournals = async () => {
             try {
                 const user = api.getStoredUser();
@@ -62,7 +68,7 @@ const JournalsEditorPage = () => {
         { key: "executive", label: "APPLIED EXECUTIVE" },
         { key: "journal_name", label: "JOURNAL" },
         { key: "status", label: "STATUS" },
-        { key: "journal_link", label: "LINK" },
+        // { key: "journal_link", label: "LINK" },
         { key: "paper_title", label: "PAPER TITLE" },
     ];
 
@@ -88,6 +94,12 @@ const JournalsEditorPage = () => {
             ...prev,
             [id]: !prev[id]
         }));
+    };
+
+    const handleRowClick = (journalId: number) => {
+        if (canClickRows) {
+            router.push(`/business/editor/view/journal/${journalId}`);
+        }
     };
 
     const renderCell = (journal: JournalData, key: string): React.ReactNode => {
@@ -226,8 +238,11 @@ const JournalsEditorPage = () => {
                                 {(journal) => (
                                     <TableRow 
                                         key={journal.id}
-                                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                        onClick={() => router.push(`/business/editor/view/journal/${journal.id}`)}
+                                        className={clsx(
+                                            canClickRows && "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+                                            !canClickRows && "cursor-default"
+                                        )}
+                                        onClick={() => handleRowClick(journal.id)}
                                     >
                                         {columns.map((column) => (
                                             <TableCell key={`${journal.id}-${column.key}`}>
@@ -245,4 +260,4 @@ const JournalsEditorPage = () => {
     );
 };
 
-export default withEditorAuth(JournalsEditorPage);
+export default withEditorAuth(JournalsEditorPage, PERMISSIONS.SHOW_JOURNAL_TABLE);

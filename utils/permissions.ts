@@ -26,8 +26,6 @@ export const PERMISSIONS = {
   CLICK_ASSIGNED_ROWS: 'click_assigned_rows',
   SHOW_JOURNAL_TABLE: 'show_journal_table',
   CLICK_JOURNAL_ROWS: 'click_journal_rows',
-  
-  // EDITOR BUTTON PERMISSIONS
   SHOW_EDIT_BUTTON_EDITOR: 'show_edit_btn_ed',
   SHOW_DELETE_BUTTON_EDITOR: 'show_del_btn_ed',
   SHOW_UPDATE_SCREENSHOT_BUTTON: 'show_update_scr_btn',
