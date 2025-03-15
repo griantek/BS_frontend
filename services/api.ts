@@ -18,7 +18,7 @@ interface ExecutiveLoginResponse {
         id: string;
         username: string;
         email: string;
-        entity_type: 'Editor' | 'Executive';
+        entity_type: 'Editor' | 'Executive' | 'Leads' | 'clients'; // Add new entity types
         role: {
             id: number;
             name: string;
@@ -571,6 +571,54 @@ interface ProspectusResponse {
   per_page: number;
 }
 
+// Add new interfaces for leads
+interface Lead {
+  id: number;
+  lead_source: string;
+  client_name: string;
+  contact_number: string;
+  country: string;
+  state: string;
+  main_subject: string;
+  service: string;
+  requirements: string;
+  customer_remarks: string;
+  registration_date: string;
+  created_at: string;
+  updated_at: string;
+  status?: string;
+  assigned_to?: string;
+  entity_id?: string;
+}
+
+interface CreateLeadRequest {
+  lead_source: string;
+  client_name: string;
+  contact_number: string;
+  country: string;
+  state: string;
+  main_subject: string;
+  service: string;
+  requirements: string;
+  customer_remarks?: string;
+  registration_date: string;
+}
+
+interface UpdateLeadRequest {
+  lead_source?: string;
+  client_name?: string;
+  contact_number?: string;
+  country?: string;
+  state?: string;
+  main_subject?: string;
+  service?: string;
+  requirements?: string;
+  customer_remarks?: string;
+  registration_date?: string;
+  status?: string;
+  assigned_to?: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -638,6 +686,32 @@ const api = {
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/entity/login', credentials);
+            
+            // Extract the entity type from the response for role-based redirection
+            const entityType = response.data.entities?.entity_type;
+            let role = 'executive'; // Default role
+            
+            // Map entity types to roles
+            switch(entityType?.toLowerCase()) {
+                case 'editor':
+                    role = 'editor';
+                    break;
+                case 'executive':
+                    role = 'executive';
+                    break;
+                case 'leads':
+                    role = 'leads';
+                    break;
+                case 'clients':
+                    role = 'clients';
+                    break;
+                default:
+                    role = 'executive'; // Fallback
+            }
+            
+            // Store the role in local storage for later use
+            localStorage.setItem(USER_ROLE_KEY, role);
+            
             return response.data;
         } catch (error: any) {
             throw error;
@@ -647,6 +721,10 @@ const api = {
     async loginAdmin(credentials: LoginCredentials): Promise<AdminLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/admin/login', credentials);
+            
+            // The server now returns role details in the admin response
+            localStorage.setItem(USER_ROLE_KEY, 'admin');
+            
             return response.data;
         } catch (error: any) {
             // Don't transform the error, let the component handle it
@@ -1136,6 +1214,70 @@ const api = {
         }
     },
 
+    // Leads endpoints
+    async getAllLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getLeadById(id: number): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getLeadsByService(service: string): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/service/${service}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getLeadsBySource(source: string): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/source/${source}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async createLead(data: CreateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.post('/leads', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async updateLead(id: number, data: UpdateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.put(`/leads/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async deleteLead(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/leads/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1145,7 +1287,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients') {
         if (!token || !role) {
             throw new Error('Invalid auth data: missing token or role');
         }
@@ -1257,5 +1399,8 @@ export type {
     DashboardStats,
     ActivityItem,
     Permission,  // Add this export
+    Lead,
+    CreateLeadRequest,
+    UpdateLeadRequest,
 };
 export default api;

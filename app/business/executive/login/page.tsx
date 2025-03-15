@@ -57,9 +57,7 @@ function BusinessLoginContent() {
         return;
       }
 
-      console.log('Login response:', response);
-
-      // Get the entity data from the new response structure
+      // Get the entity data from the response
       const entityData = response.entities;
       
       // Convert entity_type to lowercase for consistency
@@ -72,17 +70,29 @@ function BusinessLoginContent() {
         {
           ...entityData,
           role: entityData.role,
-          permissions: entityData.role.permissions, // Store permissions for RBAC
+          permissions: entityData.role.permissions,
           entity_type: entityType
         }, 
-        entityType as 'editor' | 'executive'
+        entityType as 'editor' | 'executive' | 'leads' | 'clients'
       );
 
       // Route based on entity_type
-      if (entityType === 'editor') {
-        await router.replace('/business/editor');
-      } else {
-        await router.replace('/business/executive');
+      switch(entityType) {
+        case 'editor':
+          await router.replace('/business/editor');
+          break;
+        case 'executive':
+          await router.replace('/business/executive');
+          break;
+        case 'leads':
+          await router.replace('/business/leads');
+          break;
+        case 'clients':
+          await router.replace('/business/clients');
+          break;
+        default:
+          // Fallback to executive dashboard
+          await router.replace('/business/executive');
       }
 
     } catch (error) {
@@ -103,7 +113,7 @@ function BusinessLoginContent() {
             <HeartFilledIcon size={48} className="text-primary" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Business Development Login</h1>
+            <h1 className="text-2xl font-bold">Business Portal Login</h1>
             <p className="text-sm text-default-500 mt-1">Please enter your credentials to continue</p>
           </div>
         </CardHeader>

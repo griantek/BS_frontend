@@ -74,9 +74,9 @@ function RolesPage() {
 
     const entityTypes = React.useMemo(() => {
         if (isSuperAdmin) {
-            return ['Admin', 'Editor', 'Executive'] as const;
+            return ['Admin', 'Editor', 'Executive', 'Leads' , 'Clients'] as const;
         }
-        return ['Editor', 'Executive'] as const;
+        return ['Editor', 'Executive', 'Leads' , 'Clients'] as const;
     }, [isSuperAdmin]);
 
     const fetchRoles = async () => {
@@ -132,7 +132,7 @@ function RolesPage() {
         try {
             setIsSubmitting(true);
             
-            if (!formData.name || !selectedEntityType || selectedPermissions.length === 0) {
+            if (!formData.name || !selectedEntityType) {
                 toast.error('Please fill in all required fields');
                 return;
             }
@@ -376,7 +376,7 @@ function RolesPage() {
                                 color="primary"
                                 onPress={handleCreateRole}
                                 isLoading={isSubmitting}
-                                isDisabled={!formData.name || !selectedEntityType || selectedPermissions.length === 0}
+                                isDisabled={!formData.name || !selectedEntityType}
                             >
                                 Create Role
                             </Button>

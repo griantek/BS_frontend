@@ -1,7 +1,13 @@
 import { Home, Users, Building2, Banknote, Briefcase, BookOpen } from "lucide-react";
 import {
   NewspaperIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  UserGroupIcon,
+  ClipboardDocumentCheckIcon,
+  UserCircleIcon,
+  CogIcon,
+  UserPlusIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 export type SiteConfig = typeof siteConfig;
@@ -69,6 +75,54 @@ export const siteConfig = {
       label: "Journals",
       href: "/business/editor/journals",
       icon: NewspaperIcon,
+    }
+  ],
+
+  // Leads Navigation - Add navigation for the leads role
+  leadsLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/leads",
+      icon: Home,
+    },
+    {
+      label: "All Leads",
+      href: "/business/leads/all",
+      icon: ClipboardDocumentCheckIcon,
+    },
+    {
+      label: "Pipeline",
+      href: "/business/leads/pipeline",
+      icon: ChartBarIcon,
+    },
+    {
+      label: "Campaigns",
+      href: "/business/leads/campaigns",
+      icon: UserGroupIcon,
+    }
+  ],
+
+  // Users Navigation - Add navigation for the users role
+  clientsLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/clients",
+      icon: Home,
+    },
+    {
+      label: "User Accounts",
+      href: "/business/clients/accounts",
+      icon: UserCircleIcon,
+    },
+    {
+      label: "Invitations",
+      href: "/business/clients/invitations",
+      icon: UserPlusIcon,
+    },
+    {
+      label: "Settings",
+      href: "/business/clients/settings",
+      icon: CogIcon,
     }
   ],
 

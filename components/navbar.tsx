@@ -40,7 +40,7 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isAdmin, isExecutive } = useAuth();
+  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients } = useAuth();
   const [notificationCount, setNotificationCount] = React.useState(5);
   const { setIsNavigating } = useNavigationLoading();
   const [username, setUsername] = React.useState<string>("");
@@ -48,14 +48,15 @@ export const Navbar = () => {
   const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
   const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
   const [hasNotificationsPermission, setHasNotificationsPermission] = React.useState(false);
-  const [showUsersNav, setShowUsersNav] = React.useState(false); // Default to false
-  const [showServicesTab, setShowServicesTab] = React.useState(false); // Default to false
-  const [showClientsTab, setShowClientsTab] = React.useState(false); // Default to false
-  // Add new permission state variables for finance and department tabs
+  const [showUsersNav, setShowUsersNav] = React.useState(false); 
+  const [showServicesTab, setShowServicesTab] = React.useState(false); 
+  const [showClientsTab, setShowClientsTab] = React.useState(false); 
   const [showFinanceTab, setShowFinanceTab] = React.useState(false);
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
+  const isLeadsPath = pathname?.startsWith('/business/leads');
+  const isClientsPath = pathname?.startsWith('/business/clients');
 
   React.useEffect(() => {
     // Get username from stored auth data
@@ -153,13 +154,17 @@ export const Navbar = () => {
     if (isAdmin) {
       path = '/admin';
     } else if (isExecutive) {
-      // If executive has dashboard permission, go to dashboard,
-      // otherwise go to records if they have records access
       path = hasDashboardPermission 
         ? '/business/executive'
         : hasRecordsAccess 
           ? '/business/executive/records'
-          : '/business/executive'; // Fallback to dashboard if no records access
+          : '/business/executive'; 
+    } else if (isEditor) {
+      path = '/business/editor';
+    } else if (isLeads) {
+      path = '/business/leads';
+    } else if (isClients) {
+      path = '/business/clients';
     }
     
     setIsNavigating(true);
@@ -192,15 +197,15 @@ export const Navbar = () => {
   };
 
   const getNavigationLinks = () => {
-    // For executive role, filter links based on permissions
-    if (isExecutive) {
+    // Get role from localStorage for more reliable role detection
+    const role = getUserRole();
+    
+    if (role === 'executive') {
       return siteConfig.executiveLinks.filter(link => {
-        // Filter out the dashboard link if user doesn't have permission
         if (link.href === '/business/executive') {
           return hasDashboardPermission;
         }
         
-        // Filter out the records link if user doesn't have permission
         if (link.href === '/business/executive/records') {
           return hasRecordsAccess;
         }
@@ -209,47 +214,45 @@ export const Navbar = () => {
       });
     }
     
-    // For admin role
-    if (isAdmin) {
-      // Start with all admin links
+    if (role === 'admin') {
       const adminLinks = [...siteConfig.adminLinks];
       
-      // Filter out links based on permissions
       return adminLinks.filter(link => {
-        // Users section
         if (link.href.includes('/admin/users')) {
           return showUsersNav;
         }
         
-        // Services section
         if (link.href.includes('/admin/services')) {
           return showServicesTab;
         }
         
-        // Clients section
         if (link.href.includes('/admin/clients')) {
           return showClientsTab;
         }
         
-        // Finance section - new permission check
         if (link.href.includes('/admin/finance')) {
           return showFinanceTab;
         }
         
-        // Department section - new permission check
         if (link.href.includes('/admin/department')) {
           return showDepartmentTab;
         }
         
-        // All other tabs are shown by default
         return true;
       });
     }
     
-    const role = getUserRole();
     if (role === 'editor') {
-      // Only return links if we're in mobile view or not in editor section
       return !isEditorPath ? siteConfig.editorLinks : [];
+    }
+    
+    // Add navigation for new roles
+    if (role === 'leads') {
+      return !isLeadsPath ? siteConfig.leadsLinks : [];
+    }
+    
+    if (role === 'clients') {
+      return !isClientsPath ? siteConfig.clientsLinks : [];
     }
     
     return [];
@@ -367,10 +370,23 @@ export const Navbar = () => {
 
       <NavbarMenu>
         {/* Filter the navigation links for mobile menu as well */}
-        {isLoggedIn && (getUserRole() === 'editor' ? 
-          siteConfig.editorLinks : 
-          getNavigationLinks()
-        ).map((link) => (
+        {isLoggedIn && (() => {
+          const role = getUserRole();
+          switch (role) {
+            case 'editor':
+              return siteConfig.editorLinks;
+            case 'executive':
+              return getNavigationLinks();
+            case 'admin':
+              return getNavigationLinks();
+            case 'leads':
+              return siteConfig.leadsLinks;
+            case 'clients':
+              return siteConfig.clientsLinks;
+            default:
+              return [];
+          }
+        })().map((link) => (
           // Add null check for link before rendering
           link && (
             <NavbarMenuItem key={link.href}>
