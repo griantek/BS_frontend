@@ -576,17 +576,20 @@ interface Lead {
   id: number;
   lead_source: string;
   client_name: string;
-  contact_number: string;
+  phone_number: string;
   country: string;
+  domain:string;
   state: string;
   main_subject: string;
   service: string;
   requirements: string;
   customer_remarks: string;
-  registration_date: string;
+  date: string;
+  followup_date: string;
   created_at: string;
   updated_at: string;
   status?: string;
+  prospectus_type:string;
   assigned_to?: string;
   entity_id?: string;
 }
