@@ -23,7 +23,8 @@ import {
   DocumentTextIcon,
   UserIcon,
   TableCellsIcon as TableCellsIconHero,
-  UserPlusIcon as UserPlusIconHero
+  UserPlusIcon as UserPlusIconHero,
+  BellAlertIcon
 } from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
@@ -107,9 +108,9 @@ export const siteConfig = {
       icon: TableCellsIconHero,
     },
     {
-      label: "Add Lead",
-      href: "/business/leads/add",
-      icon: UserPlusIconHero,
+      label: "Follow-ups",
+      href: "/business/leads/followup",
+      icon: BellAlertIcon
     }
   ],
 

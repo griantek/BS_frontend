@@ -18,7 +18,7 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { BellIcon, ChartPieIcon, UsersIcon, UserGroupIcon, DocumentTextIcon, UserIcon, BriefcaseIcon, TableCellsIcon, UserPlusIcon } from "@heroicons/react/24/outline";
+import { BellIcon, ChartPieIcon, UsersIcon, UserGroupIcon, DocumentTextIcon, UserIcon, BriefcaseIcon, TableCellsIcon, UserPlusIcon, BellAlertIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";
@@ -258,6 +258,11 @@ export const Navbar = () => {
           label: "All Leads",
           href: "/business/leads/all",
           icon: TableCellsIcon
+        },
+        {
+          label: "Follow-ups",
+          href: "/business/leads/followup", 
+          icon: BellAlertIcon
         },
         {
           label: "Add Lead",
