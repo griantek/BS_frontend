@@ -181,7 +181,7 @@ const LeadDetailPage = () => {
           <div className="mb-4">
             <h3 className="font-medium text-default-500">Requirements</h3>
             <p className="whitespace-pre-wrap">
-              {lead.requirements || 'No requirements specified'}
+              {lead.requirement || 'No requirements specified'}
             </p>
           </div>
         </Card>

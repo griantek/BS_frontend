@@ -21,9 +21,10 @@ import {
   UserPlusIcon,
   ClockIcon,
   FunnelIcon,
+  BellAlertIcon,
 } from "@heroicons/react/24/outline";
 import { format, parse, isValid } from "date-fns";
-import api, { Lead } from "@/services/api";
+import api, { Lead, TodayFollowupResponse } from "@/services/api";
 import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
 
@@ -39,6 +40,11 @@ const LeadsPage = () => {
   const [leadSources, setLeadSources] = useState<string[]>([]);
   const [leadDomains, setLeadDomains] = useState<string[]>([]);
   const [prospectusTypes, setProspectusTypes] = useState<string[]>([]);
+  
+  // Add state for today's follow-ups
+  const [todayFollowups, setTodayFollowups] = useState<Lead[]>([]);
+  const [followupsLoading, setFollowupsLoading] = useState(true);
+  const [followupsError, setFollowupsError] = useState<string | null>(null);
 
   // Add pagination state
   const [page, setPage] = useState(1);
@@ -55,6 +61,7 @@ const LeadsPage = () => {
   useEffect(() => {
     checkAuth(router, "leads");
     fetchLeads();
+    fetchTodayFollowups();
   }, [router]);
 
   // Extract unique sources, domains, and prospectus types when leads data changes
@@ -90,6 +97,27 @@ const LeadsPage = () => {
       setError("Failed to load leads. Please try again later.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add new function to fetch today's follow-up leads
+  const fetchTodayFollowups = async () => {
+    try {
+      setFollowupsLoading(true);
+      const response = await api.getTodayFollowupLeads();
+      if (response && response.data && response.data) {
+        // Ensure we're handling the nested data structure correctly
+        setTodayFollowups(response.data);
+      } else {
+        // Set to empty array if data structure is different
+        setTodayFollowups([]);
+      }
+    } catch (err) {
+      console.error("Error fetching today's followups:", err);
+      setFollowupsError("Failed to load today's followups. Please try again later.");
+      setTodayFollowups([]); // Ensure we have an empty array on error
+    } finally {
+      setFollowupsLoading(false);
     }
   };
 
@@ -154,7 +182,7 @@ const LeadsPage = () => {
         false ||
         lead.phone_number?.includes(query) ||
         false ||
-        lead.requirements?.toLowerCase().includes(query) ||
+        lead.requirement?.toLowerCase().includes(query) ||
         false ||
         lead.main_subject?.toLowerCase().includes(query) ||
         false ||
@@ -240,6 +268,18 @@ const LeadsPage = () => {
     router.push(`/business/leads/${leadId}`);
   };
 
+  // Add a function to clear all filters
+  const clearAllFilters = () => {
+    setFilterSource("");
+    setFilterDomain("");
+    setFilterProspectusType("");
+    setSearchQuery("");
+    setPage(1);
+  };
+
+  // Check if any filters are applied
+  const hasActiveFilters = filterSource !== "" || filterDomain !== "" || filterProspectusType !== "" || searchQuery !== "";
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Leads Dashboard</h1>
@@ -299,7 +339,106 @@ const LeadsPage = () => {
             </div>
           </div>
         </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center">
+            <div className="bg-warning/10 p-3 rounded-full">
+              <BellAlertIcon className="h-6 w-6 text-warning" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-default-500">
+                Today's Follow-ups
+              </p>
+              <h3 className="text-xl font-bold">{followupsLoading ? "..." : todayFollowups.length}</h3>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {/* Today's Follow-ups Section */}
+      <Card className="p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold flex items-center">
+            <BellAlertIcon className="h-5 w-5 mr-2 text-warning" />
+            Today's Follow-ups
+            {!followupsLoading && todayFollowups.length > 0 && (
+              <Badge className="ml-2" color="warning" size="sm">
+                {todayFollowups.length}
+              </Badge>
+            )}
+          </h2>
+          <Button 
+            size="sm"
+            color="primary"
+            variant="flat"
+            onClick={fetchTodayFollowups}
+          >
+            Refresh
+          </Button>
+        </div>
+
+        {followupsLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <Spinner size="lg" />
+          </div>
+        ) : followupsError ? (
+          <div className="text-center text-danger">{followupsError}</div>
+        ) : todayFollowups.length === 0 ? (
+          <div className="text-center py-8 text-default-500">No follow-ups scheduled for today</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table aria-label="Today's follow-ups" isStriped>
+              <TableHeader>
+                <TableColumn>CLIENT NAME</TableColumn>
+                <TableColumn>PHONE</TableColumn>
+                <TableColumn>DOMAIN</TableColumn>
+                <TableColumn>REQUIREMENT</TableColumn>
+                <TableColumn>REMARKS</TableColumn>
+                <TableColumn>ACTIONS</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {todayFollowups.map((followup) => (
+                  <TableRow key={followup.id}>
+                    <TableCell className="font-medium">{followup.client_name || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <PhoneIcon className="h-4 w-4" />
+                        {followup.phone_number || "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{followup.domain === "Nill" ? "-" : followup.domain || "-"}</TableCell>
+                    <TableCell>
+                      <div className="max-w-xs truncate">
+                        {followup.requirement || followup.detailed_requirement || "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        color={getBadgeColor(followup.remarks || followup.customer_remarks || "-")}
+                        variant="flat"
+                      >
+                        {followup.remarks || followup.customer_remarks || "-"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        size="sm" 
+                        color="primary" 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent event bubbling
+                          handleLeadRowClick(followup.id);
+                        }}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -328,7 +467,7 @@ const LeadsPage = () => {
           }
         </Select>
 
-        <Select
+        {/* <Select
           className="max-w-xs"
           placeholder="Filter by subject"
           selectedKeys={filterDomain ? [filterDomain] : []}
@@ -344,12 +483,12 @@ const LeadsPage = () => {
               </SelectItem>
             )) as any
           }
-        </Select>
+        </Select> */}
 
         {/* Add new filter for prospectus type */}
         <Select
           className="max-w-xs"
-          placeholder="Filter by type"
+          placeholder="Filter by prospectus type"
           selectedKeys={filterProspectusType ? [filterProspectusType] : []}
           onChange={handleProspectusTypeChange}
         >
@@ -365,16 +504,32 @@ const LeadsPage = () => {
           }
         </Select>
 
+        {hasActiveFilters && (
+          <Button 
+            color="warning" 
+            variant="flat"
+            onClick={clearAllFilters}
+            className="self-end"
+            size="sm"
+          >
+            Clear Filters
+          </Button>
+        )}
+
         <Button
           color="primary"
           className="sm:ml-auto"
           onClick={() => {
-            // Will implement in the next phase
-            console.log("Add lead clicked");
+            router.push("/business/leads/add");
           }}
         >
           Add New Lead
         </Button>
+      </div>
+
+      {/* All Leads - Add a header for clarity */}
+      <div className="flex items-center mb-4">
+        <h2 className="text-xl font-semibold">All Leads</h2>
       </div>
 
       {/* Leads Table */}
@@ -424,7 +579,7 @@ const LeadsPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate">
-                        {lead.requirements || "-"}
+                        {lead.requirement || "-"}
                       </div>
                     </TableCell>
                     <TableCell>{lead.prospectus_type || "-"}</TableCell>

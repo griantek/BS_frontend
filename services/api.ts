@@ -582,7 +582,8 @@ interface Lead {
   state: string;
   main_subject: string;
   service: string;
-  requirements: string;
+  requirement: string;
+  detailed_requirement?: string;
   customer_remarks: string;
   date: string;
   followup_date: string;
@@ -592,6 +593,13 @@ interface Lead {
   prospectus_type:string;
   assigned_to?: string;
   entity_id?: string;
+  research_area?: string;
+  title?: string;
+  degree?: string;
+  university?: string;
+  remarks?: string;
+  attended?: boolean;
+  followup_status?: string;
 }
 
 interface CreateLeadRequest {
@@ -603,8 +611,16 @@ interface CreateLeadRequest {
   main_subject: string;
   service: string;
   requirements: string;
+  detailed_requirement?: string;
   customer_remarks?: string;
-  registration_date: string;
+  date: string;              // Changed from registration_date
+  followup_date?: string;
+  prospectus_type?: string;
+  assigned_to?: string; 
+  followup_status?: boolean;
+  // Fields for form handling only (not sent to API)
+  other_lead_source?: string;
+  other_main_subject?: string;
 }
 
 interface UpdateLeadRequest {
@@ -620,6 +636,12 @@ interface UpdateLeadRequest {
   registration_date?: string;
   status?: string;
   assigned_to?: string;
+}
+
+interface TodayFollowupResponse {
+  data: Lead[];
+  count: number;
+  today: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1281,6 +1303,18 @@ const api = {
         }
     },
 
+    // Add new function to get today's follow-up leads
+    async getTodayFollowupLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads/today-followup');
+            // Return the response data directly, which contains the nested data structure
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching today followups:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1405,5 +1439,6 @@ export type {
     Lead,
     CreateLeadRequest,
     UpdateLeadRequest,
+    TodayFollowupResponse,
 };
 export default api;
