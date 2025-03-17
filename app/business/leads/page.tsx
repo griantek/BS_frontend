@@ -65,7 +65,7 @@ const LeadsPage = () => {
 
   useEffect(() => {
     checkAuth(router, "leads");
-    fetchLeads();
+    fetchUnapprovedLeads();
     fetchTodayFollowups();
   }, [router]);
 
@@ -80,7 +80,7 @@ const LeadsPage = () => {
       leads.forEach((lead) => {
         if (lead.lead_source) sourcesSet.add(lead.lead_source);
         if (lead.domain) domainsSet.add(lead.domain);
-        if (lead.prospectus_type) sourcesSet.add(lead.prospectus_type);
+        if (lead.prospectus_type) prospectusTypesSet.add(lead.prospectus_type);
       });
 
       setLeadSources(Array.from(sourcesSet));
@@ -89,10 +89,10 @@ const LeadsPage = () => {
     }
   }, [leads]);
 
-  const fetchLeads = async () => {
+  const fetchUnapprovedLeads = async () => {
     try {
       setLoading(true);
-      const response = await api.getAllLeads();
+      const response = await api.getAllUnapprovedLeads();
       if (response && response.data) {
         setLeads(response.data);
         calculateStats(response.data);
@@ -567,7 +567,7 @@ const LeadsPage = () => {
           <div className="bg-default-50 dark:bg-default-100/5 p-6 border-b border-divider">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-semibold text-foreground">All Leads</h2>
+                <h2 className="text-2xl font-semibold text-foreground">Unapproved Leads</h2>
                 <p className="text-foreground-400 text-sm mt-1">
                   {filteredLeads.length === 0 ? "No results found" : 
                    `Showing ${(page - 1) * rowsPerPage + 1} to ${Math.min(page * rowsPerPage, filteredLeads.length)} of ${filteredLeads.length} leads`}
@@ -595,7 +595,7 @@ const LeadsPage = () => {
                     color="danger"
                     variant="flat" 
                     className="mt-4"
-                    onClick={fetchLeads}
+                    onClick={fetchUnapprovedLeads}
                   >
                     Retry
                   </Button>

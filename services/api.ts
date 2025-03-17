@@ -1283,6 +1283,15 @@ const api = {
             throw this.handleError(error);
         }
     },
+    
+    async getAllUnapprovedLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads/unapproved');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
 
     async getLeadById(id: number): Promise<ApiResponse<Lead>> {
         try {
