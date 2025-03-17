@@ -9,12 +9,28 @@ import {
   UserPlusIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { 
+  ChartPieIcon, 
+  UsersIcon, 
+  ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconHero, 
+  CubeIcon, 
+  CreditCardIcon, 
+  BookOpenIcon,
+  WrenchScrewdriverIcon,
+  UserGroupIcon as UserGroupIconHero,
+  NewspaperIcon as NewspaperIconHero,
+  BuildingOfficeIcon,
+  DocumentTextIcon,
+  UserIcon,
+  TableCellsIcon as TableCellsIconHero,
+  UserPlusIcon as UserPlusIconHero
+} from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Griantek Business Management",
-  description: "Manage your business operations",
+  name: "Griantek Business Management System",
+  description: "A comprehensive solution for managing your business operations.",
   
   // Super Admin Navigation
   adminLinks: [
@@ -83,22 +99,17 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/leads",
-      icon: Home,
+      icon: ChartPieIcon
     },
     {
       label: "All Leads",
       href: "/business/leads/all",
-      icon: ClipboardDocumentCheckIcon,
+      icon: TableCellsIconHero,
     },
     {
-      label: "Pipeline",
-      href: "/business/leads/pipeline",
-      icon: ChartBarIcon,
-    },
-    {
-      label: "Campaigns",
-      href: "/business/leads/campaigns",
-      icon: UserGroupIcon,
+      label: "Add Lead",
+      href: "/business/leads/add",
+      icon: UserPlusIconHero,
     }
   ],
 
