@@ -21,24 +21,23 @@ const AddLeadPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Form fields state
+  // Form fields state - updated field names to match DB schema and removed service
   const [formData, setFormData] = useState<Partial<CreateLeadRequest>>({
     lead_source: "",
     client_name: "",
-    contact_number: "",
+    phone_number: "",
     country: "Indian",
     state: "",
-    main_subject: "",
-    service: "",
-    requirements: "",
+    domain: "",
+    requirement: "",
     detailed_requirement: "",
-    customer_remarks: "",
+    remarks: "",
     followup_date: "",
     prospectus_type: "",
-    other_lead_source: "",
-    other_main_subject: "",
     assigned_to: "",
-    date: new Date().toISOString().split("T")[0], // Changed from registration_date to date
+    // Fields for handling "Other" option inputs, not sent directly to API
+    other_source: "",
+    other_domain: "",
   });
 
   // Options for dropdown fields
@@ -53,16 +52,7 @@ const AddLeadPage = () => {
     "Other",
   ]);
 
-  const [services, setServices] = useState<string[]>([
-    "Publication",
-    "Scopus Publication",
-    "Web of Science",
-    "Consultation",
-    "Thesis Help",
-    "Conference",
-  ]);
-
-  const [subjects, setSubjects] = useState<string[]>([
+  const [domains, setDomains] = useState<string[]>([
     "Computer Science",
     "Mechanical Engineering",
     "Electrical Engineering",
@@ -77,7 +67,7 @@ const AddLeadPage = () => {
     "Law",
     "Psychology",
     "Social Science",
-    "Other", // Added "Other" option
+    "Other",
   ]);
 
   const [prospectTypes, setProspectTypes] = useState<string[]>([
@@ -98,6 +88,7 @@ const AddLeadPage = () => {
         setFormData(prev => ({
           ...prev,
           assigned_to: user.id || user.entities?.id || "",
+          created_by: user.id || user.entities?.id || "",
         }));
       }
     } catch (err) {
@@ -131,7 +122,7 @@ const AddLeadPage = () => {
       const requiredFields = [
         "lead_source",
         "client_name",
-        "contact_number",
+        "phone_number",
       ];
       
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -140,40 +131,34 @@ const AddLeadPage = () => {
         throw new Error(`Please fill in required fields: ${missingFields.join(", ")}`);
       }
 
-      // Validate other fields if "Other" is selected
-      if (formData.lead_source === "Other" && !formData.other_lead_source) {
-        throw new Error("Please specify the lead source.");
+      // Process "Other" options before submission
+      let leadSourceValue = formData.lead_source;
+      if (leadSourceValue === "Other" && formData.other_source) {
+        leadSourceValue = formData.other_source;
       }
 
-      if (formData.main_subject === "Other" && !formData.other_main_subject) {
-        throw new Error("Please specify the main subject/domain.");
+      let domainValue = formData.domain;
+      if (domainValue === "Other" && formData.other_domain) {
+        domainValue = formData.other_domain;
       }
 
-      // Format data for API - use "Other" values if applicable
-      const finalLeadSource = formData.lead_source === "Other" 
-        ? formData.other_lead_source 
-        : formData.lead_source;
-
-      const finalMainSubject = formData.main_subject === "Other"
-        ? formData.other_main_subject
-        : formData.main_subject;
-
+      // Format data for API with corrected field names, removed service field
       const leadData: CreateLeadRequest = {
-        lead_source: finalLeadSource!,
+        lead_source: leadSourceValue!,
         client_name: formData.client_name!,
-        contact_number: formData.contact_number!,
+        phone_number: formData.phone_number!,
         country: formData.country || "Indian",
         state: formData.state || "",
-        main_subject: finalMainSubject || "",
-        service: formData.service || "",
-        requirements: formData.requirements || "",
+        domain: domainValue || "",
+        requirement: formData.requirement || "",
         detailed_requirement: formData.detailed_requirement || "",
-        customer_remarks: formData.customer_remarks || "",
-        date: formData.date!, // Use date instead of registration_date
+        remarks: formData.remarks || "",
         followup_date: formData.followup_date || "",
         prospectus_type: formData.prospectus_type || "",
         assigned_to: formData.assigned_to || "",
-        followup_status: true,
+        created_by: formData.created_by || "",
+        followup_status: "pending",
+        attended: false,
       };
 
       // Submit to API
@@ -185,19 +170,17 @@ const AddLeadPage = () => {
       setFormData({
         lead_source: "",
         client_name: "",
-        contact_number: "",
+        phone_number: "",
         country: "Indian",
         state: "",
-        main_subject: "",
-        service: "",
-        requirements: "",
+        domain: "",
+        requirement: "",
         detailed_requirement: "",
-        customer_remarks: "",
-        date: new Date().toISOString().split("T")[0],
+        remarks: "",
         followup_date: "",
         prospectus_type: "",
-        other_lead_source: "",
-        other_main_subject: "",
+        other_source: "",
+        other_domain: "",
       });
 
       // Navigate back to leads page after short delay
@@ -262,9 +245,9 @@ const AddLeadPage = () => {
                   isRequired
                   label="Phone Number"
                   type="tel"
-                  name="contact_number"
+                  name="phone_number"
                   placeholder="Enter phone number"
-                  value={formData.contact_number}
+                  value={formData.phone_number}
                   onChange={handleChange}
                 />
               </div>
@@ -315,9 +298,9 @@ const AddLeadPage = () => {
                     className="mt-2"
                     isRequired
                     label="Specify Lead Source"
-                    name="other_lead_source"
+                    name="other_source"
                     placeholder="Enter lead source"
-                    value={formData.other_lead_source}
+                    value={formData.other_source}
                     onChange={handleChange}
                   />
                 )}
@@ -325,46 +308,33 @@ const AddLeadPage = () => {
               
               <div className="mb-4">
                 <Select
-                  label="Main Subject/Domain"
-                  placeholder="Select subject"
-                  selectedKeys={formData.main_subject ? [formData.main_subject] : []}
-                  onChange={(e) => handleSelectChange("main_subject", e.target.value)}
+                  label="Domain/Subject"
+                  placeholder="Select domain"
+                  selectedKeys={formData.domain ? [formData.domain] : []}
+                  onChange={(e) => handleSelectChange("domain", e.target.value)}
                 >
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
+                  {domains.map((domain) => (
+                    <SelectItem key={domain} value={domain}>
+                      {domain}
                     </SelectItem>
                   ))}
                 </Select>
                 
-                {/* Show input for other subject if "Other" is selected */}
-                {formData.main_subject === "Other" && (
+                {/* Show input for other domain if "Other" is selected */}
+                {formData.domain === "Other" && (
                   <Input
                     className="mt-2"
                     isRequired
-                    label="Specify Subject/Domain"
-                    name="other_main_subject"
-                    placeholder="Enter subject or domain"
-                    value={formData.other_main_subject}
+                    label="Specify Domain/Subject"
+                    name="other_domain"
+                    placeholder="Enter domain or subject"
+                    value={formData.other_domain}
                     onChange={handleChange}
                   />
                 )}
               </div>
               
-              <div className="mb-4">
-                <Select
-                  label="Service"
-                  placeholder="Select service"
-                  selectedKeys={formData.service ? [formData.service] : []}
-                  onChange={(e) => handleSelectChange("service", e.target.value)}
-                >
-                  {services.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </Select>
-              </div>
+              {/* Removed service field as it's not in DB schema */}
 
               <div className="mb-4">
                 <Input
@@ -376,16 +346,6 @@ const AddLeadPage = () => {
                   onChange={handleChange}
                 />
               </div>
-              
-              <div className="mb-4">
-                <Input
-                  type="date"
-                  label="Date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                />
-              </div>
             </div>
           </div>
           
@@ -394,10 +354,10 @@ const AddLeadPage = () => {
           {/* Requirements and Remarks */}
           <div className="mb-6">
             <Textarea
-              label="Brief Requirements"
+              label="Brief Requirement"
               placeholder="Enter brief requirement summary"
-              name="requirements"
-              value={formData.requirements}
+              name="requirement"
+              value={formData.requirement}
               onChange={handleChange}
               minRows={2}
             />
@@ -405,7 +365,7 @@ const AddLeadPage = () => {
           
           <div className="mb-6">
             <Textarea
-              label="Detailed Requirements"
+              label="Detailed Requirement"
               placeholder="Enter detailed client requirements"
               name="detailed_requirement"
               value={formData.detailed_requirement}
@@ -433,8 +393,8 @@ const AddLeadPage = () => {
             <Textarea
               label="Remarks"
               placeholder="Add any additional remarks"
-              name="customer_remarks"
-              value={formData.customer_remarks}
+              name="remarks"
+              value={formData.remarks}
               onChange={handleChange}
               minRows={2}
             />

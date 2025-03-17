@@ -580,11 +580,9 @@ interface Lead {
   country: string;
   domain:string;
   state: string;
-  main_subject: string;
-  service: string;
   requirement: string;
   detailed_requirement?: string;
-  customer_remarks: string;
+  remarks?: string;
   date: string;
   followup_date: string;
   created_at: string;
@@ -597,7 +595,6 @@ interface Lead {
   title?: string;
   degree?: string;
   university?: string;
-  remarks?: string;
   attended?: boolean;
   followup_status?: string;
 }
@@ -605,35 +602,36 @@ interface Lead {
 interface CreateLeadRequest {
   lead_source: string;
   client_name: string;
-  contact_number: string;
+  phone_number: string; // Changed from contact_number
   country: string;
   state: string;
-  main_subject: string;
-  service: string;
-  requirements: string;
+  domain: string; // Changed from main_subject
+  requirement: string; // Changed from requirements
   detailed_requirement?: string;
-  customer_remarks?: string;
-  date: string;              // Changed from registration_date
+  remarks?: string; // Changed from customer_remarks
   followup_date?: string;
   prospectus_type?: string;
   assigned_to?: string; 
-  followup_status?: boolean;
+  created_by?: string; // Added to match schema
+  followup_status?: string; // Changed from boolean to string
+  attended?: boolean; // Added to match schema
   // Fields for form handling only (not sent to API)
-  other_lead_source?: string;
-  other_main_subject?: string;
+  other_source?: string;
+  other_domain?: string;
+  other_service?: string;
 }
 
 interface UpdateLeadRequest {
   lead_source?: string;
   client_name?: string;
-  contact_number?: string;
+  phone_number?: string;
   country?: string;
   state?: string;
-  main_subject?: string;
-  service?: string;
-  requirements?: string;
-  customer_remarks?: string;
-  registration_date?: string;
+  domain?: string;
+  requirement?: string;
+  detailed_requirement?: string;
+  remarks?: string;
+  followup_date?: string;
   status?: string;
   assigned_to?: string;
 }
@@ -1252,15 +1250,6 @@ const api = {
     async getLeadById(id: number): Promise<ApiResponse<Lead>> {
         try {
             const response = await this.axiosInstance.get(`/leads/${id}`);
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
-    async getLeadsByService(service: string): Promise<ApiResponse<Lead[]>> {
-        try {
-            const response = await this.axiosInstance.get(`/leads/service/${service}`);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);

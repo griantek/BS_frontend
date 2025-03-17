@@ -140,11 +140,11 @@ const LeadDetailPage = () => {
         <h1 className="text-2xl font-bold">Lead Details</h1>
         <div className="flex items-center gap-2">
           <Badge 
-            color={getBadgeColor(lead.customer_remarks || '')}
+            color={getBadgeColor(lead.remarks || '')}
             size="lg"
             variant="flat"
           >
-            {lead.customer_remarks || 'No remarks'}
+            {lead.remarks || 'No remarks'}
           </Badge>
         </div>
       </div>
@@ -170,12 +170,7 @@ const LeadDetailPage = () => {
           
           <div className="mb-4">
             <h3 className="font-medium text-default-500">Domain / Subject</h3>
-            <p className="text-lg">{lead.domain || lead.main_subject || 'Not specified'}</p>
-          </div>
-          
-          <div className="mb-4">
-            <h3 className="font-medium text-default-500">Service</h3>
-            <p className="text-lg">{lead.service || 'Not specified'}</p>
+            <p className="text-lg">{lead.domain || 'Not specified'}</p>
           </div>
           
           <div className="mb-4">
@@ -184,6 +179,16 @@ const LeadDetailPage = () => {
               {lead.requirement || 'No requirements specified'}
             </p>
           </div>
+
+          {/* Optional: Add detailed requirements if available */}
+          {lead.detailed_requirement && (
+            <div className="mb-4">
+              <h3 className="font-medium text-default-500">Detailed Requirements</h3>
+              <p className="whitespace-pre-wrap">
+                {lead.detailed_requirement}
+              </p>
+            </div>
+          )}
         </Card>
 
         {/* Side info */}

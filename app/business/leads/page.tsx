@@ -135,14 +135,14 @@ const LeadsPage = () => {
 
     // Calculate pending follow-up leads
     const pending = leadsData.filter((lead) => {
-      return lead.customer_remarks?.toLowerCase().includes("followup") || false;
+      return lead.remarks?.toLowerCase().includes("followup") || false;
     }).length;
 
     // For conversion rate calculation
     const converted = leadsData.filter((lead) => {
       return (
         lead.status === "converted" ||
-        lead.customer_remarks?.toLowerCase().includes("converted") ||
+        lead.remarks?.toLowerCase().includes("converted") ||
         false
       );
     }).length;
@@ -165,8 +165,8 @@ const LeadsPage = () => {
       matches = false;
     }
 
-    // Use main_subject instead of domain for filtering
-    if (filterDomain && lead.main_subject !== filterDomain) {
+    // Use domain for filtering (removed service filter)
+    if (filterDomain && lead.domain !== filterDomain) {
       matches = false;
     }
 
@@ -184,9 +184,7 @@ const LeadsPage = () => {
         false ||
         lead.requirement?.toLowerCase().includes(query) ||
         false ||
-        lead.main_subject?.toLowerCase().includes(query) ||
-        false ||
-        lead.service?.toLowerCase().includes(query) ||
+        lead.domain?.toLowerCase().includes(query) ||
         false;
 
       if (!searchMatches) {
@@ -414,10 +412,10 @@ const LeadsPage = () => {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        color={getBadgeColor(followup.remarks || followup.customer_remarks || "-")}
+                        color={getBadgeColor(followup.remarks || followup.remarks || "-")}
                         variant="flat"
                       >
-                        {followup.remarks || followup.customer_remarks || "-"}
+                        {followup.remarks || followup.remarks || "-"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -555,6 +553,7 @@ const LeadsPage = () => {
                 <TableColumn>PROSPECT TYPE</TableColumn>
                 <TableColumn>FOLLOWUP DATE</TableColumn>
                 <TableColumn>REMARKS</TableColumn>
+                {/* Removed SERVICE column */}
               </TableHeader>
               <TableBody emptyContent="No leads found">
                 {items.map((lead) => (
@@ -575,7 +574,7 @@ const LeadsPage = () => {
                     <TableCell>
                       {lead.domain === "Nill"
                         ? "-"
-                        : lead.domain || lead.main_subject || "-"}
+                        : lead.domain || "-"}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate">
@@ -586,12 +585,13 @@ const LeadsPage = () => {
                     <TableCell>{lead.followup_date || "-"}</TableCell>
                     <TableCell>
                       <Badge
-                        color={getBadgeColor(lead.customer_remarks || "-")}
+                        color={getBadgeColor(lead.remarks || "-")}
                         variant="flat"
                       >
-                        {lead.customer_remarks || "-"}
+                        {lead.remarks || "-"}
                       </Badge>
                     </TableCell>
+                    {/* Removed service cell */}
                   </TableRow>
                 ))}
               </TableBody>
