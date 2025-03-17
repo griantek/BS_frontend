@@ -626,6 +626,7 @@ interface UpdateLeadRequest {
   client_name?: string;
   phone_number?: string;
   country?: string;
+  prospectus_type?:string;
   state?: string;
   domain?: string;
   requirement?: string;
@@ -634,6 +635,7 @@ interface UpdateLeadRequest {
   followup_date?: string;
   status?: string;
   assigned_to?: string;
+  followup_status?:string;
 }
 
 interface TodayFollowupResponse {
@@ -1277,6 +1279,16 @@ const api = {
     async updateLead(id: number, data: UpdateLeadRequest): Promise<ApiResponse<Lead>> {
         try {
             const response = await this.axiosInstance.put(`/leads/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for updating lead status
+    async updateLeadStatus(id: number, data: UpdateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.put(`/leads/${id}/status`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
