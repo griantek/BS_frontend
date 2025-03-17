@@ -84,7 +84,7 @@ function AdminDashboard() {
   React.useEffect(() => {
     const fetchDashboardData = async () => {
       // Start all requests in parallel
-      const executivesPromise = api.getAllExecutives()
+      const executivesPromise = api.getAllEntities()
         .then(res => {
           setMetrics(prev => ({
             ...prev,

@@ -80,7 +80,7 @@ const ExecutivesPage: React.FC = () => {
                     return;
                 }
 
-                const response = await api.getAllExecutives();
+                const response = await api.getAllEntities();
                 setExecutives(response.data);
             } catch (error: any) {
                 const errorMsg = error?.response?.data?.message || 'Failed to fetch executives';
@@ -176,7 +176,7 @@ const ExecutivesPage: React.FC = () => {
             await api.axiosInstance.put(`/entity/${selectedExecutive.id}`, updateData);
             
             // Refresh executives list
-            const response = await api.getAllExecutives();
+            const response = await api.getAllEntities();
             setExecutives(response.data);
             
             toast.success('Executive updated successfully');

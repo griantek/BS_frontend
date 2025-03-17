@@ -644,6 +644,23 @@ interface TodayFollowupResponse {
   today: string;
 }
 
+// Add this new interface for the lead approval request
+interface ApproveLeadRequest {
+  lead_id: number;
+  client_name: string;
+  phone: string;
+  email: string;
+  state: string;
+  country: string;
+  requirement: string;
+  assigned_to: string;
+  reg_id: string;
+  tech_person: string;
+  proposed_service_period: string;
+  services: string;
+  notes: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -883,7 +900,7 @@ const api = {
     },
 
     // Add new method for getting executives
-    async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
+    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
             // Try one of these endpoints based on your backend structure:
             const response = await this.axiosInstance.get('/entity/all');
@@ -1211,6 +1228,24 @@ const api = {
         }
     },
 
+    // Add new method for fetching editors
+    async getAllExecutives(): Promise<ApiResponse<Editor[]>> {
+        try {
+            console.log('Fetching all executives');
+            const response = await this.axiosInstance.get('/entity/exec/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllExecutives:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method to get prospectus assist data
     async getProspectusAssistData(prospectusId: number): Promise<ApiResponse<ProspectusAssistData>> {
         try {
@@ -1298,6 +1333,16 @@ const api = {
     async deleteLead(id: number): Promise<ApiResponse<void>> {
         try {
             const response = await this.axiosInstance.delete(`/leads/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for approving lead as prospect
+    async approveLeadAsProspect(id: number, data: ApproveLeadRequest): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post(`/leads/${id}/approve`, data);
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);
@@ -1414,7 +1459,7 @@ export type {
     Service, 
     CreateServiceRequest, 
     UpdateServiceRequest,
-    Executive, 
+    Executive,
     BankAccount, 
     Registration, 
     CreateRegistrationRequest,
@@ -1430,7 +1475,7 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-    Editor,  // Add this export
+Editor,  // Add this export
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
@@ -1441,5 +1486,6 @@ export type {
     CreateLeadRequest,
     UpdateLeadRequest,
     TodayFollowupResponse,
+    ApproveLeadRequest
 };
 export default api;

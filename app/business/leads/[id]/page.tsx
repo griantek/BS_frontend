@@ -356,6 +356,18 @@ const LeadDetailPage = () => {
               >
                 Update Status
               </Button>
+
+              {/* Add the Approve Lead button */}
+              <Button 
+                color="success" 
+                startContent={<CheckIcon className="h-4 w-4" />}
+                className="w-full"
+                onClick={() => {
+                  router.push(`/business/leads/approve/${lead.id}`);
+                }}
+              >
+                Approve Lead
+              </Button>
             </div>
           </Card>
         </div>

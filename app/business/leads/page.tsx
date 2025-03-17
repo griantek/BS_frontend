@@ -379,7 +379,7 @@ const LeadsPage = () => {
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold flex items-center text-warning-700 dark:text-warning-300">
                   <BellAlertIcon className="h-5 w-5 mr-2 text-warning" />
-                  Today's Follow-ups
+                  Today&apos;s Follow-ups
                   {/* Remove badge component here */}
                   {!followupsLoading && todayFollowups.length > 0 && (
                     <span className="ml-2 text-sm font-medium">({todayFollowups.length})</span>
