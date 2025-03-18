@@ -129,13 +129,13 @@ export default function Home() {
           >
             {/* Admin Card */}
             <Card
+              isPressable
               className={`group transform transition-all duration-500 hover:scale-[1.02] cursor-pointer backdrop-filter backdrop-blur-sm bg-background/50 border border-white/10 ${
                 hoveredCard === "admin" ? "ring-2 ring-primary shadow-xl shadow-primary/10" : "shadow-lg"
               }`}
               onMouseEnter={() => setHoveredCard("admin")}
               onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => navigateToAdmin()}
-              isPressable
+              onPress={navigateToAdmin}
             >
               <CardBody className="p-4 sm:p-6">
                 <div className="flex flex-col">
@@ -169,13 +169,13 @@ export default function Home() {
 
             {/* Executive Card */}
             <Card
+              isPressable
               className={`group transform transition-all duration-500 hover:scale-[1.02] cursor-pointer backdrop-filter backdrop-blur-sm bg-background/50 border border-white/10 ${
                 hoveredCard === "executive" ? "ring-2 ring-secondary shadow-xl shadow-secondary/10" : "shadow-lg"
               }`}
               onMouseEnter={() => setHoveredCard("executive")}
               onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => navigateToExecutive()}
-              isPressable
+              onPress={navigateToExecutive}
             >
               <CardBody className="p-4 sm:p-6">
                 <div className="flex flex-col">
