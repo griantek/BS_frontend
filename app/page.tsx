@@ -81,22 +81,22 @@ export default function Home() {
       {/* Main Content - Improved responsiveness */}
       <div className="relative z-10 container mx-auto px-4 flex flex-col items-center justify-center h-full max-w-5xl">
         <div className="w-full flex flex-col items-center">
-          {/* Logo - Responsive sizing */}
+          {/* Logo - Improved square appearance */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-4 sm:mb-5 relative"
+            className="mb-4 sm:mb-5 relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center"
           >
+            <div className="absolute inset-0 bg-primary/15 rounded-2xl filter blur-xl z-0 animate-pulse-slow"></div>
             <Image
               src="/logo.png"
               alt="Griantek Logo"
-              width={90}
-              height={90}
-              className="drop-shadow-glow relative z-10 sm:w-[120px] sm:h-[120px]"
+              width={80}
+              height={80}
+              className="drop-shadow-glow relative z-10 w-20 h-20 sm:w-24 sm:h-24 object-contain"
               priority
             />
-            <div className="absolute inset-0 bg-primary/20 rounded-full filter blur-xl z-0 animate-pulse-slow"></div>
           </motion.div>
           
           <motion.div
