@@ -61,31 +61,39 @@ export default function Home() {
     }
   };
 
+  const navigateToAdmin = () => {
+    router.push("/admin");
+  };
+
+  const navigateToExecutive = () => {
+    router.push("/business/executive/login");
+  };
+
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-background to-background/90 overflow-hidden flex items-center justify-center">
-      {/* Background Elements - Simplified */}
+    <div className="h-screen w-full bg-gradient-to-br from-background to-background/90 overflow-hidden flex items-center justify-center px-4">
+      {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/5 blur-3xl opacity-50"></div>
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full bg-secondary/5 blur-3xl opacity-60"></div>
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
       </div>
 
-      {/* Main Content - Centered container */}
+      {/* Main Content - Improved responsiveness */}
       <div className="relative z-10 container mx-auto px-4 flex flex-col items-center justify-center h-full max-w-5xl">
         <div className="w-full flex flex-col items-center">
-          {/* Logo and Title Section - More compact */}
+          {/* Logo - Responsive sizing */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-5 relative"
+            className="mb-4 sm:mb-5 relative"
           >
             <Image
               src="/logo.png"
               alt="Griantek Logo"
-              width={120}
-              height={120}
-              className="drop-shadow-glow relative z-10"
+              width={90}
+              height={90}
+              className="drop-shadow-glow relative z-10 sm:w-[120px] sm:h-[120px]"
               priority
             />
             <div className="absolute inset-0 bg-primary/20 rounded-full filter blur-xl z-0 animate-pulse-slow"></div>
@@ -95,65 +103,63 @@ export default function Home() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="text-center mb-8"
+            className="text-center mb-6 sm:mb-8"
           >
             <motion.h1
               variants={itemVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary-600 to-secondary bg-300% animate-gradient"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary-600 to-secondary bg-300% animate-gradient"
             >
               Enterprise Business Suite
             </motion.h1>
             
             <motion.p
               variants={itemVariants}
-              className="text-lg md:text-xl text-default-600 max-w-2xl mx-auto leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-default-600 max-w-2xl mx-auto leading-relaxed"
             >
               Select your portal to access the system
             </motion.p>
           </motion.div>
 
-          {/* Portal Selection Cards - Refactored for better viewport fit */}
+          {/* Portal Selection Cards - More responsive grid */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="w-full grid md:grid-cols-2 gap-6"
+            className="w-full grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2"
           >
-            {/* Admin Card - Simplified */}
+            {/* Admin Card */}
             <Card
               className={`group transform transition-all duration-500 hover:scale-[1.02] cursor-pointer backdrop-filter backdrop-blur-sm bg-background/50 border border-white/10 ${
                 hoveredCard === "admin" ? "ring-2 ring-primary shadow-xl shadow-primary/10" : "shadow-lg"
               }`}
               onMouseEnter={() => setHoveredCard("admin")}
               onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => router.push("/admin")}
+              onClick={() => navigateToAdmin()}
+              isPressable
             >
-              <CardBody className="p-6">
+              <CardBody className="p-4 sm:p-6">
                 <div className="flex flex-col">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="mb-4 w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto"
+                    className="mb-3 sm:mb-4 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto"
                   >
-                    <ShieldCheckIcon className="w-7 h-7 text-primary" />
+                    <ShieldCheckIcon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
                   </motion.div>
                   
-                  <h2 className="text-xl font-bold text-center mb-2 group-hover:text-primary transition-colors">
+                  <h2 className="text-lg sm:text-xl font-bold text-center mb-1 sm:mb-2 group-hover:text-primary transition-colors">
                     Administration Portal
                   </h2>
                   
-                  <p className="text-default-500 text-center mb-4 text-sm">
+                  <p className="text-default-500 text-center mb-3 sm:mb-4 text-xs sm:text-sm">
                     System management with enhanced security controls
                   </p>
                   
                   <Button
                     color="primary"
                     variant="shadow"
-                    size="lg"
+                    size="md"
                     className="w-full font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push("/admin");
-                    }}
+                    onPress={navigateToAdmin}
                   >
                     Access Admin
                   </Button>
@@ -161,41 +167,39 @@ export default function Home() {
               </CardBody>
             </Card>
 
-            {/* Executive Card - Simplified */}
+            {/* Executive Card */}
             <Card
               className={`group transform transition-all duration-500 hover:scale-[1.02] cursor-pointer backdrop-filter backdrop-blur-sm bg-background/50 border border-white/10 ${
                 hoveredCard === "executive" ? "ring-2 ring-secondary shadow-xl shadow-secondary/10" : "shadow-lg"
               }`}
               onMouseEnter={() => setHoveredCard("executive")}
               onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => router.push("/business/executive/login")}
+              onClick={() => navigateToExecutive()}
+              isPressable
             >
-              <CardBody className="p-6">
+              <CardBody className="p-4 sm:p-6">
                 <div className="flex flex-col">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="mb-4 w-14 h-14 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center mx-auto"
+                    className="mb-3 sm:mb-4 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center mx-auto"
                   >
-                    <UserGroupIcon className="w-7 h-7 text-secondary" />
+                    <UserGroupIcon className="w-6 h-6 sm:w-7 sm:h-7 text-secondary" />
                   </motion.div>
                   
-                  <h2 className="text-xl font-bold text-center mb-2 group-hover:text-secondary transition-colors">
+                  <h2 className="text-lg sm:text-xl font-bold text-center mb-1 sm:mb-2 group-hover:text-secondary transition-colors">
                     Executive Portal
                   </h2>
                   
-                  <p className="text-default-500 text-center mb-4 text-sm">
+                  <p className="text-default-500 text-center mb-3 sm:mb-4 text-xs sm:text-sm">
                     Business operations and workflow management
                   </p>
                   
                   <Button
                     color="secondary"
                     variant="shadow"
-                    size="lg"
+                    size="md"
                     className="w-full font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push("/business/executive/login");
-                    }}
+                    onPress={navigateToExecutive}
                   >
                     Access Executive
                   </Button>
@@ -204,12 +208,12 @@ export default function Home() {
             </Card>
           </motion.div>
 
-          {/* Minimalist Footer */}
+          {/* Footer */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-8 text-center"
+            className="mt-6 sm:mt-8 text-center"
           >
             <p className="text-default-400 text-xs">
               © 2024 Griantek Business Solutions

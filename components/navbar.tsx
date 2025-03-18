@@ -324,6 +324,10 @@ export const Navbar = () => {
     />
   );
 
+  // Get navigation links with proper type checking
+  const navigationLinks = getNavigationLinks();
+  const hasNavigationLinks = navigationLinks.length > 0;
+
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
@@ -343,9 +347,9 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        {isLoggedIn && (
+        {isLoggedIn && hasNavigationLinks && (
           <NavbarItem className="hidden sm:flex gap-4">
-            {getNavigationLinks().map((link) => (
+            {navigationLinks.map((link) => (
               // Add null check for link before rendering
               link && (
                 <NextLink
@@ -384,46 +388,33 @@ export const Navbar = () => {
         {isLoggedIn && username && (
           <ProfileMenu username={username} userRole={userRole} isMobile={true} />
         )}
-        <NavbarMenuToggle />
+        {/* Only show menu toggle if there are navigation links */}
+        {hasNavigationLinks && <NavbarMenuToggle />}
       </NavbarContent>
 
-      <NavbarMenu>
-        {/* Filter the navigation links for mobile menu as well */}
-        {isLoggedIn && (() => {
-          const role = getUserRole();
-          switch (role) {
-            case 'editor':
-              return siteConfig.editorLinks;
-            case 'executive':
-              return getNavigationLinks();
-            case 'admin':
-              return getNavigationLinks();
-            case 'leads':
-              return siteConfig.leadsLinks;
-            case 'clients':
-              return siteConfig.clientsLinks;
-            default:
-              return [];
-          }
-        })().map((link) => (
-          // Add null check for link before rendering
-          link && (
-            <NavbarMenuItem key={link.href}>
-              <NextLink 
-                className={clsx(
-                  linkStyles(),
-                  "flex items-center gap-2",
-                  isActiveMainPath(link.href) && "text-primary font-medium"
-                )} 
-                href={link.href}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </NextLink>
-            </NavbarMenuItem>
-          )
-        ))}
-      </NavbarMenu>
+      {hasNavigationLinks && (
+        <NavbarMenu>
+          {/* Filter the navigation links for mobile menu as well */}
+          {isLoggedIn && navigationLinks.map((link) => (
+            // Add null check for link before rendering
+            link && (
+              <NavbarMenuItem key={link.href}>
+                <NextLink 
+                  className={clsx(
+                    linkStyles(),
+                    "flex items-center gap-2",
+                    isActiveMainPath(link.href) && "text-primary font-medium"
+                  )} 
+                  href={link.href}
+                >
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </NextLink>
+              </NavbarMenuItem>
+            )
+          ))}
+        </NavbarMenu>
+      )}
     </HeroUINavbar>
   );
 };
