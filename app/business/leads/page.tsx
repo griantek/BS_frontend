@@ -10,7 +10,6 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/table";
-// Remove Badge import
 import { Select, SelectItem, SelectProps } from "@heroui/select";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
@@ -24,14 +23,15 @@ import {
   BellAlertIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon,
-  XMarkIcon
+  XMarkIcon,
+  TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 
 import { format, parse, isValid } from "date-fns";
 import api, { Lead, TodayFollowupResponse } from "@/services/api";
-import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
+import { withLeadsDashboardAuth } from "@/components/withLeadsAuth";
 
 const LeadsPage = () => {
   const router = useRouter();
@@ -46,16 +46,13 @@ const LeadsPage = () => {
   const [leadDomains, setLeadDomains] = useState<string[]>([]);
   const [prospectusTypes, setProspectusTypes] = useState<string[]>([]);
   
-  // Add state for today's follow-ups
   const [todayFollowups, setTodayFollowups] = useState<Lead[]>([]);
   const [followupsLoading, setFollowupsLoading] = useState(true);
   const [followupsError, setFollowupsError] = useState<string | null>(null);
 
-  // Add pagination state
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
 
-  // Stats derived from leads data
   const [stats, setStats] = useState({
     totalLeads: 0,
     newLeadsToday: 0,
@@ -64,15 +61,12 @@ const LeadsPage = () => {
   });
 
   useEffect(() => {
-    checkAuth(router, "leads");
     fetchUnapprovedLeads();
     fetchTodayFollowups();
   }, [router]);
 
-  // Extract unique sources, domains, and prospectus types when leads data changes
   useEffect(() => {
     if (leads.length > 0) {
-      // Fix the Set iteration issue by converting to Array right away
       const sourcesSet = new Set<string>();
       const domainsSet = new Set<string>();
       const prospectusTypesSet = new Set<string>();
@@ -105,45 +99,38 @@ const LeadsPage = () => {
     }
   };
 
-  // Add new function to fetch today's follow-up leads
   const fetchTodayFollowups = async () => {
     try {
       setFollowupsLoading(true);
       const response = await api.getTodayFollowupLeads();
       if (response && response.data && response.data) {
-        // Ensure we're handling the nested data structure correctly
         setTodayFollowups(response.data);
       } else {
-        // Set to empty array if data structure is different
         setTodayFollowups([]);
       }
     } catch (err) {
       console.error("Error fetching today's followups:", err);
       setFollowupsError("Failed to load today's followups. Please try again later.");
-      setTodayFollowups([]); // Ensure we have an empty array on error
+      setTodayFollowups([]);
     } finally {
       setFollowupsLoading(false);
     }
   };
 
   const calculateStats = (leadsData: Lead[]) => {
-    // Calculate total leads
     const total = leadsData.length;
 
-    // Calculate new leads today
     const today = new Date();
-    const todayString = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+    const todayString = today.toISOString().split("T")[0];
 
     const newToday = leadsData.filter((lead) => {
       return lead.date === todayString;
     }).length;
 
-    // Calculate pending follow-up leads
     const pending = leadsData.filter((lead) => {
       return lead.remarks?.toLowerCase().includes("followup") || false;
     }).length;
 
-    // For conversion rate calculation
     const converted = leadsData.filter((lead) => {
       return (
         lead.status === "converted" ||
@@ -162,7 +149,6 @@ const LeadsPage = () => {
     });
   };
 
-  // Filter leads based on selected filters and search query
   const filteredLeads = leads.filter((lead) => {
     let matches = true;
 
@@ -170,12 +156,10 @@ const LeadsPage = () => {
       matches = false;
     }
 
-    // Use domain for filtering (removed service filter)
     if (filterDomain && lead.domain !== filterDomain) {
       matches = false;
     }
 
-    // Add prospectus type filter
     if (filterProspectusType && lead.prospectus_type !== filterProspectusType) {
       matches = false;
     }
@@ -200,30 +184,25 @@ const LeadsPage = () => {
     return matches;
   });
 
-  // Calculate pagination values
   const pages = Math.ceil(filteredLeads.length / rowsPerPage);
   const items = filteredLeads.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
 
-    // Scroll to top of table when changing pages
     const tableElement = document.getElementById("leads-table");
     if (tableElement) {
       tableElement.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
-  // Format date for display - improved to handle YYYY-MM-DD format
   const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return "N/A";
 
     try {
-      // For YYYY-MM-DD format (e.g., "2024-10-12")
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         const parsedDate = parse(dateString, "yyyy-MM-dd", new Date());
         if (isValid(parsedDate)) {
@@ -231,47 +210,42 @@ const LeadsPage = () => {
         }
       }
 
-      // For ISO date strings
       const date = new Date(dateString);
       if (isValid(date)) {
         return format(date, "MMM dd, yyyy");
       }
 
-      return dateString; // Return original if parsing fails
+      return dateString;
     } catch (e) {
       console.error("Date parsing error:", e);
-      return dateString; // Return original on error
+      return dateString;
     }
   };
 
-  // Handle select changes with proper typing
   const handleSourceChange: SelectProps["onChange"] = (e) => {
     setFilterSource(e.target.value);
-    setPage(1); // Reset to first page when filter changes
+    setPage(1);
   };
 
   const handleDomainChange: SelectProps["onChange"] = (e) => {
     setFilterDomain(e.target.value);
-    setPage(1); // Reset to first page when filter changes
+    setPage(1);
   };
 
   const handleProspectusTypeChange: SelectProps["onChange"] = (e) => {
     setFilterProspectusType(e.target.value);
-    setPage(1); // Reset to first page when filter changes
+    setPage(1);
   };
 
-  // Reset pagination when search query changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setPage(1); // Reset to first page when search changes
+    setPage(1);
   };
 
-  // Handle row click to navigate to lead details
   const handleLeadRowClick = (leadId: number) => {
     router.push(`/business/leads/${leadId}`);
   };
 
-  // Add a function to clear all filters
   const clearAllFilters = () => {
     setFilterSource("");
     setFilterDomain("");
@@ -280,12 +254,10 @@ const LeadsPage = () => {
     setPage(1);
   };
 
-  // Check if any filters are applied
   const hasActiveFilters = filterSource !== "" || filterDomain !== "" || filterProspectusType !== "" || searchQuery !== "";
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Section with gradient background */}
       <div className="bg-primary-500 dark:bg-primary-600 text-white">
         <div className="max-w-7xl mx-auto p-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -309,9 +281,8 @@ const LeadsPage = () => {
         </div>
       </div>
 
-      {/* Main content with negative margin for overlapping effect */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-8">
-        {/* Stats Cards - with elevated appearance */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <Card className="p-5 shadow-md rounded-lg hover:shadow-lg transition-shadow bg-content1 overflow-hidden relative">
             <div className="flex items-center">
@@ -372,27 +343,37 @@ const LeadsPage = () => {
           </Card>
         </div>
 
+        {/* Today's Follow-ups and Quick Actions Section - Two Cards in one row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Today's Follow-ups Section - Left column, spans 2 columns */}
+          {/* Follow-ups Card - Left column, spans 2 columns */}
           <Card className="p-0 shadow-md rounded-lg overflow-hidden lg:col-span-2">
             <div className="bg-warning-50 dark:bg-warning-900/20 p-4 border-b border-warning-200 dark:border-warning-800">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold flex items-center text-warning-700 dark:text-warning-300">
                   <BellAlertIcon className="h-5 w-5 mr-2 text-warning" />
                   Today&apos;s Follow-ups
-                  {/* Remove badge component here */}
                   {!followupsLoading && todayFollowups.length > 0 && (
                     <span className="ml-2 text-sm font-medium">({todayFollowups.length})</span>
                   )}
                 </h2>
-                <Button 
-                  size="sm"
-                  color="warning"
-                  variant="flat"
-                  onClick={fetchTodayFollowups}
-                >
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm"
+                    color="warning"
+                    variant="flat"
+                    onClick={fetchTodayFollowups}
+                  >
+                    Refresh
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="warning"
+                    endContent={<ChevronRightIcon className="h-4 w-4" />}
+                    onClick={() => router.push("/business/leads/followup")}
+                  >
+                    View All
+                  </Button>
+                </div>
               </div>
             </div>
             
@@ -430,7 +411,6 @@ const LeadsPage = () => {
                             </div>
                           </TableCell>
                           <TableCell>{followup.domain === "Nill" ? "-" : followup.domain || "-"}</TableCell>
-                          {/* Replace Badge with regular text */}
                           <TableCell>
                             <span className="text-sm">{followup.remarks || "-"}</span>
                           </TableCell>
@@ -461,6 +441,7 @@ const LeadsPage = () => {
                     variant="light"
                     color="primary"
                     endContent={<ChevronRightIcon className="h-4 w-4" />}
+                    onClick={() => router.push("/business/leads/followup")}
                   >
                     View All ({todayFollowups.length})
                   </Button>
@@ -469,103 +450,72 @@ const LeadsPage = () => {
             </div>
           </Card>
 
-          {/* Search and Filters - Right column */}
+          {/* Quick Actions Card - Right column */}
           <Card className="p-0 shadow-md rounded-lg overflow-hidden">
             <div className="bg-primary-50 dark:bg-primary-900/20 p-4 border-b border-primary-200 dark:border-primary-800">
               <h3 className="text-lg font-semibold text-primary-700 dark:text-primary-300 flex items-center">
-                <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-primary" />
-                Search & Filters
+                <UserPlusIcon className="h-5 w-5 mr-2 text-primary" />
+                Quick Actions
               </h3>
             </div>
 
-            <div className="p-4">
-              <div className="space-y-4">
-                <Input
-                  label="Search leads"
-                  startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-                  placeholder="Name, phone, requirements..."
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="mb-2"
-                />
+            <div className="p-4 space-y-4">
+              <Button 
+                color="primary"
+                className="w-full"
+                startContent={<UserPlusIcon className="h-4 w-4" />}
+                onClick={() => router.push("/business/leads/add")}
+              >
+                Add New Lead
+              </Button>
+              
+              <Button 
+                color="secondary"
+                className="w-full"
+                startContent={<TableCellsIcon className="h-4 w-4" />}
+                onClick={() => router.push("/business/leads/all")}
+              >
+                View All Leads
+              </Button>
+              
+              <Button 
+                color="warning"
+                className="w-full"
+                startContent={<BellAlertIcon className="h-4 w-4" />}
+                onClick={() => router.push("/business/leads/followup")}
+              >
+                Manage Follow-ups
+              </Button>
 
-                <Select
-                  label="Lead Source"
-                  placeholder="Filter by source"
-                  selectedKeys={filterSource ? [filterSource] : []}
-                  onChange={handleSourceChange}
-                >
-                  <SelectItem key="" value="">
-                    All Sources
-                  </SelectItem>
-                  {
-                    leadSources.map((source) => (
-                      <SelectItem key={source} value={source}>
-                        {source}
-                      </SelectItem>
-                    )) as any
-                  }
-                </Select>
-
-                <Select
-                  label="Domain"
-                  placeholder="Filter by domain"
-                  selectedKeys={filterDomain ? [filterDomain] : []}
-                  onChange={handleDomainChange}
-                >
-                  <SelectItem key="" value="">
-                    All Domains
-                  </SelectItem>
-                  {
-                    leadDomains.map((domain) => (
-                      <SelectItem key={domain} value={domain}>
-                        {domain}
-                      </SelectItem>
-                    )) as any
-                  }
-                </Select>
-
-                <Select
-                  label="Prospect Type"
-                  placeholder="Filter by type"
-                  selectedKeys={filterProspectusType ? [filterProspectusType] : []}
-                  onChange={handleProspectusTypeChange}
-                >
-                  <SelectItem key="" value="">
-                    All Types
-                  </SelectItem>
-                  {
-                    prospectusTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    )) as any
-                  }
-                </Select>
-              </div>
-
-              {hasActiveFilters && (
-                <div className="mt-4 pt-4 border-t border-divider">
-                  <Button 
-                    color="warning" 
-                    variant="flat"
-                    onClick={clearAllFilters}
-                    size="sm"
-                    endContent={<XMarkIcon className="h-4 w-4" />}
-                    className="w-full"
-                  >
-                    Clear All Filters
-                  </Button>
+              {/* Activity summary */}
+              <div className="mt-6 border-t border-divider pt-4">
+                <h4 className="text-sm font-semibold mb-3">Recent Activity</h4>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <span className="text-foreground-700">{stats.newLeadsToday} new leads today</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-warning"></div>
+                    <span className="text-foreground-700">{todayFollowups.length} follow-ups pending</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    <span className="text-foreground-700">All time leads: {stats.totalLeads}</span>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </Card>
         </div>
 
-        {/* All Leads Table Section with curved borders and subtle shadow */}
-        <div className="mb-10 bg-content1 rounded-xl shadow-md overflow-hidden border border-divider">
-          <div className="bg-default-50 dark:bg-default-100/5 p-6 border-b border-divider">
-            <div className="flex justify-between items-center">
+        {/* Leads Table Section with filter bar */}
+        <div className="mb-10">
+          <Card className="p-0 shadow-md rounded-lg overflow-hidden border border-divider mb-6">
+            <div className="bg-default-50 dark:bg-default-100/5 p-6 border-b border-divider flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Unapproved Leads</h2>
                 <p className="text-foreground-400 text-sm mt-1">
@@ -573,136 +523,208 @@ const LeadsPage = () => {
                    `Showing ${(page - 1) * rowsPerPage + 1} to ${Math.min(page * rowsPerPage, filteredLeads.length)} of ${filteredLeads.length} leads`}
                 </p>
               </div>
-              <div className="bg-content1 px-4 py-2 rounded-full shadow-sm text-sm text-foreground font-medium">
-                {filteredLeads.length} leads found
+              <div className="flex items-center gap-2">
+                <div className="bg-content1 px-4 py-2 rounded-full shadow-sm text-sm text-foreground font-medium">
+                  {filteredLeads.length} leads found
+                </div>
+                <Button
+                  color="primary" 
+                  variant="flat"
+                  onClick={fetchUnapprovedLeads}
+                  size="sm"
+                >
+                  Refresh
+                </Button>
               </div>
             </div>
-          </div>
-
-          {/* Leads Table */}
-          <div className="overflow-hidden" id="leads-table">
-            {loading ? (
-              <div className="flex flex-col justify-center items-center py-16 bg-content1">
-                <Spinner size="lg" color="primary" />
-                <p className="mt-4 text-foreground-400">Loading leads...</p>
-              </div>
-            ) : error ? (
-              <div className="flex justify-center items-center py-16 bg-content1 text-danger">
-                <div className="text-center">
-                  <AlertCircleIcon className="h-12 w-12 mx-auto mb-2" />
-                  <p className="font-medium">{error}</p>
+            
+            {/* Filters bar */}
+            <div className="bg-primary-50/50 dark:bg-primary-900/10 p-4 border-b border-divider">
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex-grow min-w-[180px] max-w-xs">
+                  <Input
+                    label="Search leads"
+                    size="sm"
+                    startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+                    placeholder="Name, phone, requirements..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                </div>
+                
+                <div className="flex-grow min-w-[150px] max-w-[180px]">
+                  <Select
+                    label="Lead Source"
+                    size="sm"
+                    placeholder="Source"
+                    selectedKeys={filterSource ? [filterSource] : []}
+                    onChange={handleSourceChange}
+                  >
+                    <SelectItem key="" value="">All Sources</SelectItem>
+                    {leadSources.map((source) => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    )) as any}
+                  </Select>
+                </div>
+                
+                <div className="flex-grow min-w-[150px] max-w-[180px]">
+                  <Select
+                    label="Domain"
+                    size="sm"
+                    placeholder="Domain"
+                    selectedKeys={filterDomain ? [filterDomain] : []}
+                    onChange={handleDomainChange}
+                  >
+                    <SelectItem key="" value="">All Domains</SelectItem>
+                    {leadDomains.map((domain) => (
+                      <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                    )) as any}
+                  </Select>
+                </div>
+                
+                <div className="flex-grow min-w-[150px] max-w-[180px]">
+                  <Select
+                    label="Prospect Type"
+                    size="sm"
+                    placeholder="Type"
+                    selectedKeys={filterProspectusType ? [filterProspectusType] : []}
+                    onChange={handleProspectusTypeChange}
+                  >
+                    <SelectItem key="" value="">All Types</SelectItem>
+                    {prospectusTypes.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    )) as any}
+                  </Select>
+                </div>
+                
+                {hasActiveFilters && (
                   <Button 
-                    color="danger"
-                    variant="flat" 
-                    className="mt-4"
-                    onClick={fetchUnapprovedLeads}
+                    color="warning" 
+                    variant="flat"
+                    onClick={clearAllFilters}
+                    size="sm"
+                    endContent={<XMarkIcon className="h-4 w-4" />}
                   >
-                    Retry
+                    Clear Filters
                   </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <Table 
-                    aria-label="Leads table"
-                    classNames={{
-                      th: "bg-default-50 dark:bg-default-100/5 text-foreground-500",
-                    }}
-                  >
-                    <TableHeader>
-                      <TableColumn>DATE</TableColumn>
-                      <TableColumn>LEAD SOURCE</TableColumn>
-                      <TableColumn>CLIENT NAME</TableColumn>
-                      <TableColumn>CONTACT</TableColumn>
-                      <TableColumn>DOMAIN</TableColumn>
-                      <TableColumn>REQUIREMENT</TableColumn>
-                      <TableColumn>PROSPECT TYPE</TableColumn>
-                      <TableColumn>FOLLOWUP DATE</TableColumn>
-                      <TableColumn>REMARKS</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent={
-                      <div className="py-8">
-                        <p className="text-center text-foreground-500 font-medium">No leads found</p>
-                        <p className="text-center text-foreground-400 text-sm mt-1">Try changing your search or filter criteria</p>
-                      </div>
-                    }>
-                      {items.map((lead) => (
-                        <TableRow
-                          key={lead.id}
-                          className="cursor-pointer hover:bg-gray-500 transition-colors"
-                          onClick={() => handleLeadRowClick(lead.id)}
-                        >
-                          <TableCell className="text-sm">{formatDate(lead.date)}</TableCell>
-                          <TableCell className="text-sm">{lead.lead_source || "N/A"}</TableCell>
-                          <TableCell className="font-medium ">{lead.client_name || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 text-sm">
-                              <PhoneIcon className="h-4 w-4 text-gray-400" />
-                              {lead.phone_number || "-"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {lead.domain === "Nill"
-                              ? "-"
-                              : lead.domain || "-"}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <div className="max-w-xs truncate">
-                              {lead.requirement || "-"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{lead.prospectus_type || "-"}</TableCell>
-                          <TableCell className="text-sm">
-                            {lead.followup_date ? (
-                              <div className="flex items-center gap-1">
-                                <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
-                                {formatDate(lead.followup_date)}
-                              </div>
-                            ) : "-"}
-                          </TableCell>
-                          {/* Replace Badge with regular text */}
-                          <TableCell className="text-sm">
-                            {lead.remarks || "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Pagination Component */}
-                {filteredLeads.length > 0 && (
-                  <div className="px-6 py-4 bg-default-50 dark:bg-default-100/5 border-t border-divider">
-                    <div className="flex justify-center">
-                      <Pagination
-                        total={pages}
-                        page={page}
-                        onChange={handlePageChange}
-                        showControls={true}
-                        variant="light"
-                        size="lg"
-                        className="overflow-visible"
-                      />
-                    </div>
-                  </div>
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+
+            {/* Table container */}
+            <div className="overflow-hidden" id="leads-table">
+              {loading ? (
+                <div className="flex flex-col justify-center items-center py-16 bg-content1">
+                  <Spinner size="lg" color="primary" />
+                  <p className="mt-4 text-foreground-400">Loading leads...</p>
+                </div>
+              ) : error ? (
+                <div className="flex justify-center items-center py-16 bg-content1 text-danger">
+                  <div className="text-center">
+                    <AlertCircleIcon className="h-12 w-12 mx-auto mb-2" />
+                    <p className="font-medium">{error}</p>
+                    <Button 
+                      color="danger"
+                      variant="flat" 
+                      className="mt-4"
+                      onClick={fetchUnapprovedLeads}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table 
+                      aria-label="Leads table"
+                      classNames={{
+                        th: "bg-default-50 dark:bg-default-100/5 text-foreground-500",
+                      }}
+                    >
+                      <TableHeader>
+                        <TableColumn>DATE</TableColumn>
+                        <TableColumn>LEAD SOURCE</TableColumn>
+                        <TableColumn>CLIENT NAME</TableColumn>
+                        <TableColumn>CONTACT</TableColumn>
+                        <TableColumn>DOMAIN</TableColumn>
+                        <TableColumn>REQUIREMENT</TableColumn>
+                        <TableColumn>PROSPECT TYPE</TableColumn>
+                        <TableColumn>FOLLOWUP DATE</TableColumn>
+                        <TableColumn>REMARKS</TableColumn>
+                      </TableHeader>
+                      <TableBody emptyContent={
+                        <div className="py-8">
+                          <p className="text-center text-foreground-500 font-medium">No leads found</p>
+                          <p className="text-center text-foreground-400 text-sm mt-1">Try changing your search or filter criteria</p>
+                        </div>
+                      }>
+                        {items.map((lead) => (
+                          <TableRow
+                            key={lead.id}
+                            className="cursor-pointer hover:bg-gray-500 transition-colors"
+                            onClick={() => handleLeadRowClick(lead.id)}
+                          >
+                            <TableCell className="text-sm">{formatDate(lead.date)}</TableCell>
+                            <TableCell className="text-sm">{lead.lead_source || "N/A"}</TableCell>
+                            <TableCell className="font-medium ">{lead.client_name || "-"}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 text-sm">
+                                <PhoneIcon className="h-4 w-4 text-gray-400" />
+                                {lead.phone_number || "-"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {lead.domain === "Nill"
+                                ? "-"
+                                : lead.domain || "-"}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <div className="max-w-xs truncate">
+                                {lead.requirement || "-"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">{lead.prospectus_type || "-"}</TableCell>
+                            <TableCell className="text-sm">
+                              {lead.followup_date ? (
+                                <div className="flex items-center gap-1">
+                                  <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+                                  {formatDate(lead.followup_date)}
+                                </div>
+                              ) : "-"}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {lead.remarks || "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {filteredLeads.length > 0 && (
+                    <div className="px-6 py-4 bg-default-50 dark:bg-default-100/5 border-t border-divider">
+                      <div className="flex justify-center">
+                        <Pagination
+                          total={pages}
+                          page={page}
+                          onChange={handlePageChange}
+                          showControls={true}
+                          variant="light"
+                          size="lg"
+                          className="overflow-visible"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </div>
   );
 };
 
-// Remove or comment out badge-related helper functions that are no longer needed
-// const getBadgeColor = (status: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
-//   ...
-// };
-
-// const getBadgeLabel = (remarks: string): string => {
-//   ...
-// };
-
-export default LeadsPage;
+export default withLeadsDashboardAuth(LeadsPage);

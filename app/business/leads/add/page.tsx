@@ -23,7 +23,9 @@ import {
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import api, { CreateLeadRequest } from "@/services/api";
-import { checkAuth } from "@/utils/authCheck";
+// Remove manual auth check since we'll use HOC
+// import { checkAuth } from "@/utils/authCheck";
+import { withLeadsAuth } from "@/components/withLeadsAuth";
 
 const AddLeadPage = () => {
   const router = useRouter();
@@ -88,7 +90,8 @@ const AddLeadPage = () => {
   ]);
 
   useEffect(() => {
-    checkAuth(router, "leads");
+    // Remove manual auth check since we're using the HOC
+    // checkAuth(router, 'leads');
     
     // Get the user ID from localStorage and set it as assigned_to
     try {
@@ -104,7 +107,7 @@ const AddLeadPage = () => {
     } catch (err) {
       console.error("Error getting user from localStorage:", err);
     }
-  }, [router]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -438,4 +441,5 @@ const AddLeadPage = () => {
   );
 };
 
-export default AddLeadPage;
+// Export with auth HOC wrapper
+export default withLeadsAuth(AddLeadPage);

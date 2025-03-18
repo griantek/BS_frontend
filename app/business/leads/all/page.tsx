@@ -29,8 +29,10 @@ import {
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 import { format, parse, isValid } from "date-fns";
 import api, { Lead } from "@/services/api";
-import { checkAuth } from "@/utils/authCheck";
+// Remove the manual auth check
+// import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
+import { withLeadsAuth } from "@/components/withLeadsAuth";
 
 const AllLeadsPage = () => {
   const router = useRouter();
@@ -52,7 +54,8 @@ const AllLeadsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    checkAuth(router, "leads");
+    // Remove manual auth check since we're using the HOC
+    // checkAuth(router, "leads");
     fetchLeads();
   }, [router, page, rowsPerPage]);
 
@@ -244,7 +247,7 @@ const AllLeadsPage = () => {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex gap-2">
-              <Button
+              {/* <Button
                 color="default"
                 className="bg-white/10 text-white backdrop-blur-md border border-white/20"
                 startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
@@ -252,7 +255,7 @@ const AllLeadsPage = () => {
                 onClick={exportToCSV}
               >
                 Export
-              </Button>
+              </Button> */}
               <Button
                 color="default"
                 className="bg-white dark:bg-white/90 text-primary-600"
@@ -702,4 +705,5 @@ const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default AllLeadsPage;
+// Export with auth HOC wrapper
+export default withLeadsAuth(AllLeadsPage);

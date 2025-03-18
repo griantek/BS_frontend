@@ -181,8 +181,10 @@ export const Navbar = () => {
   };
 
   const isActiveMainPath = (path: string) => {
-    // For dashboard pages, only match exact path
-    if (path === '/admin' || path === '/business/executive' || path === '/business/editor') {
+    // Special case for dashboard/index routes to avoid conflict with sub-routes
+    if (path === '/admin' || path === '/business/executive' || 
+        path === '/business/editor' || path === '/business/leads' || 
+        path === '/business/clients') {
       return pathname === path;
     }
   
@@ -193,7 +195,7 @@ export const Navbar = () => {
     }
   
     // For other sections, match the section prefix
-    return pathname.startsWith(path) && !pathname.match(/^\/(admin|executive|editor)$/);
+    return pathname.startsWith(path) && !pathname.match(/^\/(admin|business\/executive|business\/editor|business\/leads|business\/clients)$/);
   };
 
   const getNavigationLinks = () => {

@@ -27,8 +27,11 @@ import {
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 import { format, parse, isValid, isAfter, isBefore, isPast } from "date-fns";
 import api, { Lead } from "@/services/api";
-import { checkAuth } from "@/utils/authCheck";
+// Remove the manual auth check import
+// import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
+// Import the withFollowupsAuth HOC
+import { withFollowupsAuth } from "@/components/withLeadsAuth";
 
 const FollowupsPage = () => {
   const router = useRouter();
@@ -46,7 +49,8 @@ const FollowupsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    checkAuth(router, "leads");
+    // Remove manual auth check as it will be handled by the HOC
+    // checkAuth(router, "leads");
     fetchFollowups();
   }, [router]);
 
@@ -252,7 +256,7 @@ const FollowupsPage = () => {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex gap-2">
-              <Button
+              {/* <Button
                 color="default"
                 className="bg-white dark:bg-white/90 text-primary-600"
                 startContent={<CalendarIcon className="h-4 w-4" />}
@@ -260,7 +264,7 @@ const FollowupsPage = () => {
                 onClick={() => router.push("/business/leads")}
               >
                 Dashboard
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -651,4 +655,5 @@ const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default FollowupsPage;
+// Export with specific followups auth HOC wrapper
+export default withFollowupsAuth(FollowupsPage);

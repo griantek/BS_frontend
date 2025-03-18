@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format, parse, isValid } from 'date-fns'
 import { Button, Card, Spinner, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Textarea } from '@heroui/react'
-// Remove Badge import
 import { 
   ArrowLeftIcon, 
   CalendarDaysIcon, 
@@ -19,7 +18,7 @@ import {
   BellAlertIcon
 } from '@heroicons/react/24/outline'
 import api, { Lead, UpdateLeadRequest } from '@/services/api'
-import { checkAuth } from '@/utils/authCheck'
+import { withLeadsAuth } from '@/components/withLeadsAuth'
 
 const LeadDetailPage = () => {
   const router = useRouter()
@@ -53,7 +52,6 @@ const LeadDetailPage = () => {
   ]
 
   useEffect(() => {
-    checkAuth(router, 'leads')
     if (id) {
       fetchLead(parseInt(id))
     }
@@ -499,4 +497,5 @@ const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
-export default LeadDetailPage;
+// Export the component wrapped with the auth HOC
+export default withLeadsAuth(LeadDetailPage);

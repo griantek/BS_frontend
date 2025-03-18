@@ -26,7 +26,9 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import api, { Editor } from "@/services/api";
-import { checkAuth } from "@/utils/authCheck";
+// Remove manual auth check since we'll use HOC
+// import { checkAuth } from "@/utils/authCheck";
+import { withLeadsAuth } from "@/components/withLeadsAuth";
 
 const generateRegId = () => {
   const now = new Date();
@@ -73,7 +75,8 @@ const ApproveLeadPage = () => {
   });
 
   useEffect(() => {
-    checkAuth(router, "leads");
+    // Remove manual auth check since we're using the HOC
+    // checkAuth(router, "leads");
     
     if (id) {
       fetchLead(parseInt(id));
@@ -402,4 +405,5 @@ const ApproveLeadPage = () => {
   );
 };
 
-export default ApproveLeadPage;
+// Export with auth HOC wrapper
+export default withLeadsAuth(ApproveLeadPage);
