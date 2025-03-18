@@ -24,7 +24,8 @@ import {
   MagnifyingGlassIcon,
   ChevronRightIcon,
   XMarkIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  UserGroupIcon
 } from "@heroicons/react/24/outline";
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 
@@ -57,7 +58,7 @@ const LeadsPage = () => {
     totalLeads: 0,
     newLeadsToday: 0,
     pendingFollowup: 0,
-    conversionRate: 0,
+    newProspects: 0,  // Replace conversionRate with newProspects
   });
 
   useEffect(() => {
@@ -131,21 +132,15 @@ const LeadsPage = () => {
       return lead.remarks?.toLowerCase().includes("followup") || false;
     }).length;
 
-    const converted = leadsData.filter((lead) => {
-      return (
-        lead.status === "converted" ||
-        lead.remarks?.toLowerCase().includes("converted") ||
-        false
-      );
+    const newProspects = leadsData.filter((lead) => {
+      return lead.prospectus_type === "Prospect";
     }).length;
-
-    const rate = total > 0 ? Math.round((converted / total) * 100) : 0;
 
     setStats({
       totalLeads: total,
       newLeadsToday: newToday,
       pendingFollowup: pending,
-      conversionRate: rate,
+      newProspects: newProspects,  // Set new prospects count instead of conversion rate
     });
   };
 
@@ -327,16 +322,17 @@ const LeadsPage = () => {
             <div className="absolute -right-3 -top-3 w-16 h-16 bg-warning/5 rounded-full"></div>
           </Card>
 
+          {/* Replace Conversion Rate card with New Prospects card */}
           <Card className="p-5 shadow-md rounded-lg hover:shadow-lg transition-shadow bg-content1 overflow-hidden relative">
             <div className="flex items-center">
               <div className="bg-secondary/10 p-3 rounded-full">
-                <FunnelIcon className="h-6 w-6 text-secondary" />
+                <UserGroupIcon className="h-6 w-6 text-secondary" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-foreground-400">
-                  Conversion Rate
+                  New Prospects
                 </p>
-                <h3 className="text-2xl font-bold text-foreground">{stats.conversionRate}%</h3>
+                <h3 className="text-2xl font-bold text-foreground">{stats.newProspects}</h3>
               </div>
             </div>
             <div className="absolute -right-3 -top-3 w-16 h-16 bg-secondary/5 rounded-full"></div>
@@ -365,14 +361,14 @@ const LeadsPage = () => {
                   >
                     Refresh
                   </Button>
-                  <Button
+                  {/* <Button
                     size="sm"
                     color="warning"
                     endContent={<ChevronRightIcon className="h-4 w-4" />}
                     onClick={() => router.push("/business/leads/followup")}
                   >
                     View All
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </div>

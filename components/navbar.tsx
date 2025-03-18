@@ -266,11 +266,7 @@ export const Navbar = () => {
           href: "/business/leads/followup", 
           icon: BellAlertIcon
         },
-        {
-          label: "Add Lead",
-          href: "/business/leads/add",
-          icon: UserPlusIcon
-        }
+        // {con
       ];
     }
     
