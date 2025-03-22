@@ -51,7 +51,7 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
         router.push('/admin');
         break;
       case 'leads':
-        router.push('/business/leads');
+        router.push('/business/conversion');
         break;
       case 'clients':
         router.push('/business/clients');
@@ -78,7 +78,7 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
       router.replace('/admin');
       break;
     case 'leads':
-      router.replace('/business/leads');
+      router.replace('/business/conversion');
       break;
     case 'clients':
       router.replace('/business/clients');

@@ -205,9 +205,9 @@ const AllLeadsPage = () => {
     setPage(1);
   };
 
-  // Handle row click to navigate to lead details
+  // Handle row click to navigate to lead details - use correct path
   const handleLeadRowClick = (leadId: number) => {
-    router.push(`/business/leads/${leadId}`);
+    router.push(`/business/conversion/leads/${leadId}`);
   };
 
   // Add a function to clear all filters
@@ -262,7 +262,7 @@ const AllLeadsPage = () => {
                 startContent={<UserPlusIcon className="h-4 w-4" />}
                 size="md"
                 onClick={() => {
-                  router.push("/business/leads/add");
+                  router.push("/business/conversion/leads/add");
                 }}
               >
                 Add New Lead

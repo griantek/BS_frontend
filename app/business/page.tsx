@@ -22,7 +22,7 @@ export default function BusinessPage() {
         router.replace('/business/executive');
         break;
       case 'leads':
-        router.replace('/business/leads');
+        router.replace('/business/conversion');
         break;
       case 'clients':
         router.replace('/business/clients');

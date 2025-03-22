@@ -206,7 +206,7 @@ const FollowupsPage = () => {
 
   // Handle row click to navigate to lead details
   const handleLeadRowClick = (leadId: number) => {
-    router.push(`/business/leads/${leadId}`);
+    router.push(`/business/conversion/leads/${leadId}`);
   };
 
   // Mark as completed function
@@ -261,7 +261,7 @@ const FollowupsPage = () => {
                 className="bg-white dark:bg-white/90 text-primary-600"
                 startContent={<CalendarIcon className="h-4 w-4" />}
                 size="md"
-                onClick={() => router.push("/business/leads")}
+                onClick={() => router.push("/business/conversion")}
               >
                 Dashboard
               </Button> */}

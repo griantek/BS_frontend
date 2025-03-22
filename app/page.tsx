@@ -27,7 +27,7 @@ export default function Home() {
         router.replace("/business/editor");
         break;
       case "leads":
-        router.replace("/business/leads");
+        router.replace("/business/conversion");
         break;
       case "clients":
         router.replace("/business/clients");

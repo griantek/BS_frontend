@@ -99,17 +99,17 @@ export const siteConfig = {
   leadsLinks: [
     {
       label: "Dashboard",
-      href: "/business/leads",
+      href: "/business/conversion",
       icon: ChartPieIcon
     },
     {
       label: "All Leads",
-      href: "/business/leads/all",
+      href: "/business/conversion/leads/all",
       icon: TableCellsIconHero,
     },
     {
       label: "Follow-ups",
-      href: "/business/leads/followup",
+      href: "/business/conversion/followup",
       icon: BellAlertIcon
     }
   ],

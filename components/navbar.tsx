@@ -55,7 +55,7 @@ export const Navbar = () => {
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
-  const isLeadsPath = pathname?.startsWith('/business/leads');
+  const isLeadsPath = pathname?.startsWith('/business/conversion');
   const isClientsPath = pathname?.startsWith('/business/clients');
 
   React.useEffect(() => {
@@ -162,7 +162,7 @@ export const Navbar = () => {
     } else if (isEditor) {
       path = '/business/editor';
     } else if (isLeads) {
-      path = '/business/leads';
+      path = '/business/conversion';
     } else if (isClients) {
       path = '/business/clients';
     }
@@ -183,7 +183,7 @@ export const Navbar = () => {
   const isActiveMainPath = (path: string) => {
     // Special case for dashboard/index routes to avoid conflict with sub-routes
     if (path === '/admin' || path === '/business/executive' || 
-        path === '/business/editor' || path === '/business/leads' || 
+        path === '/business/editor' || path === '/business/conversion' || 
         path === '/business/clients') {
       return pathname === path;
     }
@@ -192,6 +192,13 @@ export const Navbar = () => {
     if (path.startsWith('/admin/')) {
       const section = path.split('/')[2]; // Get 'users', 'clients', etc.
       return pathname.startsWith('/admin/' + section);
+    }
+    
+    // Special handling for leads - highlight "All Leads" when on followup pages
+    if (path === '/business/conversion/leads/all') {
+      return pathname === path || 
+             pathname.startsWith('/business/conversion/leads/followup') ||
+             pathname.match(/^\/business\/conversion\/leads\/\d+$/);
     }
   
     // For other sections, match the section prefix
@@ -248,25 +255,20 @@ export const Navbar = () => {
       return !isEditorPath ? siteConfig.editorLinks : [];
     }
     
-    // Add navigation for new roles
+    // Update to remove links from navbar since they'll be in the sidebar now
     if (role === 'leads') {
+      // Return Dashboard and All Leads links for the navbar
       return [
         {
           label: "Dashboard",
-          href: "/business/leads",
+          href: "/business/conversion",
           icon: ChartPieIcon
         },
         {
           label: "All Leads",
-          href: "/business/leads/all",
+          href: "/business/conversion/leads/all",
           icon: TableCellsIcon
-        },
-        {
-          label: "Follow-ups",
-          href: "/business/leads/followup", 
-          icon: BellAlertIcon
-        },
-        // {con
+        }
       ];
     }
     

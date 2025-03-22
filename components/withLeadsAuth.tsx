@@ -26,16 +26,16 @@ export function withLeadsAuth<P extends object>(
           setHasPermission(hasRequiredPermission);
           
           if (!hasRequiredPermission) {
-            router.replace('/business/leads');
+            router.replace('/business/conversion');
           }
         }
         
         // Check for specific route permissions
         if (isAuthed) {
           // For example, you could check if the user has permission to access the followup page
-          const isFollowupRoute = pathname === '/business/leads/followup';
+          const isFollowupRoute = pathname === '/business/conversion/followup';
           if (isFollowupRoute && !currentUserHasPermission(PERMISSIONS.VIEW_FOLLOWUPS)) {
-            router.replace('/business/leads');
+            router.replace('/business/conversion');
             return;
           }
           

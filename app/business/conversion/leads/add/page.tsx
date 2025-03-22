@@ -198,7 +198,7 @@ const AddLeadPage = () => {
 
       // Navigate back to leads page after short delay
       setTimeout(() => {
-        router.push("/business/leads");
+        router.push("/business/conversion/leads/all");  // Redirect to all leads page for consistency
       }, 2000);
 
     } catch (err: any) {
@@ -214,7 +214,7 @@ const AddLeadPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <Button 
-            onClick={() => router.push("/business/leads")}
+            onClick={() => router.push("/business/conversion/leads/all")}  // Update to redirect to all leads page
             variant="light" 
             startContent={<ArrowLeftIcon className="h-4 w-4" />}
           >
@@ -420,7 +420,7 @@ const AddLeadPage = () => {
               <Button
                 color="danger"
                 variant="flat"
-                onClick={() => router.push("/business/leads")}
+                onClick={() => router.push("/business/conversion/leads/all")}  // Update to redirect to all leads page
                 disabled={loading}
               >
                 Cancel

@@ -167,10 +167,11 @@ const ApproveLeadPage = () => {
         requirement: lead.requirement,
       });
 
+      // Update success redirect path
       if (response && response.data) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/business/leads");
+          router.push("/business/conversion/leads/all");
         }, 2000);
       }
     } catch (err: any) {

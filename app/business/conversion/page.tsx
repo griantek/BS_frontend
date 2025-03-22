@@ -238,7 +238,7 @@ const LeadsPage = () => {
   };
 
   const handleLeadRowClick = (leadId: number) => {
-    router.push(`/business/leads/${leadId}`);
+    router.push(`/business/conversion/${leadId}`);
   };
 
   const clearAllFilters = () => {
@@ -250,6 +250,11 @@ const LeadsPage = () => {
   };
 
   const hasActiveFilters = filterSource !== "" || filterDomain !== "" || filterProspectusType !== "" || searchQuery !== "";
+
+  // Add a click handler to navigate to Leads from dashboard
+  const navigateToLeads = () => {
+    router.push('/business/conversion/leads/all');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -267,7 +272,7 @@ const LeadsPage = () => {
               startContent={<UserPlusIcon className="h-4 w-4" />}
               size="lg"
               onClick={() => {
-                router.push("/business/leads/add");
+                router.push("/business/conversion/add");
               }}
             >
               Add New Lead
@@ -365,7 +370,7 @@ const LeadsPage = () => {
                     size="sm"
                     color="warning"
                     endContent={<ChevronRightIcon className="h-4 w-4" />}
-                    onClick={() => router.push("/business/leads/followup")}
+                    onClick={() => router.push("/business/conversion/followup")}
                   >
                     View All
                   </Button> */}
@@ -437,7 +442,7 @@ const LeadsPage = () => {
                     variant="light"
                     color="primary"
                     endContent={<ChevronRightIcon className="h-4 w-4" />}
-                    onClick={() => router.push("/business/leads/followup")}
+                    onClick={() => router.push("/business/conversion/followup")}
                   >
                     View All ({todayFollowups.length})
                   </Button>
@@ -460,7 +465,7 @@ const LeadsPage = () => {
                 color="primary"
                 className="w-full"
                 startContent={<UserPlusIcon className="h-4 w-4" />}
-                onClick={() => router.push("/business/leads/add")}
+                onClick={() => router.push("/business/conversion/add")}
               >
                 Add New Lead
               </Button>
@@ -469,7 +474,7 @@ const LeadsPage = () => {
                 color="secondary"
                 className="w-full"
                 startContent={<TableCellsIcon className="h-4 w-4" />}
-                onClick={() => router.push("/business/leads/all")}
+                onClick={navigateToLeads}
               >
                 View All Leads
               </Button>
@@ -478,7 +483,7 @@ const LeadsPage = () => {
                 color="warning"
                 className="w-full"
                 startContent={<BellAlertIcon className="h-4 w-4" />}
-                onClick={() => router.push("/business/leads/followup")}
+                onClick={() => router.push("/business/conversion/followup")}
               >
                 Manage Follow-ups
               </Button>

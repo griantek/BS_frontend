@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --sidebar-width: 16rem;
+  --sidebar-width: 4rem; /* Start collapsed by default */
+  --sidebar-expanded-width: 16rem;
+  --sidebar-collapsed-width: 4rem;
+  --sidebar-transition-duration: 300ms;
 }
 
 /* Add grid pattern background */
@@ -32,4 +35,11 @@
 
 .animate-pulse-slow {
   animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Sidebar transitions */
+.sidebar-transition {
+  transition: width var(--sidebar-transition-duration) ease, 
+              transform var(--sidebar-transition-duration) ease,
+              padding-left var(--sidebar-transition-duration) ease;
 }

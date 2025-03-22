@@ -83,7 +83,7 @@ function BusinessLoginContent() {
           await router.replace('/business/executive');
           break;
         case 'leads':
-          await router.replace('/business/leads');
+          await router.replace('/business/conversion');
           break;
         case 'clients':
           await router.replace('/business/clients');

@@ -113,7 +113,7 @@ const LeadDetailPage = () => {
   }
 
   const handleBack = () => {
-    router.push('/business/leads')
+    router.push('/business/conversion/leads/all')
   }
   
   // Handle form input changes
@@ -361,7 +361,7 @@ const LeadDetailPage = () => {
                 startContent={<CheckIcon className="h-4 w-4" />}
                 className="w-full"
                 onClick={() => {
-                  router.push(`/business/leads/approve/${lead.id}`);
+                  router.push(`/business/conversion/leads/approve/${lead.id}`);
                 }}
               >
                 Approve Lead
