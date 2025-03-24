@@ -36,6 +36,11 @@ import {
   currentUserHasPermission
 } from '@/utils/permissions';
 
+// Add helper function to calculate balance amount (similar to registration view page)
+const calculateBalanceAmount = (totalAmount: number, paidAmount: number = 0): number => {
+  return Math.max(0, totalAmount - paidAmount);
+};
+
 function BusinessDashboard() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -114,8 +119,24 @@ function BusinessDashboard() {
       // Calculate dashboard metrics
       const pendingRegs = registrations.filter(reg => reg.status === 'pending');
       const completedRegs = registrations.filter(reg => reg.status === 'registered');
+      
+      // Calculate total revenue from completed registrations
       const totalRevenue = completedRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
-      const pendingAmount = pendingRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
+      
+      // Calculate pending amount considering partial payments
+      let pendingAmount = 0;
+      
+      // Add all pending registration amounts
+      pendingAmount += pendingRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
+      
+      // Add balance amounts from partially paid registrations
+      completedRegs.forEach(reg => {
+        // Check if there's a transactions property with amount
+        if (reg.transactions && reg.transactions.amount && reg.transactions.amount < reg.total_amount) {
+          const balanceAmount = calculateBalanceAmount(reg.total_amount, reg.transactions.amount);
+          pendingAmount += balanceAmount;
+        }
+      });
 
       setDashboardData({
         totalProspects: prospects.length,
@@ -332,7 +353,7 @@ function BusinessDashboard() {
             <div>
               <h3 className="text-lg font-semibold flex items-center">
                 <BellAlertIcon className="h-5 w-5 mr-2 text-warning" />
-                Today's Follow-ups
+                Today&apos;s Follow-ups
               </h3>
               <p className="text-default-500 text-sm">
                 {todayFollowups.length === 0 ? "No follow-ups scheduled for today" : 
@@ -485,7 +506,7 @@ function BusinessDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span>Pending Amount:</span>
-                    <span className="font-semibold">{formatCurrency(dashboardData.pendingAmount)}</span>
+                    <span className="font-semibold text-warning-600">{formatCurrency(dashboardData.pendingAmount)}</span>
                   </div>
                 </div>
 
