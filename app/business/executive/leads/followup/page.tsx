@@ -27,11 +27,9 @@ import {
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 import { format, parse, isValid, isAfter, isBefore, isPast } from "date-fns";
 import api, { Lead } from "@/services/api";
-// Remove the manual auth check import
-// import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
-// Import the withFollowupsAuth HOC
-import { withFollowupsAuth } from "@/components/withLeadsAuth";
+// Import the appropriate auth HOC
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 const FollowupsPage = () => {
   const router = useRouter();
@@ -49,8 +47,6 @@ const FollowupsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    // Remove manual auth check as it will be handled by the HOC
-    // checkAuth(router, "leads");
     fetchFollowups();
   }, [router]);
 
@@ -204,9 +200,9 @@ const FollowupsPage = () => {
     setPage(1);
   };
 
-  // Handle row click to navigate to lead details
+  // Handle row click to navigate to lead details - use the executive path
   const handleLeadRowClick = (leadId: number) => {
-    router.push(`/business/conversion/leads/${leadId}`);
+    router.push(`/business/executive/leads/${leadId}`);
   };
 
   // Mark as completed function
@@ -256,15 +252,7 @@ const FollowupsPage = () => {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex gap-2">
-              {/* <Button
-                color="default"
-                className="bg-white dark:bg-white/90 text-primary-600"
-                startContent={<CalendarIcon className="h-4 w-4" />}
-                size="md"
-                onClick={() => router.push("/business/conversion")}
-              >
-                Dashboard
-              </Button> */}
+              {/* Header buttons if needed */}
             </div>
           </div>
         </div>
@@ -311,7 +299,7 @@ const FollowupsPage = () => {
                 }
               </Select>
 
-              {/* <Select
+              <Select
                 label="Follow-up Status"
                 placeholder="Filter by status"
                 selectedKeys={[filterStatus]}
@@ -326,7 +314,7 @@ const FollowupsPage = () => {
                 <SelectItem key="" value="">
                   All Statuses
                 </SelectItem>
-              </Select> */}
+              </Select>
             </div>
 
             {hasActiveFilters && (
@@ -489,7 +477,7 @@ const FollowupsPage = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {/* {lead.followup_status === 'pending' && (
+                                {lead.followup_status === 'pending' && (
                                   <Button
                                     size="sm"
                                     color="success"
@@ -500,7 +488,7 @@ const FollowupsPage = () => {
                                   >
                                     Mark Complete
                                   </Button>
-                                )} */}
+                                )}
                                 <Button
                                   size="sm"
                                   color="primary"
@@ -559,101 +547,10 @@ const FollowupsPage = () => {
             )}
           </div>
         </Card>
-
-        {/* Statistics Cards */}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <BellAlertIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Total Follow-ups
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {leads.length}
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-warning/10 p-3 rounded-full">
-                <ClockIcon className="h-5 w-5 text-warning" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Pending
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {leads.filter(lead => lead.followup_status === 'pending').length}
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-danger/10 p-3 rounded-full">
-                <AlertCircleIcon className="h-5 w-5 text-danger" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Overdue
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {leads.filter(lead => {
-                    if (!lead.followup_date || lead.followup_status !== 'pending') return false;
-                    return getFollowupStatus(lead.followup_date) === 'overdue';
-                  }).length}
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-success/10 p-3 rounded-full">
-                <CheckIcon className="h-5 w-5 text-success" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Completed
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {leads.filter(lead => lead.followup_status === 'completed').length}
-                </h3>
-              </div>
-            </div>
-          </Card>
-        </div> */}
       </div>
     </div>
   );
 };
 
-// Helper icon components
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M8 2v4" />
-    <path d="M16 2v4" />
-    <rect width="18" height="18" x="3" y="4" rx="2" />
-    <path d="M3 10h18" />
-  </svg>
-);
-
-// Export with specific followups auth HOC wrapper
-export default withFollowupsAuth(FollowupsPage);
+// Export with auth HOC wrapper - may need to update for executive role
+export default withExecutiveAuth(FollowupsPage);

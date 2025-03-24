@@ -25,7 +25,7 @@ import {
 import api, { CreateLeadRequest } from "@/services/api";
 // Remove manual auth check since we'll use HOC
 // import { checkAuth } from "@/utils/authCheck";
-import { withLeadsAuth } from "@/components/withLeadsAuth";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 const AddLeadPage = () => {
   const router = useRouter();
@@ -83,7 +83,7 @@ const AddLeadPage = () => {
   ]);
 
   const [prospectTypes, setProspectTypes] = useState<string[]>([
-    "Lead",
+    "Leads",
     "Not a prospect",
     "Later prospect",
     "Prospect",
@@ -198,7 +198,7 @@ const AddLeadPage = () => {
 
       // Navigate back to leads page after short delay
       setTimeout(() => {
-        router.push("/business/conversion/leads/all");  // Redirect to all leads page for consistency
+        router.push("/business/executive/leads/all");  // Redirect to all leads page for consistency
       }, 2000);
 
     } catch (err: any) {
@@ -214,7 +214,7 @@ const AddLeadPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <Button 
-            onClick={() => router.push("/business/conversion/leads/all")}  // Update to redirect to all leads page
+            onClick={() => router.push("/business/executive/leads/all")}  // Update to redirect to all leads page
             variant="light" 
             startContent={<ArrowLeftIcon className="h-4 w-4" />}
           >
@@ -420,7 +420,7 @@ const AddLeadPage = () => {
               <Button
                 color="danger"
                 variant="flat"
-                onClick={() => router.push("/business/conversion/leads/all")}  // Update to redirect to all leads page
+                onClick={() => router.push("/business/executive/leads/all")}  // Update to redirect to all leads page
                 disabled={loading}
               >
                 Cancel
@@ -442,4 +442,4 @@ const AddLeadPage = () => {
 };
 
 // Export with auth HOC wrapper
-export default withLeadsAuth(AddLeadPage);
+export default withExecutiveAuth(AddLeadPage);

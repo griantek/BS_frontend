@@ -252,42 +252,42 @@ function RegistrationContent({ regId }: { regId: string }) {
         .join(", ");
       
       // Create registration request
-      const registrationData: CreateRegistrationRequest = {
-        entity_id: user.id,
-        client_id: user.id,
-        registered_by: user.id,
-        prospectus_id: prospectData.id,
-        services: servicesString,
-        init_amount: parseFloat(initialAmount) || 0,
-        accept_amount: parseFloat(acceptanceAmount) || 0,
-        discount: parseFloat(discount) || 0,
-        total_amount: totalAmount,
-        accept_period: `${acceptancePeriod} ${acceptancePeriodUnit}`,
-        pub_period: `${publicationPeriod} ${publicationPeriodUnit}`,
-        bank_id: selectedBank,
-        status: parseFloat(paymentAmount) > 0 ? "registered" : "pending",
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+      // const registrationData: CreateRegistrationRequest = {
+      //   entity_id: user.id,
+      //   client_id: user.id,
+      //   registered_by: user.id,
+      //   prospectus_id: prospectData.id,
+      //   services: servicesString,
+      //   init_amount: parseFloat(initialAmount) || 0,
+      //   accept_amount: parseFloat(acceptanceAmount) || 0,
+      //   discount: parseFloat(discount) || 0,
+      //   total_amount: totalAmount,
+      //   accept_period: `${acceptancePeriod} ${acceptancePeriodUnit}`,
+      //   pub_period: `${publicationPeriod} ${publicationPeriodUnit}`,
+      //   bank_id: selectedBank,
+      //   status: parseFloat(paymentAmount) > 0 ? "registered" : "pending",
+      //   month: new Date().getMonth() + 1,
+      //   year: new Date().getFullYear(),
         
-        // Payment transaction details
-        transaction_type: transactionType,
-        transaction_id: transactionId,
-        amount: parseFloat(paymentAmount) || 0,
-        transaction_date: transactionDate,
-        additional_info: {}
-      };
+      //   // Payment transaction details
+      //   // transaction_type: transactionType,
+      //   transaction_id: transactionId,
+      //   amount: parseFloat(paymentAmount) || 0,
+      //   transaction_date: transactionDate,
+      //   additional_info: {}
+      // };
       
       // Submit registration
-      const response = await api.createRegistration(registrationData);
+      // const response = await api.createRegistration(registrationData);
       
-      if (response.success) {
-        // Show success modal instead of toast for better UX
-        setShowSuccessModal(true);
-        // Update prospect status to registered
-        await api.updateProspectusStatus(prospectData.reg_id, "registered");
-      } else {
-        throw new Error("Failed to register prospect");
-      }
+      // if (response.success) {
+      //   // Show success modal instead of toast for better UX
+      //   setShowSuccessModal(true);
+      //   // Update prospect status to registered
+      //   // await api.updateProspectusStatus(prospectData.reg_id, "registered");
+      // } else {
+      //   throw new Error("Failed to register prospect");
+      // }
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "Failed to register prospect");
@@ -398,7 +398,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                   <SelectItem key="placeholder" value="">
                     Select a service
                   </SelectItem>
-                  {services.map((service) => (
+                  {/* {services.map((service) => (
                     <SelectItem
                       key={service.id}
                       value={service.id.toString()}
@@ -407,7 +407,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                     >
                       {service.service_name} - ₹{service.fee.toLocaleString()}
                     </SelectItem>
-                  ))}
+                  ))} */}
                 </Select>
                 
                 {selectedServices.length > 0 && (
@@ -622,7 +622,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 startContent={<CurrencyRupeeIcon className="h-4 w-4 text-default-400" />}
-                helperText={`Total amount: ₹${totalAmount.toLocaleString()}`}
+                // helperText={`Total amount: ₹${totalAmount.toLocaleString()}`}
               />
               
               <div className="bg-default-50 p-3 rounded-lg text-sm">

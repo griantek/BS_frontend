@@ -29,10 +29,8 @@ import {
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
 import { format, parse, isValid } from "date-fns";
 import api, { Lead } from "@/services/api";
-// Remove the manual auth check
-// import { checkAuth } from "@/utils/authCheck";
 import { useRouter } from "next/navigation";
-import { withLeadsAuth } from "@/components/withLeadsAuth";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 const AllLeadsPage = () => {
   const router = useRouter();
@@ -54,8 +52,6 @@ const AllLeadsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    // Remove manual auth check since we're using the HOC
-    // checkAuth(router, "leads");
     fetchLeads();
   }, [router, page, rowsPerPage]);
 
@@ -205,9 +201,9 @@ const AllLeadsPage = () => {
     setPage(1);
   };
 
-  // Handle row click to navigate to lead details - use correct path
+  // Handle row click to navigate to lead details - use correct executive path
   const handleLeadRowClick = (leadId: number) => {
-    router.push(`/business/conversion/leads/${leadId}`);
+    router.push(`/business/executive/leads/${leadId}`);
   };
 
   // Add a function to clear all filters
@@ -247,22 +243,13 @@ const AllLeadsPage = () => {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex gap-2">
-              {/* <Button
-                color="default"
-                className="bg-white/10 text-white backdrop-blur-md border border-white/20"
-                startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
-                size="md"
-                onClick={exportToCSV}
-              >
-                Export
-              </Button> */}
               <Button
                 color="default"
                 className="bg-white dark:bg-white/90 text-primary-600"
                 startContent={<UserPlusIcon className="h-4 w-4" />}
                 size="md"
                 onClick={() => {
-                  router.push("/business/conversion/leads/add");
+                  router.push("/business/executive/leads/add");
                 }}
               >
                 Add New Lead
@@ -543,7 +530,7 @@ const AllLeadsPage = () => {
                             ${
                               lead.followup_status === "pending"
                                 ? "bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300"
-                                : lead.followup_status === "completed"
+                                : lead.followup_status === "converted"
                                   ? "bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300"
                                   : "bg-default-100 text-default-800 dark:bg-default-900/30 dark:text-default-300"
                             }`}
@@ -592,118 +579,10 @@ const AllLeadsPage = () => {
             )}
           </div>
         </Card>
-
-        {/* Summary Stats */}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <UsersIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Total Leads
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {totalCount}
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-warning/10 p-3 rounded-full">
-                <CalendarDaysIcon className="h-5 w-5 text-warning" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Pending Followups
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {
-                    leads.filter((lead) => lead.followup_status === "pending")
-                      .length
-                  }
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-success/10 p-3 rounded-full">
-                <CheckIcon className="h-5 w-5 text-success" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Completed Followups
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {
-                    leads.filter((lead) => lead.followup_status === "completed")
-                      .length
-                  }
-                </h3>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 bg-content1 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-secondary/10 p-3 rounded-full">
-                <FilterIcon className="h-5 w-5 text-secondary" />
-              </div>
-              <div className="ml-4">
-                <p className="text-xs font-medium text-foreground-400">
-                  Filtered Results
-                </p>
-                <h3 className="text-xl font-bold text-foreground">
-                  {filteredLeads.length}
-                </h3>
-              </div>
-            </div>
-          </Card>
-        </div> */}
       </div>
     </div>
   );
 };
 
-// Helper icon components
-const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <polyline points="20 6 9 17 4 12"></polyline>
-  </svg>
-);
-
-const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-  </svg>
-);
-
-// Export with auth HOC wrapper
-export default withLeadsAuth(AllLeadsPage);
+// Export with auth HOC wrapper - update to use executive auth if needed
+export default withExecutiveAuth(AllLeadsPage);

@@ -646,7 +646,7 @@ interface TodayFollowupResponse {
 
 // Add this new interface for the lead approval request
 interface ApproveLeadRequest {
-  lead_id: number;
+  leads_id: number;
   client_name: string;
   phone: string;
   email: string;

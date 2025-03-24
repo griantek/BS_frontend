@@ -7,8 +7,6 @@ import {
   Card,
   Button,
   Input,
-  Select,
-  SelectItem,
   Textarea,
   Divider,
   Spinner,
@@ -25,10 +23,8 @@ import {
   ClipboardDocumentListIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import api, { Editor } from "@/services/api";
-// Remove manual auth check since we'll use HOC
-// import { checkAuth } from "@/utils/authCheck";
-import { withLeadsAuth } from "@/components/withLeadsAuth";
+import api from "@/services/api";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 const generateRegId = () => {
   const now = new Date();
@@ -60,12 +56,12 @@ const ApproveLeadPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [executives, setExecutives] = useState<Editor[]>([]);
-  const [loadingExecutives, setLoadingExecutives] = useState(true);
+  // Remove the executives state and loading state as we don't need them anymore
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Form state
   const [formData, setFormData] = useState({
-    assigned_to: "",
+    assigned_to: "", // Will be set automatically with current user ID
     email: "",
     reg_id: generateRegId(),
     tech_person: "",
@@ -75,12 +71,26 @@ const ApproveLeadPage = () => {
   });
 
   useEffect(() => {
-    // Remove manual auth check since we're using the HOC
-    // checkAuth(router, "leads");
-    
     if (id) {
       fetchLead(parseInt(id));
-      fetchExecutives();
+      
+      // Get the current user information from localStorage and set assigned_to value
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          if (userData && userData.id) {
+            setCurrentUserId(userData.id.toString());
+            // Set the assigned_to value in the form data
+            setFormData(prev => ({
+              ...prev,
+              assigned_to: userData.id.toString()
+            }));
+          }
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      }
     }
   }, [id, router]);
 
@@ -105,33 +115,8 @@ const ApproveLeadPage = () => {
     }
   };
 
-  // Fetch executives for the dropdown
-  const fetchExecutives = async () => {
-    try {
-      setLoadingExecutives(true);
-      const response = await api.getAllExecutives();
-
-      if (response && response.data) {
-        setExecutives(response.data);
-      } else {
-        console.error("No executives found");
-      }
-    } catch (err) {
-      console.error("Error fetching executives:", err);
-    } finally {
-      setLoadingExecutives(false);
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -143,12 +128,17 @@ const ApproveLeadPage = () => {
     
     if (!lead) return;
     
-    // Validate required fields
-    const requiredFields = ["assigned_to", "email", "services", "proposed_service_period"];
+    // Validate required fields (remove assigned_to from validation if it's set automatically)
+    const requiredFields = ["email", "services", "proposed_service_period"];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
       setError(`Please fill in all required fields: ${missingFields.join(", ")}`);
+      return;
+    }
+
+    if (!formData.assigned_to) {
+      setError("User information not found. Please refresh the page or log in again.");
       return;
     }
 
@@ -159,7 +149,7 @@ const ApproveLeadPage = () => {
       // Call the API to approve lead
       const response = await api.approveLeadAsProspect(parseInt(id), {
         ...formData,
-        lead_id: lead.id,
+        leads_id: lead.id,
         client_name: lead.client_name,
         phone: lead.phone_number,
         state: lead.state,
@@ -171,7 +161,7 @@ const ApproveLeadPage = () => {
       if (response && response.data) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/business/conversion/leads/all");
+          router.push("/business/executive/leads/all");
         }, 2000);
       }
     } catch (err: any) {
@@ -273,30 +263,16 @@ const ApproveLeadPage = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                {/* Assignment Section */}
+                {/* Assignment Section - Remove the executive dropdown */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <UserGroupIcon className="h-5 w-5 mr-2 text-primary" />
-                    Assignment Details
+                    Client Information
                   </h3>
                   <Divider className="mb-4" />
 
                   <div className="space-y-4">
-                    <Select
-                      label="Assign to Executive"
-                      placeholder={loadingExecutives ? "Loading executives..." : "Select an executive"}
-                      selectedKeys={formData.assigned_to ? [formData.assigned_to] : []}
-                      onChange={(e) => handleSelectChange("assigned_to", e.target.value)}
-                      isDisabled={loadingExecutives}
-                      isRequired
-                    >
-                      {executives.map((executive) => (
-                        <SelectItem key={executive.id} value={executive.id}>
-                          {executive.username}
-                        </SelectItem>
-                      ))}
-                    </Select>
-
+                    {/* Only email field remains in this section */}
                     <Input
                       label="Email"
                       name="email"
@@ -407,4 +383,4 @@ const ApproveLeadPage = () => {
 };
 
 // Export with auth HOC wrapper
-export default withLeadsAuth(ApproveLeadPage);
+export default withExecutiveAuth(ApproveLeadPage);

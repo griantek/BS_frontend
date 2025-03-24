@@ -72,12 +72,17 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/executive",
-      icon: Home,
+      icon: ChartPieIcon,
+    },
+    {
+      label: "Leads", // New tab for leads in executive section
+      href: "/business/executive/leads/all",
+      icon: UserPlusIcon,
     },
     {
       label: "Records",
       href: "/business/executive/records",
-      icon: TableCellsIcon,
+      icon: DocumentTextIcon,
     }
   ],
 

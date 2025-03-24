@@ -40,6 +40,7 @@ export const Sidebar = () => {
     // Check if we're in different sections
     const isEditorPath = pathname?.startsWith('/business/editor');
     const isLeadsPath = pathname?.startsWith('/business/conversion/leads');
+    const isExecutiveLeadsPath = pathname?.startsWith('/business/executive/leads');
     const isConversionPath = pathname === '/business/conversion';
 
     React.useEffect(() => {
@@ -49,11 +50,19 @@ export const Sidebar = () => {
         setShowJournalTable(currentUserHasPermission(PERMISSIONS.SHOW_JOURNAL_TABLE));
     }, []);
 
-    // Generate Leads sidebar items
+    // Generate Leads sidebar items (original conversion/leads path)
     const getLeadsSidebarItems = () => {
         return [
             { name: 'All Leads', icon: TableCellsIcon, path: '/business/conversion/leads/all' },
             { name: 'Followups', icon: BellAlertIcon, path: '/business/conversion/leads/followup' },
+        ];
+    };
+
+    // Generate Executive Leads sidebar items (new executive/leads path)
+    const getExecutiveLeadsSidebarItems = () => {
+        return [
+            { name: 'All Leads', icon: TableCellsIcon, path: '/business/executive/leads/all' },
+            { name: 'Followups', icon: BellAlertIcon, path: '/business/executive/leads/followup' },
         ];
     };
 
@@ -132,7 +141,7 @@ export const Sidebar = () => {
                    pathname.startsWith('/business/editor/assigned/');
         }
         
-        // For leads paths
+        // For leads paths (original conversion path)
         if (path === '/business/conversion/leads/all') {
             return pathname === path || 
                    pathname.match(/^\/business\/conversion\/leads\/\d+$/) ||
@@ -140,6 +149,16 @@ export const Sidebar = () => {
         }
         if (path === '/business/conversion/leads/followup') {
             return pathname === path || pathname.startsWith('/business/conversion/leads/followup');
+        }
+
+        // For executive leads paths (new path)
+        if (path === '/business/executive/leads/all') {
+            return pathname === path || 
+                   pathname.match(/^\/business\/executive\/leads\/\d+$/) ||
+                   pathname === '/business/executive/leads/add';
+        }
+        if (path === '/business/executive/leads/followup') {
+            return pathname === path || pathname.startsWith('/business/executive/leads/followup');
         }
         
         return pathname === path;
@@ -180,9 +199,11 @@ export const Sidebar = () => {
     // Get appropriate sidebar items based on the path
     const sidebarItems = isLeadsPath && role === 'leads' 
         ? getLeadsSidebarItems() 
-        : isEditorPath && role === 'editor'
-            ? getEditorSidebarItems()
-            : [];
+        : isExecutiveLeadsPath && role === 'executive'
+            ? getExecutiveLeadsSidebarItems()
+            : isEditorPath && role === 'editor'
+                ? getEditorSidebarItems()
+                : [];
 
     // If no sidebar items to show, don't render the sidebar
     if (sidebarItems.length === 0) {
@@ -190,7 +211,7 @@ export const Sidebar = () => {
     }
 
     // Get title based on section
-    const sidebarTitle = isLeadsPath ? "Lead Management" : "Navigation";
+    const sidebarTitle = isLeadsPath || isExecutiveLeadsPath ? "Lead Management" : "Navigation";
 
     return (
         <Card 
