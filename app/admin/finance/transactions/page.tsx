@@ -56,7 +56,6 @@ function TransactionsPage() {
     const fetchTransactions = async () => {
       try {
         const response = await api.getAllTransactions();
-        console.log("transactionssssss: ",response.data); 
         setTransactions(response.data);
       } catch (error) {
         console.error('Error fetching transactions:', error);

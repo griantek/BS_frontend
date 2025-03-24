@@ -92,6 +92,7 @@ function QuotationContent({ regId }: { regId: string }) {
       selectedBank: "",
       selectedServicesData: [],
       transactionDate: new Date().toISOString().split("T")[0], // Add default date
+      password: "", // Add default value for password
     },
   });
 
@@ -281,49 +282,73 @@ function QuotationContent({ regId }: { regId: string }) {
         throw new Error("Prospect data not found");
       }
 
-      // Prepare registration data with updated fields
-      const registrationData: CreateRegistrationRequest = {
-        // Transaction details 
-        transaction_type: "Cash",
-        transaction_id: "",
-        amount: 0,
-        transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
-        additional_info: {},
+      try {
+        // First create the client account
+        const clientData = {
+          prospectus_id: prospectData.id,
+          email: prospectData.email,
+          password: data.password
+        };
+
+        console.log("Creating client account with:", clientData);
         
-        entity_id: user.id,
-        client_id: user.id,
-        registered_by: user.id,
-        prospectus_id: prospectData.id,
-        services: data.selectedServices
-          .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
-          .filter(Boolean)
-          .join(", "),
-        init_amount: data.initialAmount || 0,
-        accept_amount: data.acceptanceAmount || 0,
-        discount: data.discountAmount || 0,
-        total_amount: data.totalAmount || 0,
-        accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-        pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-        bank_id: data.selectedBank,
-        status: "pending",
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-      };
+        const clientResponse = await api.createClient(clientData);
+        
+        // Check if we have a valid client response
+        if (!clientResponse.success || !clientResponse.data) {
+          throw new Error("Failed to create client account");
+        }
+        
+        console.log("Client account created successfully:", clientResponse.data);
 
-      // Log the data being sent
-      console.log("Sending registration data:", registrationData);
+        // Prepare registration data with updated fields and new client ID
+        const registrationData: CreateRegistrationRequest = {
+          // Transaction details 
+          transaction_type: "Cash",
+          transaction_id: "",
+          amount: 0,
+          transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
+          additional_info: {},
+          
+          entity_id: user.id,
+          client_id: clientResponse.data.id, // Use id from the response directly
+          registered_by: user.id,
+          prospectus_id: prospectData.id,
+          services: data.selectedServices
+            .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
+            .filter(Boolean)
+            .join(", "),
+          init_amount: data.initialAmount || 0,
+          accept_amount: data.acceptanceAmount || 0,
+          discount: data.discountAmount || 0,
+          total_amount: data.totalAmount || 0,
+          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
+          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
+          bank_id: data.selectedBank,
+          status: "pending",
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        };
 
-      // Submit registration
-      const response = await api.createRegistration(registrationData);
+        // Log the data being sent
+        console.log("Sending registration data:", registrationData);
 
-      if (response.success) {
-        await generatePDF();
-        toast.success("Quotation generated and saved successfully!");
-        router.push("/business/executive");
-      } else {
-        throw new Error("Failed to create registration");
+        // Submit registration
+        const response = await api.createRegistration(registrationData);
+
+        if (response.success) {
+          await generatePDF();
+          toast.success("Quotation generated and saved successfully!");
+          router.push("/business/executive");
+        } else {
+          throw new Error("Failed to create registration");
+        }
+      } catch (error: any) { // Change clientError to error: any
+        console.error("Client creation error:", error);
+        toast.error("Failed to create client account: " + (error.message || "Unknown error"));
+        throw error; // Propagate error to the outer catch block
       }
-    } catch (error) {
+    } catch (error: any) { // Add type annotation here as well
       console.error("Submission error:", error);
       toast.error("Failed to generate quotation");
     } finally {
@@ -696,6 +721,18 @@ function QuotationContent({ regId }: { regId: string }) {
                       </SelectOption>
                     ))}
                   </select>
+                </div>
+
+                {/* Password Field - Added */}
+                <div className="w-full space-y-2">
+                  <Input
+                    type="password"
+                    label="Create Password"
+                    placeholder="Enter password for client account"
+                    {...register("password")}
+                    isRequired
+                    description="This password will be used for the client's account"
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">

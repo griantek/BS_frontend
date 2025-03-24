@@ -274,7 +274,7 @@ interface CreateRegistrationRequest {
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
-  registered_by: string;  // Add this new field
+  registered_by: string;
 }
 
 // Add new interface for database registration
@@ -659,6 +659,22 @@ interface ApproveLeadRequest {
   proposed_service_period: string;
   services: string;
   notes: string;
+}
+
+// Add new interface for client creation
+interface CreateClientRequest {
+  prospectus_id: number;
+  email: string;
+  password: string;
+}
+
+// Update the interface to match the actual response
+interface CreateClientResponse {
+  id: string;
+  prospectus_id: number;
+  email: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1370,6 +1386,21 @@ const api = {
         }
     },
 
+    // Update the createClient method to handle the actual response format
+    async createClient(data: CreateClientRequest): Promise<ApiResponse<CreateClientResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/clients', data);
+            return {
+                success: true,
+                data: response.data,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error: any) {
+            console.error('Error creating client:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1495,6 +1526,8 @@ Editor,  // Add this export
     CreateLeadRequest,
     UpdateLeadRequest,
     TodayFollowupResponse,
-    ApproveLeadRequest
+    ApproveLeadRequest,
+    CreateClientRequest,
+    CreateClientResponse,  
 };
 export default api;
