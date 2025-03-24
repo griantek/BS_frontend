@@ -5,13 +5,13 @@ import Image from "next/image";
 import { Button, Card, CardBody, Divider } from "@nextui-org/react";
 import { motion } from "framer-motion";
 import { getUserRole } from "@/utils/authCheck";
-import { ShieldCheckIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon, UserGroupIcon, UserIcon } from "@heroicons/react/24/outline";
 
 export default function Home() {
   const router = useRouter();
   const [shouldRender, setShouldRender] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<
-    "executive" | "admin" | null
+    "executive" | "admin" | "client" | null
   >(null);
 
   useEffect(() => {
@@ -67,6 +67,10 @@ export default function Home() {
 
   const navigateToExecutive = () => {
     router.push("/business/executive/login");
+  };
+
+  const navigateToClient = () => {
+    router.push("/business/clients/login");
   };
 
   return (
@@ -125,7 +129,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="w-full grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2"
+            className="w-full grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3"
           >
             {/* Admin Card */}
             <Card
@@ -200,6 +204,46 @@ export default function Home() {
                     size="md"
                     className="w-full font-medium"
                     onPress={navigateToExecutive}
+                  >
+                    Access Executive
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Client Card - New */}
+            <Card
+              isPressable
+              className={`group transform transition-all duration-500 hover:scale-[1.02] cursor-pointer backdrop-filter backdrop-blur-sm bg-background/50 border border-white/10 ${
+                hoveredCard === "client" ? "ring-2 ring-success shadow-xl shadow-success/10" : "shadow-lg"
+              }`}
+              onMouseEnter={() => setHoveredCard("client")}
+              onMouseLeave={() => setHoveredCard(null)}
+              onPress={navigateToClient}
+            >
+              <CardBody className="p-4 sm:p-6">
+                <div className="flex flex-col">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="mb-3 sm:mb-4 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center mx-auto"
+                  >
+                    <UserIcon className="w-6 h-6 sm:w-7 sm:h-7 text-success" />
+                  </motion.div>
+                  
+                  <h2 className="text-lg sm:text-xl font-bold text-center mb-1 sm:mb-2 group-hover:text-success transition-colors">
+                    Client Portal
+                  </h2>
+                  
+                  <p className="text-default-500 text-center mb-3 sm:mb-4 text-xs sm:text-sm">
+                    Access your projects and submission tracking
+                  </p>
+                  
+                  <Button
+                    color="success"
+                    variant="shadow"
+                    size="md"
+                    className="w-full font-medium text-white"
+                    onPress={navigateToClient}
                   >
                     Access Executive
                   </Button>
