@@ -362,6 +362,13 @@ function BusinessDashboard() {
                     key={followup.id} 
                     className="p-3 bg-default-50 rounded-lg hover:bg-default-100 transition-colors cursor-pointer"
                     onClick={() => router.push(`/business/executive/leads/${followup.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        router.push(`/business/executive/leads/${followup.id}`);
+                      }
+                    }}
                   >
                     <div className="flex justify-between mb-1">
                       <h4 className="font-medium">{followup.client_name}</h4>
@@ -526,6 +533,13 @@ function BusinessDashboard() {
                   key={lead.id}
                   className="py-3 px-1 flex justify-between items-center hover:bg-default-50 cursor-pointer"
                   onClick={() => router.push(`/business/executive/leads/${lead.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      router.push(`/business/executive/leads/${lead.id}`);
+                    }
+                  }}
                 >
                   <div>
                     <h4 className="font-medium">{lead.client_name}</h4>
