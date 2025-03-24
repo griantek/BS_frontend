@@ -170,7 +170,7 @@ function AddProspect() {
       
       await api.createProspectus(prospectusData);
       toast.success('Prospect added successfully!');
-      router.replace('/business/executive'); // Immediate routing after success
+      router.replace('/business/executive/records/prospectus'); // Immediate routing after success
       
     } catch (error: any) {
       setIsSubmitting(false); // Reset submission state on error
@@ -192,7 +192,7 @@ function AddProspect() {
         isIconOnly
         variant="light"
         className="fixed top-4 left-4 z-50"
-        onClick={() => router.push('/business/executive')}
+        onClick={() => router.push('/business/executive/records/prospectus')}
       >
         <ArrowLeftIcon className="h-5 w-5" />
       </Button>

@@ -57,23 +57,25 @@ export default function ClientLoginPage() {
       setIsLoading(true);
       
       // Call the client login API endpoint
-    //   const response = await api.clientLogin(formData.email, formData.password);
+      const response = await api.clientLogin(formData.email, formData.password);
       
-    //   if (response.success) {
-    //     toast.success('Login successful');
+      if (response.success && response.data) {
+        toast.success('Login successful');
         
-    //     // Store token and user data
-    //     localStorage.setItem('client_token', response.data.token);
-    //     localStorage.setItem('client_user', JSON.stringify(response.data.user));
+        // Store token and user data
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.client));
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userRole', 'clients');
         
         // Navigate to the client dashboard
-        router.push('/business/clients/dashboard');
-    //   } else {
-    //     toast.error(response.message || 'Invalid credentials');
-    //   }
-    } catch (error) {
+        router.push('/business/clients');
+      } else {
+        toast.error('Invalid credentials');
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
+      toast.error(error.error || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

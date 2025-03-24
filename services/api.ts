@@ -196,7 +196,8 @@ interface Registration {
   year: number;
   created_at: string;
   transaction_id: number;  // Added
-  notes?: string;  // Make notes optional in the base interface
+  notes?: string;
+  client_id:string;
   prospectus: {
     id: number;
     date: string;
@@ -677,6 +678,23 @@ interface CreateClientResponse {
   updated_at: string;
 }
 
+// Add new interface for client login
+interface ClientLoginRequest {
+  email: string;
+  password: string;
+}
+
+interface ClientLoginResponse {
+  success: boolean;
+  token: string;
+  client: {
+    id: string;
+    email: string;
+    username?: string;
+    created_at: string;
+  };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -992,15 +1010,46 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            // Ensure we're using entity_id in the request
-            const response = await this.axiosInstance.post('/common/registration/create', {
-                ...data,
-                entity_id: data.entity_id,
+            // Add logging to see what's being sent
+            console.log("createRegistration data:", {
+              ...data,
+              client_id: data.client_id
             });
+            
+            if (!data.client_id) {
+              console.error("Missing client_id in registration data!");
+            }
+            
+            // Don't spread data - explicitly construct the object to ensure all fields are included
+            const requestData = {
+              transaction_type: data.transaction_type,
+              transaction_id: data.transaction_id,
+              amount: data.amount,
+              transaction_date: data.transaction_date,
+              additional_info: data.additional_info,
+              entity_id: data.entity_id,
+              client_id: data.client_id, // Ensure client_id is explicitly included
+              registered_by: data.registered_by,
+              prospectus_id: data.prospectus_id,
+              services: data.services,
+              init_amount: data.init_amount,
+              accept_amount: data.accept_amount,
+              discount: data.discount,
+              total_amount: data.total_amount,
+              accept_period: data.accept_period,
+              pub_period: data.pub_period,
+              bank_id: data.bank_id,
+              status: data.status,
+              month: data.month,
+              year: data.year,
+              assigned_to: data.assigned_to
+            };
+            
+            const response = await this.axiosInstance.post('/common/registration/create', requestData);
             return response.data;
-        } catch (error: any) {
+          } catch (error: any) {
             throw this.handleError(error);
-        }
+          }
     },
 
     // Add new method for updating registration
@@ -1401,6 +1450,30 @@ const api = {
         }
     },
 
+    // Add client login method
+    async clientLogin(email: string, password: string): Promise<ApiResponse<ClientLoginResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/clients/login', {
+                email,
+                password
+            });
+            
+            // Store client role
+            if (response.data && response.data.token) {
+                localStorage.setItem(USER_ROLE_KEY, 'clients');
+            }
+            
+            return {
+                success: true,
+                data: response.data,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error: any) {
+            console.error('Client login error:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1529,5 +1602,7 @@ Editor,  // Add this export
     ApproveLeadRequest,
     CreateClientRequest,
     CreateClientResponse,  
+    ClientLoginRequest,
+    ClientLoginResponse
 };
 export default api;

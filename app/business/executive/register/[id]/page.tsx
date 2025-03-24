@@ -291,42 +291,16 @@ function RegistrationContent({ regId }: { regId: string }) {
         return { ...baseInfo, additional_info };
       };
 
-      // Prepare registration data with explicit client_id and registered_by
-      const registrationData: CreateRegistrationRequest = {
-        ...getTransactionInfo(),
-        entity_id: user.id,
-        client_id: user.id, // Use user.id as client_id
-        registered_by: user.id, // Use user.id as registered_by
+      // First create the client account
+      const clientData = {
         prospectus_id: prospectData.id,
-        services: data.selectedServices
-          .map(
-            (id) => services.find((s) => s.id === parseInt(id))?.service_name
-          )
-          .filter(Boolean)
-          .join(", "),
-        init_amount: data.initialAmount,
-        accept_amount: data.acceptanceAmount,
-        discount: data.discountAmount,
-        assigned_to: data.assigned_to,
-        total_amount: data.totalAmount,
-        accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-        pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-        bank_id: data.selectedBank,
-        status: "registered" as const,
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        email: prospectData.email,
+        password: data.password,
       };
 
+      console.log("Creating client account with:", clientData);
+
       try {
-        // First create the client account
-        const clientData = {
-          prospectus_id: prospectData.id,
-          email: prospectData.email,
-          password: data.password,
-        };
-
-        console.log("Creating client account with:", clientData);
-
         const clientResponse = await api.createClient(clientData);
         console.log("Client response:", clientResponse);
 
@@ -335,16 +309,39 @@ function RegistrationContent({ regId }: { regId: string }) {
           throw new Error("Failed to create client account");
         }
 
-        console.log(
-          "Client account created successfully:",
-          clientResponse.data
-        );
+        console.log("Client account created successfully:", clientResponse.data);
 
-        // Then create the registration with the new client ID
-        registrationData.client_id = clientResponse.data.id; // Use id directly from the response
+        // Now prepare registration data with the new client ID
+        const registrationData: CreateRegistrationRequest = {
+          ...getTransactionInfo(),
+          entity_id: user.id,
+          client_id: clientResponse.data.id, // Make sure client_id is set here
+          registered_by: user.id,
+          prospectus_id: prospectData.id,
+          services: data.selectedServices
+            .map(
+              (id) => services.find((s) => s.id === parseInt(id))?.service_name
+            )
+            .filter(Boolean)
+            .join(", "),
+          init_amount: data.initialAmount,
+          accept_amount: data.acceptanceAmount,
+          discount: data.discountAmount,
+          assigned_to: data.assigned_to,
+          total_amount: data.totalAmount,
+          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
+          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
+          bank_id: data.selectedBank,
+          status: "registered" as const,
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        };
 
-        // Log the registration data before sending
-        console.log("Registration data being sent:", registrationData);
+        // Log the data being sent to verify client_id is included
+        console.log("Registration data being sent (with client_id):", {
+          ...registrationData,
+          client_id: registrationData.client_id // Explicitly log client_id
+        });
 
         // Send to API
         const response = await api.createRegistration(registrationData);
