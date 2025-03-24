@@ -14,7 +14,10 @@ import {
     BellAlertIcon,
     CheckIcon,
     TableCellsIcon,
-    UserPlusIcon
+    UserPlusIcon,
+    DocumentTextIcon,
+    UserGroupIcon as UserGroupIconOutline,
+    DocumentDuplicateIcon
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
@@ -42,6 +45,7 @@ export const Sidebar = () => {
     const isLeadsPath = pathname?.startsWith('/business/conversion/leads');
     const isExecutiveLeadsPath = pathname?.startsWith('/business/executive/leads');
     const isConversionPath = pathname === '/business/conversion';
+    const isRecordsPath = pathname?.startsWith('/business/executive/records');
 
     React.useEffect(() => {
         // Check if the user has permissions for the various sections
@@ -63,6 +67,14 @@ export const Sidebar = () => {
         return [
             { name: 'All Leads', icon: TableCellsIcon, path: '/business/executive/leads/all' },
             { name: 'Followups', icon: BellAlertIcon, path: '/business/executive/leads/followup' },
+        ];
+    };
+
+    // Generate Executive Records sidebar items
+    const getExecutiveRecordsSidebarItems = () => {
+        return [
+            { name: 'Prospects', icon: UserGroupIconOutline, path: '/business/executive/records/prospectus' },
+            { name: 'Registrations', icon: DocumentDuplicateIcon, path: '/business/executive/records/registration' },
         ];
     };
 
@@ -160,6 +172,14 @@ export const Sidebar = () => {
         if (path === '/business/executive/leads/followup') {
             return pathname === path || pathname.startsWith('/business/executive/leads/followup');
         }
+
+        // For executive records paths
+        if (path === '/business/executive/records/prospectus') {
+            return pathname === path || pathname.startsWith('/business/executive/records/prospectus');
+        }
+        if (path === '/business/executive/records/registration') {
+            return pathname === path || pathname.startsWith('/business/executive/records/registration');
+        }
         
         return pathname === path;
     };
@@ -201,9 +221,11 @@ export const Sidebar = () => {
         ? getLeadsSidebarItems() 
         : isExecutiveLeadsPath && role === 'executive'
             ? getExecutiveLeadsSidebarItems()
-            : isEditorPath && role === 'editor'
-                ? getEditorSidebarItems()
-                : [];
+            : isRecordsPath && role === 'executive'
+                ? getExecutiveRecordsSidebarItems()
+                : isEditorPath && role === 'editor'
+                    ? getEditorSidebarItems()
+                    : [];
 
     // If no sidebar items to show, don't render the sidebar
     if (sidebarItems.length === 0) {
@@ -211,7 +233,11 @@ export const Sidebar = () => {
     }
 
     // Get title based on section
-    const sidebarTitle = isLeadsPath || isExecutiveLeadsPath ? "Lead Management" : "Navigation";
+    const sidebarTitle = isLeadsPath || isExecutiveLeadsPath 
+        ? "Lead Management" 
+        : isRecordsPath 
+            ? "Records Management"
+            : "Navigation";
 
     return (
         <Card 
