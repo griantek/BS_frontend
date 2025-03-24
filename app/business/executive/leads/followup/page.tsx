@@ -214,7 +214,7 @@ const FollowupsPage = () => {
       if (!lead) return;
       
       await api.updateLeadStatus(leadId, {
-        followup_status: 'completed',
+        followup_status: 'converted',
         remarks: lead.remarks
       });
       
