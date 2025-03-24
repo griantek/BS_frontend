@@ -140,7 +140,7 @@ const LeadsPage = () => {
       totalLeads: total,
       newLeadsToday: newToday,
       pendingFollowup: pending,
-      newProspects: newProspects,  // Set new prospects count instead of conversion rate
+      newProspects: newProspects,
     });
   };
 
@@ -250,8 +250,7 @@ const LeadsPage = () => {
   };
 
   const hasActiveFilters = filterSource !== "" || filterDomain !== "" || filterProspectusType !== "" || searchQuery !== "";
-
-  // Add a click handler to navigate to Leads from dashboard
+  
   const navigateToLeads = () => {
     router.push('/business/conversion/leads/all');
   };
@@ -366,14 +365,6 @@ const LeadsPage = () => {
                   >
                     Refresh
                   </Button>
-                  {/* <Button
-                    size="sm"
-                    color="warning"
-                    endContent={<ChevronRightIcon className="h-4 w-4" />}
-                    onClick={() => router.push("/business/conversion/followup")}
-                  >
-                    View All
-                  </Button> */}
                 </div>
               </div>
             </div>

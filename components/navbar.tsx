@@ -268,6 +268,11 @@ export const Navbar = () => {
           label: "All Leads",
           href: "/business/conversion/leads/all",
           icon: TableCellsIcon
+        },
+        {
+          label: 'Prospects',
+          href: '/business/conversion/prospects',
+          icon: UserGroupIcon
         }
       ];
     }
