@@ -62,7 +62,16 @@ export const Navbar = () => {
     // Get username from stored auth data
     if (isLoggedIn) {
       const userData = api.getStoredAuth()?.user;
-      if (userData?.username) {
+      
+      // Check for client-specific data structure
+      const isClientUser = getUserRole() === 'clients';
+      
+      if (isClientUser && userData) {
+        // For clients, check different possible fields for the name
+        const clientName = userData.name || userData.prospectus.client_name || userData.client_name || userData.username || userData.email;
+        setUsername(clientName || "Client");
+      } else if (userData?.username) {
+        // For other roles, use the username field
         setUsername(userData.username);
       }
       
@@ -190,7 +199,7 @@ export const Navbar = () => {
   
     // Special handling for admin sections
     if (path.startsWith('/admin/')) {
-      const section = path.split('/')[2]; // Get 'users', 'clients', etc.
+      const section = path.split('/')[2]; // Get xs', 'clients', etc.
       return pathname.startsWith('/admin/' + section);
     }
     
@@ -278,7 +287,8 @@ export const Navbar = () => {
     }
     
     if (role === 'clients') {
-      return !isClientsPath ? siteConfig.clientsLinks : [];
+      // Always return client links regardless of path
+      return siteConfig.clientsLinks;
     }
     
     return [];

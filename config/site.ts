@@ -24,7 +24,9 @@ import {
   UserIcon,
   TableCellsIcon as TableCellsIconHero,
   UserPlusIcon as UserPlusIconHero,
-  BellAlertIcon
+  BellAlertIcon,
+  ClipboardDocumentListIcon,
+  ChatBubbleLeftRightIcon
 } from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
@@ -124,23 +126,18 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/clients",
-      icon: Home,
+      icon: ChartPieIcon, // Ensure you import this icon
     },
     {
-      label: "User Accounts",
-      href: "/business/clients/accounts",
-      icon: UserCircleIcon,
+      label: "Projects",
+      href: "/business/clients/projects", 
+      icon: ClipboardDocumentListIcon, // Ensure you import this icon
     },
     {
-      label: "Invitations",
-      href: "/business/clients/invitations",
-      icon: UserPlusIcon,
+      label: "Support",
+      href: "/business/clients/support",
+      icon: ChatBubbleLeftRightIcon, // Ensure you import this icon
     },
-    {
-      label: "Settings",
-      href: "/business/clients/settings",
-      icon: CogIcon,
-    }
   ],
 
   navItems: [

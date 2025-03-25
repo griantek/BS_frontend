@@ -1597,7 +1597,7 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-Editor,  // Add this export
+    Editor,  // Add this export
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,

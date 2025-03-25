@@ -33,6 +33,8 @@ export const ProfileMenu = ({ username, isMobile = false, userRole = '' }: Profi
       router.replace('/admin/login');
     } else if (storedUserRole === 'admin') {
       router.replace('/business/executive/login');
+    } else if (storedUserRole === 'clients') {
+      router.replace('/business/clients/login');
     } else {
       router.replace('/business/executive/login');
     }

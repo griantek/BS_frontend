@@ -36,7 +36,10 @@ export default function AdminLogin() {
       const userRole = getUserRole();
       if (userRole === "admin") {
         router.replace("/admin");
-      } else {
+      } else if(userRole === "clients"){
+        router.replace("/business/clients");
+      }
+      else{
         router.replace("/business");
       }
     }
