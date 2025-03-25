@@ -866,7 +866,6 @@ const api = {
     // Get single prospect by registration ID
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
-            console.log('Fetching prospect by regId:', regId);
             const response = await this.axiosInstance.get(`/entity/prospectus/register/${regId}`);
             return response.data;
         } catch (error: any) {
@@ -1020,11 +1019,6 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            // Add logging to see what's being sent
-            console.log("createRegistration data:", {
-              ...data,
-              client_id: data.client_id
-            });
             
             if (!data.client_id) {
               console.error("Missing client_id in registration data!");
@@ -1288,7 +1282,7 @@ const api = {
     // Add new method for fetching editors
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
-            console.log('Fetching all editors');
+            
             const response = await this.axiosInstance.get('/entity/editors/all');
             return response.data;
         } catch (error: any) {
@@ -1449,8 +1443,6 @@ const api = {
     async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.post('/clients', data);
-            // Log the response structure to understand it better
-            console.log("Raw client creation response:", response.data);
             
             return {
                 success: true,

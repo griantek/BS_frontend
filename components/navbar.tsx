@@ -406,7 +406,9 @@ export const Navbar = () => {
           <ProfileMenu username={username} userRole={userRole} isMobile={true} />
         )}
         {/* Only show menu toggle if there are navigation links */}
-        {hasNavigationLinks && <NavbarMenuToggle />}
+        {hasNavigationLinks && (
+          <NavbarMenuToggle className="ml-1" aria-label="Open menu" />
+        )}
       </NavbarContent>
 
       {hasNavigationLinks && (
@@ -419,12 +421,16 @@ export const Navbar = () => {
                 <NextLink 
                   className={clsx(
                     linkStyles(),
-                    "flex items-center gap-2",
+                    "flex items-center gap-2 py-3", // Added more padding for better touch targets
                     isActiveMainPath(link.href) && "text-primary font-medium"
                   )} 
                   href={link.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavigation(link.href);
+                  }}
                 >
-                  <link.icon className="w-4 h-4" />
+                  <link.icon className="w-5 h-5" /> {/* Increased icon size for better visibility */}
                   {link.label}
                 </NextLink>
               </NavbarMenuItem>

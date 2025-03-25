@@ -126,17 +126,17 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/clients",
-      icon: ChartPieIcon, // Ensure you import this icon
+      icon: ChartPieIcon, 
     },
     {
-      label: "Projects",
-      href: "/business/clients/projects", 
-      icon: ClipboardDocumentListIcon, // Ensure you import this icon
+      label: "Journals", // Single main journal entry point
+      href: "/business/clients/journals", 
+      icon: NewspaperIconHero,
     },
     {
       label: "Support",
       href: "/business/clients/support",
-      icon: ChatBubbleLeftRightIcon, // Ensure you import this icon
+      icon: ChatBubbleLeftRightIcon,
     },
   ],
 

@@ -228,8 +228,6 @@ function RegistrationContent({ regId }: { regId: string }) {
 
       const user = JSON.parse(userStr);
 
-      // Log user data to verify
-      console.log("User data:", user);
 
       // Create transaction info
       const getTransactionInfo = () => {
@@ -298,11 +296,9 @@ function RegistrationContent({ regId }: { regId: string }) {
         password: data.password,
       };
 
-      console.log("Creating client account with:", clientData);
 
       try {
         const clientResponse = await api.createClient(clientData);
-        console.log("Client response:", clientResponse);
 
         // Check if we have a valid client response
         if (!clientResponse.success) {
@@ -312,14 +308,11 @@ function RegistrationContent({ regId }: { regId: string }) {
         // Extract the client ID correctly from the nested data structure
         // The response has data.data.id structure
         const clientId = clientResponse.data?.data?.id;
-        console.log("Client ID extracted:", clientId);
 
         if (!clientId) {
           throw new Error("Client ID is missing in the response");
         }
 
-        console.log("Client account created successfully:", clientResponse.data);
-        console.log("Client ID:", clientId); // Log the correct ID
 
         // Get transaction info
         const transactionInfo = getTransactionInfo();
@@ -355,13 +348,6 @@ function RegistrationContent({ regId }: { regId: string }) {
           console.error("Client ID is still missing in registration data!");
           throw new Error("Client ID is required for registration");
         }
-
-        // Log the data being sent to verify client_id is included
-        console.log("Registration data being sent (with client_id):", {
-          ...registrationData,
-          client_id_exists: !!registrationData.client_id,
-          client_id: registrationData.client_id,
-        });
 
         // Send to API
         const response = await api.createRegistration(registrationData);

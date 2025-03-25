@@ -100,6 +100,15 @@ export const Sidebar = () => {
         return items;
     };
 
+    // Generate client sidebar items
+    const getClientSidebarItems = () => {
+        return [
+            { name: 'All Journals', icon: NewspaperIcon, path: '/business/clients/journals' },
+            { name: 'Submissions', icon: ClipboardDocumentListIcon, path: '/business/clients/journals/submissions' },
+            { name: 'Quotations', icon: DocumentTextIcon, path: '/business/clients/journals/quotations' },
+        ];
+    };
+
     // Toggle sidebar state manually (when button is clicked)
     const toggleSidebar = () => {
         // When manually toggled, update the persisted state
@@ -180,6 +189,22 @@ export const Sidebar = () => {
         if (path === '/business/executive/records/registration') {
             return pathname === path || pathname.startsWith('/business/executive/records/registration');
         }
+
+        // For client journal paths
+        if (path === '/business/clients/journals') {
+            return pathname === path || 
+                pathname.startsWith('/business/clients/journals/') && 
+                !pathname.includes('submissions') && 
+                !pathname.includes('quotations');
+        }
+        
+        if (path === '/business/clients/journals/submissions') {
+            return pathname.includes('/business/clients/journals/submissions');
+        }
+        
+        if (path === '/business/clients/journals/quotations') {
+            return pathname.includes('/business/clients/journals/quotations');
+        }
         
         return pathname === path;
     };
@@ -225,7 +250,9 @@ export const Sidebar = () => {
                 ? getExecutiveRecordsSidebarItems()
                 : isEditorPath && role === 'editor'
                     ? getEditorSidebarItems()
-                    : [];
+                    : pathname?.startsWith('/business/clients/journals') && role === 'clients'
+                        ? getClientSidebarItems()
+                        : [];
 
     // If no sidebar items to show, don't render the sidebar
     if (sidebarItems.length === 0) {
@@ -237,7 +264,9 @@ export const Sidebar = () => {
         ? "Lead Management" 
         : isRecordsPath 
             ? "Records Management"
-            : "Navigation";
+            : pathname?.startsWith('/business/clients/journals')
+                ? "Journal Management"
+                : "Navigation";
 
     return (
         <Card 

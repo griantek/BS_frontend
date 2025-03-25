@@ -276,7 +276,6 @@ function QuotationContent({ regId }: { regId: string }) {
       }
 
       const user = JSON.parse(userStr);
-      console.log("User data:", user); // Log to verify user data
 
       if (!prospectData) {
         throw new Error("Prospect data not found");
@@ -290,7 +289,6 @@ function QuotationContent({ regId }: { regId: string }) {
           password: data.password
         };
 
-        console.log("Creating client account with:", clientData);
         
         const clientResponse = await api.createClient(clientData);
         
@@ -302,13 +300,10 @@ function QuotationContent({ regId }: { regId: string }) {
         // Extract the client ID correctly from the nested data structure
         // The response has data.data.id structure
         const clientId = clientResponse.data?.data?.id;
-        console.log("Client ID extracted:", clientId);
         
         if (!clientId) {
           throw new Error("Client ID is missing in the response");
         }
-        
-        console.log("Client account created successfully:", clientResponse.data);
 
         // Prepare registration data with updated fields and new client ID
         const registrationData: CreateRegistrationRequest = {
@@ -344,13 +339,6 @@ function QuotationContent({ regId }: { regId: string }) {
           console.error("Client ID is still missing in registration data!");
           throw new Error("Client ID is required for registration");
         }
-
-        // Log the data being sent
-        console.log("Sending registration data:", {
-          ...registrationData,
-          client_id_exists: !!registrationData.client_id,
-          client_id: registrationData.client_id,
-        });
 
         // Submit registration
         const response = await api.createRegistration(registrationData);
