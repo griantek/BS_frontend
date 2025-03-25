@@ -305,17 +305,30 @@ function RegistrationContent({ regId }: { regId: string }) {
         console.log("Client response:", clientResponse);
 
         // Check if we have a valid client response
-        if (!clientResponse.success || !clientResponse.data) {
+        if (!clientResponse.success) {
           throw new Error("Failed to create client account");
         }
 
+        // Extract the client ID correctly from the nested data structure
+        // The response has data.data.id structure
+        const clientId = clientResponse.data?.data?.id;
+        console.log("Client ID extracted:", clientId);
+
+        if (!clientId) {
+          throw new Error("Client ID is missing in the response");
+        }
+
         console.log("Client account created successfully:", clientResponse.data);
+        console.log("Client ID:", clientId); // Log the correct ID
+
+        // Get transaction info
+        const transactionInfo = getTransactionInfo();
 
         // Now prepare registration data with the new client ID
         const registrationData: CreateRegistrationRequest = {
-          ...getTransactionInfo(),
+          ...transactionInfo,
           entity_id: user.id,
-          client_id: clientResponse.data.id, // Make sure client_id is set here
+          client_id: clientId, // Use the extracted client ID
           registered_by: user.id,
           prospectus_id: prospectData.id,
           services: data.selectedServices
@@ -337,10 +350,17 @@ function RegistrationContent({ regId }: { regId: string }) {
           year: new Date().getFullYear(),
         };
 
+        // Verify client_id is set before sending
+        if (!registrationData.client_id) {
+          console.error("Client ID is still missing in registration data!");
+          throw new Error("Client ID is required for registration");
+        }
+
         // Log the data being sent to verify client_id is included
         console.log("Registration data being sent (with client_id):", {
           ...registrationData,
-          client_id: registrationData.client_id // Explicitly log client_id
+          client_id_exists: !!registrationData.client_id,
+          client_id: registrationData.client_id,
         });
 
         // Send to API

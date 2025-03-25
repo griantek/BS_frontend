@@ -295,8 +295,17 @@ function QuotationContent({ regId }: { regId: string }) {
         const clientResponse = await api.createClient(clientData);
         
         // Check if we have a valid client response
-        if (!clientResponse.success || !clientResponse.data) {
+        if (!clientResponse.success) {
           throw new Error("Failed to create client account");
+        }
+        
+        // Extract the client ID correctly from the nested data structure
+        // The response has data.data.id structure
+        const clientId = clientResponse.data?.data?.id;
+        console.log("Client ID extracted:", clientId);
+        
+        if (!clientId) {
+          throw new Error("Client ID is missing in the response");
         }
         
         console.log("Client account created successfully:", clientResponse.data);
@@ -311,7 +320,7 @@ function QuotationContent({ regId }: { regId: string }) {
           additional_info: {},
           
           entity_id: user.id,
-          client_id: clientResponse.data.id, // Use id from the response directly
+          client_id: clientId, // Use the extracted client ID
           registered_by: user.id,
           prospectus_id: prospectData.id,
           services: data.selectedServices
@@ -330,8 +339,18 @@ function QuotationContent({ regId }: { regId: string }) {
           year: new Date().getFullYear(),
         };
 
+        // Verify client_id is set before sending
+        if (!registrationData.client_id) {
+          console.error("Client ID is still missing in registration data!");
+          throw new Error("Client ID is required for registration");
+        }
+
         // Log the data being sent
-        console.log("Sending registration data:", registrationData);
+        console.log("Sending registration data:", {
+          ...registrationData,
+          client_id_exists: !!registrationData.client_id,
+          client_id: registrationData.client_id,
+        });
 
         // Submit registration
         const response = await api.createRegistration(registrationData);

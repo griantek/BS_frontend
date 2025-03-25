@@ -1436,12 +1436,15 @@ const api = {
     },
 
     // Update the createClient method to handle the actual response format
-    async createClient(data: CreateClientRequest): Promise<ApiResponse<CreateClientResponse>> {
+    async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.post('/clients', data);
+            // Log the response structure to understand it better
+            console.log("Raw client creation response:", response.data);
+            
             return {
                 success: true,
-                data: response.data,
+                data: response.data, // Keep the original nested structure
                 timestamp: new Date().toISOString()
             };
         } catch (error: any) {
