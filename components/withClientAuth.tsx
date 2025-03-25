@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Spinner } from "@nextui-org/react";
+import { PageLoadingSpinner } from "@/components/LoadingSpinner";
+import { checkAuth } from "@/utils/authCheck";
 
 export function withClientAuth<P extends object>(
   Component: React.ComponentType<P>
@@ -13,29 +15,19 @@ export function withClientAuth<P extends object>(
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-      // Check if client is authenticated
-      const token = localStorage.getItem("client_token");
-      const userStr = localStorage.getItem("client_user");
-
-      if (!token || !userStr) {
-        toast.error("Please login to access this page");
-        router.push("/business/clients/login");
-        return;
-      }
-
-      // Additional validation could be added here, like token expiry check
-      // or API call to validate token on the server
-
-      setIsAuthorized(true);
+      // Use the same checkAuth function that other auth HOCs use
+      // with 'clients' as the required role
+      const isAuthed = checkAuth(router, 'clients');
+      setIsAuthorized(isAuthed);
       setIsLoading(false);
+      
+      if (!isAuthed) {
+        toast.error("Please log in to access this page");
+      }
     }, [router]);
 
     if (isLoading) {
-      return (
-        <div className="h-screen w-full flex items-center justify-center">
-          <Spinner size="lg" label="Authorizing..." />
-        </div>
-      );
+      return <PageLoadingSpinner text="Verifying your access..." />;
     }
 
     if (!isAuthorized) {
@@ -45,3 +37,5 @@ export function withClientAuth<P extends object>(
     return <Component {...props} />;
   };
 }
+
+export default withClientAuth;

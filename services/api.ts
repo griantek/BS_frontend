@@ -684,21 +684,31 @@ interface ClientLoginRequest {
   password: string;
 }
 
+// Update the ClientLoginResponse interface to match the actual response structure
 interface ClientLoginResponse {
   success: boolean;
   token: string;
-  client: {
+  data: {
     id: string;
     email: string;
-    username?: string;
+    prospectus_id?: number;
     created_at: string;
+    updated_at: string;
+    prospectus?: {
+      id: number;
+      email: string;
+      phone: string;
+      client_name: string;
+    };
   };
+  timestamp: string;
 }
 
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
-    '/admin/login'
+    '/admin/login',
+    '/clients/login'
 ];
 
 // API service
@@ -1454,7 +1464,7 @@ const api = {
     },
 
     // Add client login method
-    async clientLogin(email: string, password: string): Promise<ApiResponse<ClientLoginResponse>> {
+    async clientLogin(email: string, password: string): Promise<ClientLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/clients/login', {
                 email,
@@ -1466,11 +1476,7 @@ const api = {
                 localStorage.setItem(USER_ROLE_KEY, 'clients');
             }
             
-            return {
-                success: true,
-                data: response.data,
-                timestamp: new Date().toISOString()
-            };
+            return response.data;
         } catch (error: any) {
             console.error('Client login error:', error);
             throw this.handleError(error);

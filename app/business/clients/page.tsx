@@ -1,14 +1,23 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, CardHeader, Button, Divider } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Button, Divider, Spinner } from "@nextui-org/react";
 import { toast } from 'react-toastify';
+import { withClientAuth } from '@/components/withClientAuth';
+import api from '@/services/api';
 
 interface ClientUser {
     id: string;
     email: string;
     username?: string;
     created_at: string;
+    prospectus_id?: number;
+    prospectus?: {
+        id: number;
+        email: string;
+        phone: string;
+        client_name: string;
+    };
 }
 
 const DashboardPage = () => {
@@ -17,44 +26,33 @@ const DashboardPage = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user is logged in
-        const token = localStorage.getItem('token');
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const userRole = localStorage.getItem('userRole');
+        // Get client data from localStorage (already validated by withClientAuth)
+        const userData = api.getStoredUser();
         
-        if (!token || isLoggedIn !== 'true' || userRole !== 'clients') {
-            toast.error('Please login to access your dashboard');
+        if (userData) {
+            setClient(userData);
+        } else {
+            // This should not happen because withClientAuth would redirect,
+            // but as a fallback:
+            toast.error('Could not retrieve your profile');
             router.push('/business/clients/login');
-            return;
-        }
-
-        // Get client data
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                const userData = JSON.parse(userStr);
-                setClient(userData);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                toast.error('Error loading your profile');
-            }
         }
         
         setIsLoading(false);
     }, [router]);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userRole');
-        
+        api.clearStoredAuth();
         toast.success('Logged out successfully');
         router.push('/business/clients/login');
     };
 
     if (isLoading) {
-        return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Spinner size="lg" />
+            </div>
+        );
     }
 
     return (
@@ -69,11 +67,19 @@ const DashboardPage = () => {
             <Card className="mb-6">
                 <CardHeader className="pb-0 pt-4 px-4 flex-col items-start">
                     <h4 className="text-lg font-bold">Welcome Back!</h4>
-                    <p className="text-default-500">{client?.email}</p>
+                    <p className="text-default-500">
+                        {client?.prospectus?.client_name || client?.email}
+                    </p>
                 </CardHeader>
                 <CardBody>
-                    <p>Your client ID: {client?.id}</p>
-                    <p>Account created: {new Date(client?.created_at || '').toLocaleDateString()}</p>
+                    <div className="space-y-2">
+                        <p><span className="font-medium">Client ID:</span> {client?.id}</p>
+                        <p><span className="font-medium">Email:</span> {client?.email}</p>
+                        {client?.prospectus?.phone && (
+                            <p><span className="font-medium">Phone:</span> {client?.prospectus?.phone}</p>
+                        )}
+                        <p><span className="font-medium">Account created:</span> {new Date(client?.created_at || '').toLocaleDateString()}</p>
+                    </div>
                 </CardBody>
             </Card>
             
@@ -102,4 +108,4 @@ const DashboardPage = () => {
     )
 }
 
-export default DashboardPage
+export default withClientAuth(DashboardPage);

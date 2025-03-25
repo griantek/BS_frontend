@@ -1,12 +1,15 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardBody, Input, Button, Divider, Link, Spinner } from "@nextui-org/react";
 import { EyeIcon, EyeSlashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import api from '@/services/api';
+import { isLoggedIn, redirectToDashboard, getUserRole } from '@/utils/authCheck';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ClientLoginPage() {
   const router = useRouter();
@@ -14,6 +17,19 @@ export default function ClientLoginPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({ email: '', password: '' });
+  const { updateAuthState } = useAuth();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    if (isLoggedIn()) {
+      const userRole = getUserRole();
+      if (userRole === "clients") {
+        router.replace("/business/clients");
+      } else {
+        redirectToDashboard(router);
+      }
+    }
+  }, [router]);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
@@ -59,14 +75,19 @@ export default function ClientLoginPage() {
       // Call the client login API endpoint
       const response = await api.clientLogin(formData.email, formData.password);
       
-      if (response.success && response.data) {
+      if (response.success && response.token) {
+        document.body.style.cursor = 'wait';
         toast.success('Login successful');
         
-        // Store token and user data
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.client));
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', 'clients');
+        // Store auth data using the standard pattern from other logins
+        api.setStoredAuth(
+          response.token, 
+          response.data, // This is the client object
+          'clients' // Use 'clients' as the role
+        );
+        
+        // Update auth context
+        updateAuthState();
         
         // Navigate to the client dashboard
         router.push('/business/clients');
@@ -78,6 +99,7 @@ export default function ClientLoginPage() {
       toast.error(error.error || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
+      document.body.style.cursor = 'default';
     }
   };
 
@@ -89,6 +111,8 @@ export default function ClientLoginPage() {
         <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl opacity-50"></div>
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
       </div>
+      
+      <ToastContainer />
       
       <Button
         isIconOnly
