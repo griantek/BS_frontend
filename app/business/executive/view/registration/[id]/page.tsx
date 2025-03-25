@@ -89,6 +89,59 @@ const PAYMENT_MODE_MAP: Record<string, TransactionInfo['transaction_type']> = {
   crypto: 'Crypto',
 } as const;
 
+// Add a helper function to calculate balance amount
+const calculateBalanceAmount = (totalAmount: number, paidAmount: number = 0): number => {
+  return Math.max(0, totalAmount - paidAmount);
+};
+
+// Add a helper component to display payment status with balance
+const PaymentStatusDisplay = ({ 
+  status, 
+  totalAmount,
+  paidAmount,
+  paymentType
+}: { 
+  status: string;
+  totalAmount: number;
+  paidAmount?: number;
+  paymentType?: string;
+}) => {
+  // Calculate the balance amount
+  const balanceAmount = calculateBalanceAmount(totalAmount, paidAmount || 0);
+  const isPartiallyPaid = status === 'registered' && paidAmount && paidAmount < totalAmount;
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center">
+        <Chip
+          color={status === 'registered' ? 'success' : 'warning'}
+          variant="flat"
+          size="sm"
+        >
+          {status === 'registered' ? (
+            isPartiallyPaid ? 'Partially Paid' : 'Paid'
+          ) : 'Pending'}
+        </Chip>
+        
+        {paymentType && status === 'registered' && (
+          <Chip className="ml-2" color="primary" variant="flat" size="sm">
+            {paymentType}
+          </Chip>
+        )}
+      </div>
+      
+      {isPartiallyPaid && (
+        <div className="text-sm bg-warning-50 dark:bg-warning-900/20 p-2 rounded text-warning-700 dark:text-warning-400">
+          <div className="font-medium">Balance Due: ₹{balanceAmount.toLocaleString()}</div>
+          <div className="text-xs">
+            Paid: ₹{paidAmount.toLocaleString()} of ₹{totalAmount.toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 function RegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const { isOpen: isPaymentModalOpen, onOpen: onPaymentModalOpen, onClose: onPaymentModalClose } = useDisclosure();
@@ -525,9 +578,12 @@ function RegistrationContent({ regId }: { regId: string }) {
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                       <p className="text-sm text-gray-600 mb-1">Payment Status</p>
-                      <Chip color={registrationData.transactions.amount === registrationData.total_amount ? 'success' : 'warning'} variant="flat" className="text-lg">
-                        {registrationData.transactions.amount === registrationData.total_amount ? 'Paid' : 'Partially Paid'}
-                      </Chip>
+                      <PaymentStatusDisplay 
+                        status={registrationData.status}
+                        totalAmount={registrationData.total_amount}
+                        paidAmount={registrationData.transactions?.amount}
+                        paymentType={registrationData.transactions?.transaction_type}
+                      />
                     </div>
                   </>
                 )}

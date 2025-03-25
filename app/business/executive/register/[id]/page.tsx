@@ -63,6 +63,7 @@ interface RegistrationFormData {
   cryptoCurrency?: string;
   transactionId?: string;
   assigned_to?: string;
+  password: string; // Add password field to the interface
 }
 
 // Add this mapping outside the component
@@ -107,8 +108,9 @@ function RegistrationContent({ regId }: { regId: string }) {
       selectedBank: "",
       paymentMode: "cash",
       amount: 0,
-      transactionDate: new Date().toISOString().split('T')[0], // Set today's date as default
+      transactionDate: new Date().toISOString().split("T")[0], // Set today's date as default
       transactionId: "",
+      password: "", // Add default empty password
     },
   });
 
@@ -119,13 +121,17 @@ function RegistrationContent({ regId }: { regId: string }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [prospectResponse, servicesResponse, bankResponse, editorsResponse] =
-          await Promise.all([
-            api.getProspectusByRegId(regId),
-            api.getAllServices(),
-            api.getAllBankAccounts(),
-            api.getAllEditors(),
-          ]);
+        const [
+          prospectResponse,
+          servicesResponse,
+          bankResponse,
+          editorsResponse,
+        ] = await Promise.all([
+          api.getProspectusByRegId(regId),
+          api.getAllServices(),
+          api.getAllBankAccounts(),
+          api.getAllEditors(),
+        ]);
 
         setProspectData(prospectResponse.data);
         setServices(servicesResponse.data);
@@ -219,12 +225,12 @@ function RegistrationContent({ regId }: { regId: string }) {
         toast.error("User data not found");
         return;
       }
-  
+
       const user = JSON.parse(userStr);
-      
+
       // Log user data to verify
       console.log("User data:", user);
-  
+
       // Create transaction info
       const getTransactionInfo = () => {
         const baseInfo = {
@@ -233,9 +239,9 @@ function RegistrationContent({ regId }: { regId: string }) {
           amount: data.amount,
           transaction_date: data.transactionDate,
         };
-  
+
         let additional_info: Record<string, any> = {};
-  
+
         switch (data.paymentMode) {
           case "upi":
             additional_info = {
@@ -281,53 +287,104 @@ function RegistrationContent({ regId }: { regId: string }) {
             };
             break;
         }
-  
+
         return { ...baseInfo, additional_info };
       };
-  
-      // Prepare registration data with explicit client_id and registered_by
-      const registrationData: CreateRegistrationRequest = {  
-        ...getTransactionInfo(),
-        entity_id: user.id,
-        client_id: user.id, // Use user.id as client_id
-        registered_by: user.id, // Use user.id as registered_by
+
+      // First create the client account
+      const clientData = {
         prospectus_id: prospectData.id,
-        services: data.selectedServices
-          .map(
-            (id) => services.find((s) => s.id === parseInt(id))?.service_name
-          )
-          .filter(Boolean)
-          .join(", "),
-        init_amount: data.initialAmount,
-        accept_amount: data.acceptanceAmount,
-        discount: data.discountAmount,
-        assigned_to: data.assigned_to,
-        total_amount: data.totalAmount,
-        accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-        pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-        bank_id: data.selectedBank,
-        status: 'registered' as const,
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        email: prospectData.email,
+        password: data.password,
       };
-  
-      // Log the registration data before sending
-      console.log("Registration data being sent:", registrationData);
-  
-      // Send to API
-      const response = await api.createRegistration(registrationData);
-      if (response.success) {
-        toast.success('Registration completed successfully!');
-        router.push('/business/executive');
-      } else {
-        toast.error('Registration failed');
+
+      console.log("Creating client account with:", clientData);
+
+      try {
+        const clientResponse = await api.createClient(clientData);
+        console.log("Client response:", clientResponse);
+
+        // Check if we have a valid client response
+        if (!clientResponse.success) {
+          throw new Error("Failed to create client account");
+        }
+
+        // Extract the client ID correctly from the nested data structure
+        // The response has data.data.id structure
+        const clientId = clientResponse.data?.data?.id;
+        console.log("Client ID extracted:", clientId);
+
+        if (!clientId) {
+          throw new Error("Client ID is missing in the response");
+        }
+
+        console.log("Client account created successfully:", clientResponse.data);
+        console.log("Client ID:", clientId); // Log the correct ID
+
+        // Get transaction info
+        const transactionInfo = getTransactionInfo();
+
+        // Now prepare registration data with the new client ID
+        const registrationData: CreateRegistrationRequest = {
+          ...transactionInfo,
+          entity_id: user.id,
+          client_id: clientId, // Use the extracted client ID
+          registered_by: user.id,
+          prospectus_id: prospectData.id,
+          services: data.selectedServices
+            .map(
+              (id) => services.find((s) => s.id === parseInt(id))?.service_name
+            )
+            .filter(Boolean)
+            .join(", "),
+          init_amount: data.initialAmount,
+          accept_amount: data.acceptanceAmount,
+          discount: data.discountAmount,
+          assigned_to: data.assigned_to,
+          total_amount: data.totalAmount,
+          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
+          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
+          bank_id: data.selectedBank,
+          status: "registered" as const,
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        };
+
+        // Verify client_id is set before sending
+        if (!registrationData.client_id) {
+          console.error("Client ID is still missing in registration data!");
+          throw new Error("Client ID is required for registration");
+        }
+
+        // Log the data being sent to verify client_id is included
+        console.log("Registration data being sent (with client_id):", {
+          ...registrationData,
+          client_id_exists: !!registrationData.client_id,
+          client_id: registrationData.client_id,
+        });
+
+        // Send to API
+        const response = await api.createRegistration(registrationData);
+        if (response.success) {
+          toast.success("Registration completed successfully!");
+          router.push("/business/executive");
+        } else {
+          toast.error("Registration failed");
+        }
+      } catch (error: any) {
+        // Change clientError to error: any
+        console.error("Client creation error:", error);
+        toast.error(
+          "Failed to create client account: " +
+            (error.message || "Unknown error")
+        );
+        throw error; // Propagate error to the outer catch block
       }
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("Failed to complete registration");
     }
   };
-  
 
   const renderPaymentFields = () => {
     const paymentMode = watch("paymentMode");
@@ -474,7 +531,9 @@ function RegistrationContent({ regId }: { regId: string }) {
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
-              <h2 className="text-xl md:text-2xl font-bold">Prospect Details</h2>
+              <h2 className="text-xl md:text-2xl font-bold">
+                Prospect Details
+              </h2>
             </CardHeader>
             <Divider />
             <CardBody className="space-y-4">
@@ -522,11 +581,16 @@ function RegistrationContent({ regId }: { regId: string }) {
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
-              <h2 className="text-xl md:text-2xl font-bold">Registration Form</h2>
+              <h2 className="text-xl md:text-2xl font-bold">
+                Registration Form
+              </h2>
             </CardHeader>
             <Divider />
             <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4 md:space-y-6"
+              >
                 {/* Service Selection */}
                 <div className="space-y-4">
                   <select
@@ -536,14 +600,20 @@ function RegistrationContent({ regId }: { regId: string }) {
                   >
                     <option value="">Add a service</option>
                     {services.map((service) => (
-                      <option 
-                      key={service.id} 
-                      value={service.id}
-                      disabled={watch('selectedServices').includes(service.id.toString())}
-                    >
-                      {service.service_name} - ₹{service.fee.toLocaleString()}
-                      {watch('selectedServices').includes(service.id.toString()) ? ' (Selected)' : ''}
-                    </option>
+                      <option
+                        key={service.id}
+                        value={service.id}
+                        disabled={watch("selectedServices").includes(
+                          service.id.toString()
+                        )}
+                      >
+                        {service.service_name} - ₹{service.fee.toLocaleString()}
+                        {watch("selectedServices").includes(
+                          service.id.toString()
+                        )
+                          ? " (Selected)"
+                          : ""}
+                      </option>
                     ))}
                   </select>
 
@@ -671,14 +741,18 @@ function RegistrationContent({ regId }: { regId: string }) {
                     <Input
                       type="date"
                       label="Transaction Date"
-                      defaultValue={new Date().toISOString().split('T')[0]}
-                      {...register('transactionDate', { required: 'Transaction date is required' })}
+                      defaultValue={new Date().toISOString().split("T")[0]}
+                      {...register("transactionDate", {
+                        required: "Transaction date is required",
+                      })}
                     />
                     <Input
                       type="number"
                       label="Amount Paid (₹)"
                       required
-                      {...register('amount', { required: 'Amount is required' })}
+                      {...register("amount", {
+                        required: "Amount is required",
+                      })}
                     />
                   </div>
 
@@ -686,10 +760,26 @@ function RegistrationContent({ regId }: { regId: string }) {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Password Field - Added */}
+                  <div className="w-full space-y-2">
+                    <Input
+                      type="password"
+                      label="Create Password"
+                      placeholder="Enter password for client account"
+                      {...register("password", {
+                        required: "Password is required",
+                      })}
+                      isRequired
+                      description="This password will be used for the client's account"
+                    />
+                  </div>
+
                   {/* Add this before the submit button */}
                   <select
                     className="w-full p-2 rounded-lg border border-gray-300"
-                    {...register("assigned_to", { required: "Editor assignment is required" })}
+                    {...register("assigned_to", {
+                      required: "Editor assignment is required",
+                    })}
                   >
                     <option value="">Select Editor to Assign</option>
                     {editors.map((editor) => (

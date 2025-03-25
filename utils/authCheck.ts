@@ -4,9 +4,10 @@ const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
-export const getUserRole = (): 'editor' | 'executive' | 'admin' | null => {
+// Update role type to include new roles
+export const getUserRole = (): 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'admin' | null;
+  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | null;
 };
 
 export const isLoggedIn = (): boolean => {
@@ -18,11 +19,13 @@ export const isLoggedIn = (): boolean => {
 
 export const redirectToLogin = (router: AppRouterInstance, userRole?: string) => {
   if (typeof window === 'undefined') return;
+  
+  // All business entities use the same login page
   const path = userRole === 'admin' ? '/admin/login' : '/business/executive/login';
   router.replace(path);
 };
 
-export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'admin'): boolean => {
+export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'admin' | 'leads' | 'clients'): boolean => {
   if (typeof window === 'undefined') return false;
   
   const token = localStorage.getItem(TOKEN_KEY);
@@ -47,6 +50,12 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
       case 'admin':
         router.push('/admin');
         break;
+      case 'leads':
+        router.push('/business/conversion');
+        break;
+      case 'clients':
+        router.push('/business/clients');
+        break;
       default:
         router.push('/');
     }
@@ -67,6 +76,12 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
       break;
     case 'admin':
       router.replace('/admin');
+      break;
+    case 'leads':
+      router.replace('/business/conversion');
+      break;
+    case 'clients':
+      router.replace('/business/clients');
       break;
     default:
       router.replace('/');

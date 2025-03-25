@@ -26,4 +26,5 @@ export interface QuotationFormData {
   publicationPeriodUnit: PeriodUnit;  // Updated to use PeriodUnit type
   selectedBank: string;
   transactionDate:string;
+  password:string;
 }

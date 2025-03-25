@@ -14,12 +14,21 @@ export default function BusinessPage() {
     }
 
     // Redirect based on role
-    if (userRole === 'editor') {
-      router.replace('/business/editor');
-    } else if (userRole === 'executive') {
-      router.replace('/business/executive');
-    } else {
-      router.replace('/business/executive/login');
+    switch (userRole) {
+      case 'editor':
+        router.replace('/business/editor');
+        break;
+      case 'executive':
+        router.replace('/business/executive');
+        break;
+      case 'leads':
+        router.replace('/business/conversion');
+        break;
+      case 'clients':
+        router.replace('/business/clients');
+        break;
+      default:
+        router.replace('/business/executive/login');
     }
   }, [router]);
 

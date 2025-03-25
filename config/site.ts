@@ -1,14 +1,37 @@
 import { Home, Users, Building2, Banknote, Briefcase, BookOpen } from "lucide-react";
 import {
   NewspaperIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  UserGroupIcon,
+  ClipboardDocumentCheckIcon,
+  UserCircleIcon,
+  CogIcon,
+  UserPlusIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { 
+  ChartPieIcon, 
+  UsersIcon, 
+  ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconHero, 
+  CubeIcon, 
+  CreditCardIcon, 
+  BookOpenIcon,
+  WrenchScrewdriverIcon,
+  UserGroupIcon as UserGroupIconHero,
+  NewspaperIcon as NewspaperIconHero,
+  BuildingOfficeIcon,
+  DocumentTextIcon,
+  UserIcon,
+  TableCellsIcon as TableCellsIconHero,
+  UserPlusIcon as UserPlusIconHero,
+  BellAlertIcon
+} from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Griantek Business Management",
-  description: "Manage your business operations",
+  name: "Griantek Business Management System",
+  description: "A comprehensive solution for managing your business operations.",
   
   // Super Admin Navigation
   adminLinks: [
@@ -49,12 +72,17 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/executive",
-      icon: Home,
+      icon: ChartPieIcon,
+    },
+    {
+      label: "Leads", // New tab for leads in executive section
+      href: "/business/executive/leads/all",
+      icon: UserPlusIcon,
     },
     {
       label: "Records",
       href: "/business/executive/records",
-      icon: TableCellsIcon,
+      icon: DocumentTextIcon,
     }
   ],
 
@@ -69,6 +97,49 @@ export const siteConfig = {
       label: "Journals",
       href: "/business/editor/journals",
       icon: NewspaperIcon,
+    }
+  ],
+
+  // Leads Navigation - Add navigation for the leads role
+  leadsLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/conversion",
+      icon: ChartPieIcon
+    },
+    {
+      label: "All Leads",
+      href: "/business/conversion/leads/all",
+      icon: TableCellsIconHero,
+    },
+    {
+      label: "Follow-ups",
+      href: "/business/conversion/followup",
+      icon: BellAlertIcon
+    }
+  ],
+
+  // Users Navigation - Add navigation for the users role
+  clientsLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/clients",
+      icon: Home,
+    },
+    {
+      label: "User Accounts",
+      href: "/business/clients/accounts",
+      icon: UserCircleIcon,
+    },
+    {
+      label: "Invitations",
+      href: "/business/clients/invitations",
+      icon: UserPlusIcon,
+    },
+    {
+      label: "Settings",
+      href: "/business/clients/settings",
+      icon: CogIcon,
     }
   ],
 

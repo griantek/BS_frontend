@@ -18,7 +18,7 @@ interface ExecutiveLoginResponse {
         id: string;
         username: string;
         email: string;
-        entity_type: 'Editor' | 'Executive';
+        entity_type: 'Editor' | 'Executive' | 'Leads' | 'clients'; // Add new entity types
         role: {
             id: number;
             name: string;
@@ -196,7 +196,8 @@ interface Registration {
   year: number;
   created_at: string;
   transaction_id: number;  // Added
-  notes?: string;  // Make notes optional in the base interface
+  notes?: string;
+  client_id:string;
   prospectus: {
     id: number;
     date: string;
@@ -274,7 +275,7 @@ interface CreateRegistrationRequest {
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
-  registered_by: string;  // Add this new field
+  registered_by: string;
 }
 
 // Add new interface for database registration
@@ -571,6 +572,129 @@ interface ProspectusResponse {
   per_page: number;
 }
 
+// Add new interfaces for leads
+interface Lead {
+  id: number;
+  lead_source: string;
+  client_name: string;
+  phone_number: string;
+  country: string;
+  domain:string;
+  state: string;
+  requirement: string;
+  detailed_requirement?: string;
+  remarks?: string;
+  date: string;
+  followup_date: string;
+  created_at: string;
+  updated_at: string;
+  status?: string;
+  prospectus_type:string;
+  assigned_to?: string;
+  entity_id?: string;
+  research_area?: string;
+  title?: string;
+  degree?: string;
+  university?: string;
+  attended?: boolean;
+  followup_status?: string;
+}
+
+interface CreateLeadRequest {
+  lead_source: string;
+  client_name: string;
+  phone_number: string; // Changed from contact_number
+  country: string;
+  state: string;
+  domain: string; // Changed from main_subject
+  requirement: string; // Changed from requirements
+  detailed_requirement?: string;
+  remarks?: string; // Changed from customer_remarks
+  followup_date?: string;
+  prospectus_type?: string;
+  assigned_to?: string; 
+  created_by?: string; // Added to match schema
+  followup_status?: string; // Changed from boolean to string
+  attended?: boolean; // Added to match schema
+  // Fields for form handling only (not sent to API)
+  other_source?: string;
+  other_domain?: string;
+  other_service?: string;
+}
+
+interface UpdateLeadRequest {
+  lead_source?: string;
+  client_name?: string;
+  phone_number?: string;
+  country?: string;
+  prospectus_type?:string;
+  state?: string;
+  domain?: string;
+  requirement?: string;
+  detailed_requirement?: string;
+  remarks?: string;
+  followup_date?: string;
+  status?: string;
+  assigned_to?: string;
+  followup_status?:string;
+}
+
+interface TodayFollowupResponse {
+  data: Lead[];
+  count: number;
+  today: string;
+}
+
+// Add this new interface for the lead approval request
+interface ApproveLeadRequest {
+  leads_id: number;
+  client_name: string;
+  phone: string;
+  email: string;
+  state: string;
+  country: string;
+  requirement: string;
+  assigned_to: string;
+  reg_id: string;
+  tech_person: string;
+  proposed_service_period: string;
+  services: string;
+  notes: string;
+}
+
+// Add new interface for client creation
+interface CreateClientRequest {
+  prospectus_id: number;
+  email: string;
+  password: string;
+}
+
+// Update the interface to match the actual response
+interface CreateClientResponse {
+  id: string;
+  prospectus_id: number;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Add new interface for client login
+interface ClientLoginRequest {
+  email: string;
+  password: string;
+}
+
+interface ClientLoginResponse {
+  success: boolean;
+  token: string;
+  client: {
+    id: string;
+    email: string;
+    username?: string;
+    created_at: string;
+  };
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -638,6 +762,32 @@ const api = {
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/entity/login', credentials);
+            
+            // Extract the entity type from the response for role-based redirection
+            const entityType = response.data.entities?.entity_type;
+            let role = 'executive'; // Default role
+            
+            // Map entity types to roles
+            switch(entityType?.toLowerCase()) {
+                case 'editor':
+                    role = 'editor';
+                    break;
+                case 'executive':
+                    role = 'executive';
+                    break;
+                case 'leads':
+                    role = 'leads';
+                    break;
+                case 'clients':
+                    role = 'clients';
+                    break;
+                default:
+                    role = 'executive'; // Fallback
+            }
+            
+            // Store the role in local storage for later use
+            localStorage.setItem(USER_ROLE_KEY, role);
+            
             return response.data;
         } catch (error: any) {
             throw error;
@@ -647,6 +797,10 @@ const api = {
     async loginAdmin(credentials: LoginCredentials): Promise<AdminLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/admin/login', credentials);
+            
+            // The server now returns role details in the admin response
+            localStorage.setItem(USER_ROLE_KEY, 'admin');
+            
             return response.data;
         } catch (error: any) {
             // Don't transform the error, let the component handle it
@@ -780,7 +934,7 @@ const api = {
     },
 
     // Add new method for getting executives
-    async getAllExecutives(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
+    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
         try {
             // Try one of these endpoints based on your backend structure:
             const response = await this.axiosInstance.get('/entity/all');
@@ -856,15 +1010,46 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            // Ensure we're using entity_id in the request
-            const response = await this.axiosInstance.post('/common/registration/create', {
-                ...data,
-                entity_id: data.entity_id,
+            // Add logging to see what's being sent
+            console.log("createRegistration data:", {
+              ...data,
+              client_id: data.client_id
             });
+            
+            if (!data.client_id) {
+              console.error("Missing client_id in registration data!");
+            }
+            
+            // Don't spread data - explicitly construct the object to ensure all fields are included
+            const requestData = {
+              transaction_type: data.transaction_type,
+              transaction_id: data.transaction_id,
+              amount: data.amount,
+              transaction_date: data.transaction_date,
+              additional_info: data.additional_info,
+              entity_id: data.entity_id,
+              client_id: data.client_id, // Ensure client_id is explicitly included
+              registered_by: data.registered_by,
+              prospectus_id: data.prospectus_id,
+              services: data.services,
+              init_amount: data.init_amount,
+              accept_amount: data.accept_amount,
+              discount: data.discount,
+              total_amount: data.total_amount,
+              accept_period: data.accept_period,
+              pub_period: data.pub_period,
+              bank_id: data.bank_id,
+              status: data.status,
+              month: data.month,
+              year: data.year,
+              assigned_to: data.assigned_to
+            };
+            
+            const response = await this.axiosInstance.post('/common/registration/create', requestData);
             return response.data;
-        } catch (error: any) {
+          } catch (error: any) {
             throw this.handleError(error);
-        }
+          }
     },
 
     // Add new method for updating registration
@@ -1108,6 +1293,24 @@ const api = {
         }
     },
 
+    // Add new method for fetching editors
+    async getAllExecutives(): Promise<ApiResponse<Editor[]>> {
+        try {
+            console.log('Fetching all executives');
+            const response = await this.axiosInstance.get('/entity/exec/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllExecutives:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method to get prospectus assist data
     async getProspectusAssistData(prospectusId: number): Promise<ApiResponse<ProspectusAssistData>> {
         try {
@@ -1136,6 +1339,144 @@ const api = {
         }
     },
 
+    // Leads endpoints
+    async getAllLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+    
+    async getAllUnapprovedLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads/unapproved');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getLeadById(id: number): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async getLeadsBySource(source: string): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/source/${source}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async createLead(data: CreateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.post('/leads', data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async updateLead(id: number, data: UpdateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.put(`/leads/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for updating lead status
+    async updateLeadStatus(id: number, data: UpdateLeadRequest): Promise<ApiResponse<Lead>> {
+        try {
+            const response = await this.axiosInstance.put(`/leads/${id}/status`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    async deleteLead(id: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/leads/${id}`);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for approving lead as prospect
+    async approveLeadAsProspect(id: number, data: ApproveLeadRequest): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post(`/leads/${id}/approve`, data);
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new function to get today's follow-up leads
+    async getTodayFollowupLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads/today-followup');
+            // Return the response data directly, which contains the nested data structure
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching today followups:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update the createClient method to handle the actual response format
+    async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post('/clients', data);
+            // Log the response structure to understand it better
+            console.log("Raw client creation response:", response.data);
+            
+            return {
+                success: true,
+                data: response.data, // Keep the original nested structure
+                timestamp: new Date().toISOString()
+            };
+        } catch (error: any) {
+            console.error('Error creating client:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add client login method
+    async clientLogin(email: string, password: string): Promise<ApiResponse<ClientLoginResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/clients/login', {
+                email,
+                password
+            });
+            
+            // Store client role
+            if (response.data && response.data.token) {
+                localStorage.setItem(USER_ROLE_KEY, 'clients');
+            }
+            
+            return {
+                success: true,
+                data: response.data,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error: any) {
+            console.error('Client login error:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1145,7 +1486,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients') {
         if (!token || !role) {
             throw new Error('Invalid auth data: missing token or role');
         }
@@ -1234,7 +1575,7 @@ export type {
     Service, 
     CreateServiceRequest, 
     UpdateServiceRequest,
-    Executive, 
+    Executive,
     BankAccount, 
     Registration, 
     CreateRegistrationRequest,
@@ -1250,12 +1591,21 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-    Editor,  // Add this export
+Editor,  // Add this export
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
     DashboardStats,
     ActivityItem,
     Permission,  // Add this export
+    Lead,
+    CreateLeadRequest,
+    UpdateLeadRequest,
+    TodayFollowupResponse,
+    ApproveLeadRequest,
+    CreateClientRequest,
+    CreateClientResponse,  
+    ClientLoginRequest,
+    ClientLoginResponse
 };
 export default api;

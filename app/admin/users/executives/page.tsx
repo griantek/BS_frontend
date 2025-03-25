@@ -80,7 +80,7 @@ const ExecutivesPage: React.FC = () => {
                     return;
                 }
 
-                const response = await api.getAllExecutives();
+                const response = await api.getAllEntities();
                 setExecutives(response.data);
             } catch (error: any) {
                 const errorMsg = error?.response?.data?.message || 'Failed to fetch executives';
@@ -176,7 +176,7 @@ const ExecutivesPage: React.FC = () => {
             await api.axiosInstance.put(`/entity/${selectedExecutive.id}`, updateData);
             
             // Refresh executives list
-            const response = await api.getAllExecutives();
+            const response = await api.getAllEntities();
             setExecutives(response.data);
             
             toast.success('Executive updated successfully');
@@ -248,8 +248,11 @@ const ExecutivesPage: React.FC = () => {
                                             <Chip
                                                 variant="flat"
                                                 color={
-                                                    executive.role_details?.name.toLowerCase().includes('admin') ? 'danger' :
-                                                    executive.role_details?.entity_type === 'Editor' ? 'warning' : 'primary'
+                                                    executive.role_details?.entity_type === 'SupAdmin' ? 'danger' :
+                                                    executive.role_details?.entity_type === 'Admin' ? 'primary' :
+                                                    executive.role_details?.entity_type === 'Editor' ? 'warning' : 
+                                                    executive.role_details?.entity_type === 'Executive' ? 'success' : 
+                                                    'default'  
                                                 }
                                                 size="sm"
                                             >

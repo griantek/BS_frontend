@@ -18,7 +18,7 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { BellIcon } from "@heroicons/react/24/outline";
+import { BellIcon, ChartPieIcon, UsersIcon, UserGroupIcon, DocumentTextIcon, UserIcon, BriefcaseIcon, TableCellsIcon, UserPlusIcon, BellAlertIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";
@@ -40,7 +40,7 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isAdmin, isExecutive } = useAuth();
+  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients } = useAuth();
   const [notificationCount, setNotificationCount] = React.useState(5);
   const { setIsNavigating } = useNavigationLoading();
   const [username, setUsername] = React.useState<string>("");
@@ -48,14 +48,15 @@ export const Navbar = () => {
   const [hasRecordsAccess, setHasRecordsAccess] = React.useState(false);
   const [hasDashboardPermission, setHasDashboardPermission] = React.useState(false);
   const [hasNotificationsPermission, setHasNotificationsPermission] = React.useState(false);
-  const [showUsersNav, setShowUsersNav] = React.useState(false); // Default to false
-  const [showServicesTab, setShowServicesTab] = React.useState(false); // Default to false
-  const [showClientsTab, setShowClientsTab] = React.useState(false); // Default to false
-  // Add new permission state variables for finance and department tabs
+  const [showUsersNav, setShowUsersNav] = React.useState(false); 
+  const [showServicesTab, setShowServicesTab] = React.useState(false); 
+  const [showClientsTab, setShowClientsTab] = React.useState(false); 
   const [showFinanceTab, setShowFinanceTab] = React.useState(false);
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
+  const isLeadsPath = pathname?.startsWith('/business/conversion');
+  const isClientsPath = pathname?.startsWith('/business/clients');
 
   React.useEffect(() => {
     // Get username from stored auth data
@@ -153,13 +154,17 @@ export const Navbar = () => {
     if (isAdmin) {
       path = '/admin';
     } else if (isExecutive) {
-      // If executive has dashboard permission, go to dashboard,
-      // otherwise go to records if they have records access
       path = hasDashboardPermission 
         ? '/business/executive'
         : hasRecordsAccess 
           ? '/business/executive/records'
-          : '/business/executive'; // Fallback to dashboard if no records access
+          : '/business/executive'; 
+    } else if (isEditor) {
+      path = '/business/editor';
+    } else if (isLeads) {
+      path = '/business/conversion';
+    } else if (isClients) {
+      path = '/business/clients';
     }
     
     setIsNavigating(true);
@@ -176,8 +181,10 @@ export const Navbar = () => {
   };
 
   const isActiveMainPath = (path: string) => {
-    // For dashboard pages, only match exact path
-    if (path === '/admin' || path === '/business/executive' || path === '/business/editor') {
+    // Special case for dashboard/index routes to avoid conflict with sub-routes
+    if (path === '/admin' || path === '/business/executive' || 
+        path === '/business/editor' || path === '/business/conversion' || 
+        path === '/business/clients') {
       return pathname === path;
     }
   
@@ -186,21 +193,28 @@ export const Navbar = () => {
       const section = path.split('/')[2]; // Get 'users', 'clients', etc.
       return pathname.startsWith('/admin/' + section);
     }
+    
+    // Special handling for leads - highlight "All Leads" when on followup pages
+    if (path === '/business/conversion/leads/all') {
+      return pathname === path || 
+             pathname.startsWith('/business/conversion/leads/followup') ||
+             pathname.match(/^\/business\/conversion\/leads\/\d+$/);
+    }
   
     // For other sections, match the section prefix
-    return pathname.startsWith(path) && !pathname.match(/^\/(admin|executive|editor)$/);
+    return pathname.startsWith(path) && !pathname.match(/^\/(admin|business\/executive|business\/editor|business\/leads|business\/clients)$/);
   };
 
   const getNavigationLinks = () => {
-    // For executive role, filter links based on permissions
-    if (isExecutive) {
+    // Get role from localStorage for more reliable role detection
+    const role = getUserRole();
+    
+    if (role === 'executive') {
       return siteConfig.executiveLinks.filter(link => {
-        // Filter out the dashboard link if user doesn't have permission
         if (link.href === '/business/executive') {
           return hasDashboardPermission;
         }
         
-        // Filter out the records link if user doesn't have permission
         if (link.href === '/business/executive/records') {
           return hasRecordsAccess;
         }
@@ -209,47 +223,62 @@ export const Navbar = () => {
       });
     }
     
-    // For admin role
-    if (isAdmin) {
-      // Start with all admin links
+    if (role === 'admin') {
       const adminLinks = [...siteConfig.adminLinks];
       
-      // Filter out links based on permissions
       return adminLinks.filter(link => {
-        // Users section
         if (link.href.includes('/admin/users')) {
           return showUsersNav;
         }
         
-        // Services section
         if (link.href.includes('/admin/services')) {
           return showServicesTab;
         }
         
-        // Clients section
         if (link.href.includes('/admin/clients')) {
           return showClientsTab;
         }
         
-        // Finance section - new permission check
         if (link.href.includes('/admin/finance')) {
           return showFinanceTab;
         }
         
-        // Department section - new permission check
         if (link.href.includes('/admin/department')) {
           return showDepartmentTab;
         }
         
-        // All other tabs are shown by default
         return true;
       });
     }
     
-    const role = getUserRole();
     if (role === 'editor') {
-      // Only return links if we're in mobile view or not in editor section
       return !isEditorPath ? siteConfig.editorLinks : [];
+    }
+    
+    // Update to remove links from navbar since they'll be in the sidebar now
+    if (role === 'leads') {
+      // Return Dashboard and All Leads links for the navbar
+      return [
+        {
+          label: "Dashboard",
+          href: "/business/conversion",
+          icon: ChartPieIcon
+        },
+        {
+          label: "All Leads",
+          href: "/business/conversion/leads/all",
+          icon: TableCellsIcon
+        },
+        {
+          label: 'Prospects',
+          href: '/business/conversion/prospects',
+          icon: UserGroupIcon
+        }
+      ];
+    }
+    
+    if (role === 'clients') {
+      return !isClientsPath ? siteConfig.clientsLinks : [];
     }
     
     return [];
@@ -302,6 +331,10 @@ export const Navbar = () => {
     />
   );
 
+  // Get navigation links with proper type checking
+  const navigationLinks = getNavigationLinks();
+  const hasNavigationLinks = navigationLinks.length > 0;
+
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
@@ -321,9 +354,9 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        {isLoggedIn && (
+        {isLoggedIn && hasNavigationLinks && (
           <NavbarItem className="hidden sm:flex gap-4">
-            {getNavigationLinks().map((link) => (
+            {navigationLinks.map((link) => (
               // Add null check for link before rendering
               link && (
                 <NextLink
@@ -362,33 +395,33 @@ export const Navbar = () => {
         {isLoggedIn && username && (
           <ProfileMenu username={username} userRole={userRole} isMobile={true} />
         )}
-        <NavbarMenuToggle />
+        {/* Only show menu toggle if there are navigation links */}
+        {hasNavigationLinks && <NavbarMenuToggle />}
       </NavbarContent>
 
-      <NavbarMenu>
-        {/* Filter the navigation links for mobile menu as well */}
-        {isLoggedIn && (getUserRole() === 'editor' ? 
-          siteConfig.editorLinks : 
-          getNavigationLinks()
-        ).map((link) => (
-          // Add null check for link before rendering
-          link && (
-            <NavbarMenuItem key={link.href}>
-              <NextLink 
-                className={clsx(
-                  linkStyles(),
-                  "flex items-center gap-2",
-                  isActiveMainPath(link.href) && "text-primary font-medium"
-                )} 
-                href={link.href}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </NextLink>
-            </NavbarMenuItem>
-          )
-        ))}
-      </NavbarMenu>
+      {hasNavigationLinks && (
+        <NavbarMenu>
+          {/* Filter the navigation links for mobile menu as well */}
+          {isLoggedIn && navigationLinks.map((link) => (
+            // Add null check for link before rendering
+            link && (
+              <NavbarMenuItem key={link.href}>
+                <NextLink 
+                  className={clsx(
+                    linkStyles(),
+                    "flex items-center gap-2",
+                    isActiveMainPath(link.href) && "text-primary font-medium"
+                  )} 
+                  href={link.href}
+                >
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </NextLink>
+              </NavbarMenuItem>
+            )
+          ))}
+        </NavbarMenu>
+      )}
     </HeroUINavbar>
   );
 };
