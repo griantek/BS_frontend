@@ -1,40 +1,56 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Spinner } from '@heroui/react';
-import { checkAuth } from '@/utils/authCheck';
+import { PageLoadingSpinner } from '@/components/LoadingSpinner';
+import api from '@/services/api';
 
 // Higher Order Component for Author-specific authenticated pages
-export default function withAuthorAuth<P extends object>(
-  Component: React.ComponentType<P>
-): React.FC<P> {
-  return function AuthorProtectedComponent(props: P) {
+const withAuthorAuth = (Component: React.ComponentType<any>) => {
+  const AuthWrapper = (props: any) => {
     const router = useRouter();
-    const { isLoggedIn, isAuthor } = useAuth();
-    const [loading, setLoading] = React.useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
-      const checkAuthentication = () => {
-        // Use the checkAuth utility to verify author role access
-        if (!checkAuth(router, 'author')) {
-          return;
+      const checkAuth = async () => {
+        try {
+          // Get token from storage
+          const token = api.getStoredToken();
+          
+          // Get user role
+          const userRole = localStorage.getItem('userRole');
+          
+          if (!token || userRole !== 'author') {
+            // Redirect to login if not authenticated or not an author
+            router.push('/business/executive/login');
+            return;
+          }
+          
+          // User is authenticated and is an author
+          setIsAuthorized(true);
+        } catch (error) {
+          console.error('Auth check error:', error);
+          router.push('/business/executive/login');
+        } finally {
+          setIsLoading(false);
         }
-        setLoading(false);
       };
 
-      checkAuthentication();
-    }, [router, isLoggedIn, isAuthor]);
+      checkAuth();
+    }, [router]);
 
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Spinner size="lg" color="secondary" />
-        </div>
-      );
+    if (isLoading) {
+      return <PageLoadingSpinner text="Checking authentication..." />;
     }
 
-    // Render the component once authentication is confirmed
+    if (!isAuthorized) {
+      return null; // Will be redirected by the useEffect
+    }
+
     return <Component {...props} />;
   };
-}
+
+  return AuthWrapper;
+};
+
+export default withAuthorAuth;

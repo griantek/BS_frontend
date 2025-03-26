@@ -712,6 +712,41 @@ interface ClientPendingRegistrationResponse {
   timestamp: string;
 }
 
+// Add new interfaces for author tasks
+interface AuthorTask {
+  id: number;
+  title: string;
+  description: string;
+  journal_name: string;
+  client_name: string;
+  assigned_date: string;
+  deadline: string;
+  status: 'pending' | 'in_progress' | 'under_review' | 'completed';
+  completion_percentage: number;
+  document_url?: string;
+  paper_requirements?: string;
+  research_area?: string;
+  word_count?: number;
+  review_comments?: string[];
+  last_updated: string;
+}
+
+interface AuthorTaskUpdateRequest {
+  status?: 'pending' | 'in_progress' | 'under_review' | 'completed';
+  completion_percentage?: number;
+  document_url?: string;
+  review_comments?: string[];
+}
+
+interface AuthorStats {
+  assigned_count: number;
+  in_progress_count: number;
+  completed_count: number;
+  under_review_count: number;
+  tasks_this_week: number;
+  tasks_past_due: number;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -1505,6 +1540,149 @@ const api = {
         }
     },
 
+    // Mock data functions for author tasks while the backend is developed
+    // Author-related mock functions
+    async getAuthorStats(): Promise<ApiResponse<AuthorStats>> {
+        // Mock data for now
+        const mockStats = {
+          assigned_count: 8,
+          in_progress_count: 3,
+          completed_count: 12,
+          under_review_count: 2,
+          tasks_this_week: 4,
+          tasks_past_due: 1,
+        };
+        
+        return {
+          success: true,
+          data: mockStats,
+          timestamp: new Date().toISOString()
+        };
+      },
+      
+      async getAuthorTasks(): Promise<ApiResponse<AuthorTask[]>> {
+        // Mock data for now
+        const mockTasks = [
+          {
+            id: 1,
+            title: "Smart City Infrastructure Paper",
+            description: "Research and write a paper on smart city infrastructure implementation challenges and solutions.",
+            journal_name: "Journal of Urban Technology",
+            client_name: "Smart Cities Inc.",
+            assigned_date: "2023-10-15",
+            deadline: "2023-11-15",
+            status: "in_progress" as const,
+            completion_percentage: 65,
+            paper_requirements: "5000-7000 words, APA format, at least 25 citations from reputable sources",
+            research_area: "Urban Technology",
+            word_count: 6500,
+            last_updated: "2023-11-01",
+          },
+          {
+            id: 2,
+            title: "Quantum Computing Applications in Healthcare",
+            description: "Write a comprehensive review of quantum computing applications in healthcare and diagnostics.",
+            journal_name: "Digital Health Research",
+            client_name: "QuantumHealth Research",
+            assigned_date: "2023-10-20",
+            deadline: "2023-11-30",
+            status: "pending" as const,
+            completion_percentage: 0,
+            paper_requirements: "Academic review, 10,000+ words with extensive citations",
+            research_area: "Quantum Computing, Healthcare",
+            last_updated: "2023-10-20",
+          },
+          {
+            id: 3,
+            title: "Sustainable Energy Systems",
+            description: "Create a research paper on innovative sustainable energy systems for developing countries.",
+            journal_name: "Renewable Energy Research",
+            client_name: "GreenEnergy Foundation",
+            assigned_date: "2023-09-05",
+            deadline: "2023-10-20",
+            status: "completed" as const,
+            completion_percentage: 100,
+            document_url: "https://example.com/documents/sustainable-energy-paper-final.pdf",
+            paper_requirements: "Case study approach, focus on practical implementations",
+            research_area: "Renewable Energy",
+            word_count: 8200,
+            last_updated: "2023-10-18",
+          },
+          {
+            id: 4,
+            title: "Blockchain in Financial Inclusion",
+            description: "Research on blockchain technology applications for financial inclusion in underbanked populations.",
+            journal_name: "Financial Technology Review",
+            client_name: "Global Finance Initiative",
+            assigned_date: "2023-10-25",
+            deadline: "2023-12-10",
+            status: "under_review" as const,
+            completion_percentage: 90,
+            document_url: "https://example.com/documents/blockchain-finance-draft.pdf",
+            paper_requirements: "Focus on case studies from Southeast Asia and Africa",
+            research_area: "Blockchain, Financial Technology",
+            word_count: 7800,
+            review_comments: ["Please expand section 3.2 with more examples", "Add recent regulations from 2023"],
+            last_updated: "2023-11-05",
+          },
+          {
+            id: 5,
+            title: "AI Ethics in Automated Decision Systems",
+            description: "Critical analysis of ethical considerations in AI-powered automated decision systems.",
+            journal_name: "AI and Society",
+            client_name: "Ethics in Technology Institute",
+            assigned_date: "2023-11-01",
+            deadline: "2023-12-20",
+            status: "pending" as const,
+            completion_percentage: 0,
+            paper_requirements: "Interdisciplinary approach, combining technical and philosophical perspectives",
+            research_area: "AI Ethics",
+            last_updated: "2023-11-01",
+          }
+        ];
+        
+        return {
+          success: true,
+          data: mockTasks,
+          timestamp: new Date().toISOString()
+        };
+      },
+      
+      async getTaskById(id: number): Promise<ApiResponse<AuthorTask>> {
+        // Mock implementation
+        const allTasks = await this.getAuthorTasks();
+        const task = allTasks.data.find(t => t.id === id);
+        
+        if (!task) {
+          throw new Error(`Task with ID ${id} not found`);
+        }
+        
+        return {
+          success: true,
+          data: task,
+          timestamp: new Date().toISOString()
+        };
+      },
+      
+      async updateTask(id: number, data: AuthorTaskUpdateRequest): Promise<ApiResponse<AuthorTask>> {
+        // Mock implementation - would normally send to backend
+        console.log(`Updating task ${id} with data:`, data);
+        
+        // For mock purposes, we'll pretend the update was successful and return the task
+        const taskResponse = await this.getTaskById(id);
+        const updatedTask = {
+          ...taskResponse.data,
+          ...data,
+          last_updated: new Date().toISOString()
+        };
+        
+        return {
+          success: true,
+          data: updatedTask,
+          timestamp: new Date().toISOString()
+        };
+      },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1635,6 +1813,9 @@ export type {
     CreateClientResponse,  
     ClientLoginRequest,
     ClientLoginResponse,
-    ClientPendingRegistrationResponse
+    ClientPendingRegistrationResponse,
+    AuthorTask,
+    AuthorTaskUpdateRequest,
+    AuthorStats
 };
 export default api;

@@ -40,7 +40,7 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients } = useAuth();
+  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients, isAuthor } = useAuth();
   const [notificationCount, setNotificationCount] = React.useState(5);
   const { setIsNavigating } = useNavigationLoading();
   const [username, setUsername] = React.useState<string>("");
@@ -174,6 +174,8 @@ export const Navbar = () => {
       path = '/business/conversion';
     } else if (isClients) {
       path = '/business/clients';
+    } else if (isAuthor) {
+      path = '/business/author';
     }
     
     setIsNavigating(true);
@@ -289,6 +291,10 @@ export const Navbar = () => {
     if (role === 'clients') {
       // Always return client links regardless of path
       return siteConfig.clientsLinks;
+    }
+    
+    if (role === 'author') {
+      return siteConfig.authorLinks;
     }
     
     return [];

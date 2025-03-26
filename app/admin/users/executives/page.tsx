@@ -57,6 +57,7 @@ const ExecutivesPage: React.FC = () => {
     const [canUpdateUsers, setCanUpdateUsers] = React.useState(true);
     const [canAddExecutive, setCanAddExecutive] = React.useState(true);
     const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+    const [selectedRolePermissions, setSelectedRolePermissions] = React.useState<any[]>([]);
 
     const formatDate = (dateString: string) => {
         try {
@@ -128,6 +129,12 @@ const ExecutivesPage: React.FC = () => {
             setIsLoadingRoles(true);
             const rolesResponse = await api.getAllRoles();
             setRoles(rolesResponse.data);
+            
+            // Find the selected role to get its permissions
+            const selectedRole = rolesResponse.data.find(
+                r => r.id.toString() === executive.role_details.id.toString()
+            );
+            setSelectedRolePermissions(selectedRole?.permissions || []);
         } catch (error) {
             toast.error('Failed to load roles');
             console.error('Error loading roles:', error);
@@ -152,6 +159,10 @@ const ExecutivesPage: React.FC = () => {
             ...prev,
             role: selectedKey
         }));
+        
+        // Update permissions display when role changes
+        const selectedRole = roles.find(r => r.id.toString() === selectedKey);
+        setSelectedRolePermissions(selectedRole?.permissions || []);
     };
 
     const handleSubmit = async () => {
@@ -324,6 +335,35 @@ const ExecutivesPage: React.FC = () => {
                                             ))
                                         )}
                                     </Select>
+                                    
+                                    {/* Display role permissions */}
+                                    <div className="mt-4">
+                                        <p className="text-sm font-medium mb-2">Role Permissions:</p>
+                                        
+                                        {isLoadingRoles ? (
+                                            <div className="flex justify-center py-2">
+                                                <Spinner size="sm" />
+                                            </div>
+                                        ) : selectedRolePermissions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-default-50">
+                                                {selectedRolePermissions.map(permission => (
+                                                    <Chip 
+                                                        key={permission.id} 
+                                                        size="sm" 
+                                                        variant="flat"
+                                                        className="max-w-[200px] truncate"
+                                                    >
+                                                        {permission.description || permission.name}
+                                                    </Chip>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center p-3 border rounded-md bg-default-50 text-default-500">
+                                                No permissions assigned to this role
+                                            </div>
+                                        )}
+                                    </div>
+                                    
                                     <Divider />
                                     <div className="space-y-4">
                                         <p className="text-sm text-default-500">

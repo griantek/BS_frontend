@@ -26,7 +26,8 @@ import {
   UserPlusIcon as UserPlusIconHero,
   BellAlertIcon,
   ClipboardDocumentListIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
@@ -137,6 +138,25 @@ export const siteConfig = {
       label: "Support",
       href: "/business/clients/support",
       icon: ChatBubbleLeftRightIcon,
+    },
+  ],
+
+  // Author Navigation - Add navigation for the author role
+  authorLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/author",
+      icon: ChartPieIcon
+    },
+    {
+      label: "Assigned Tasks",
+      href: "/business/author/tasks",
+      icon: ClipboardDocumentListIcon
+    },
+    {
+      label: "Completed Work",
+      href: "/business/author/completed",
+      icon: CheckIcon
     },
   ],
 

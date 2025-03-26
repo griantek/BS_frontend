@@ -46,6 +46,7 @@ export const Sidebar = () => {
     const isExecutiveLeadsPath = pathname?.startsWith('/business/executive/leads');
     const isConversionPath = pathname === '/business/conversion';
     const isRecordsPath = pathname?.startsWith('/business/executive/records');
+    const isAuthorPath = pathname?.startsWith('/business/author');
 
     React.useEffect(() => {
         // Check if the user has permissions for the various sections
@@ -106,6 +107,15 @@ export const Sidebar = () => {
             { name: 'All Journals', icon: NewspaperIcon, path: '/business/clients/journals' },
             { name: 'Submissions', icon: ClipboardDocumentListIcon, path: '/business/clients/journals/submissions' },
             { name: 'Quotations', icon: DocumentTextIcon, path: '/business/clients/journals/quotations' },
+        ];
+    };
+
+    // Generate author sidebar items
+    const getAuthorSidebarItems = () => {
+        return [
+            { name: 'Dashboard', icon: HomeIcon, path: '/business/author' },
+            { name: 'Assigned Tasks', icon: ClipboardDocumentListIcon, path: '/business/author/tasks' },
+            { name: 'Completed Work', icon: CheckIcon, path: '/business/author/completed' },
         ];
     };
 
@@ -205,6 +215,16 @@ export const Sidebar = () => {
         if (path === '/business/clients/journals/quotations') {
             return pathname.includes('/business/clients/journals/quotations');
         }
+
+        // For author paths
+        if (path === '/business/author/tasks') {
+            return pathname === path || 
+                   pathname.startsWith('/business/author/tasks/');
+        }
+        if (path === '/business/author/completed') {
+            return pathname === path || 
+                   pathname.startsWith('/business/author/completed/');
+        }
         
         return pathname === path;
     };
@@ -252,7 +272,9 @@ export const Sidebar = () => {
                     ? getEditorSidebarItems()
                     : pathname?.startsWith('/business/clients/journals') && role === 'clients'
                         ? getClientSidebarItems()
-                        : [];
+                        : isAuthorPath && role === 'author'
+                            ? getAuthorSidebarItems()
+                            : [];
 
     // If no sidebar items to show, don't render the sidebar
     if (sidebarItems.length === 0) {
