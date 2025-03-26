@@ -74,9 +74,9 @@ function RolesPage() {
 
     const entityTypes = React.useMemo(() => {
         if (isSuperAdmin) {
-            return ['Admin', 'Editor', 'Executive', 'Leads' , 'Clients'] as const;
+            return ['Admin', 'Editor', 'Executive', 'Leads' , 'Clients','Author'] as const;
         }
-        return ['Editor', 'Executive', 'Leads' , 'Clients'] as const;
+        return ['Editor', 'Executive', 'Leads' , 'Clients','Author'] as const;
     }, [isSuperAdmin]);
 
     const fetchRoles = async () => {
@@ -534,6 +534,7 @@ function RolesPage() {
                                                     role.entity_type === 'Admin' ? 'primary' :
                                                     role.entity_type === 'Editor' ? 'warning' : 
                                                     role.entity_type === 'Executive' ? 'success' :
+                                                    role.entity_type === 'Author' ? 'secondary' :
                                                     role.entity_type === 'SupAdmin' ? 'danger' : 
                                                     'default'
                                                 }

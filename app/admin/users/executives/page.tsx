@@ -252,6 +252,7 @@ const ExecutivesPage: React.FC = () => {
                                                     executive.role_details?.entity_type === 'Admin' ? 'primary' :
                                                     executive.role_details?.entity_type === 'Editor' ? 'warning' : 
                                                     executive.role_details?.entity_type === 'Executive' ? 'success' : 
+                                                    executive.role_details?.entity_type === 'Author' ? 'secondary' :
                                                     'default'  
                                                 }
                                                 size="sm"

@@ -704,6 +704,14 @@ interface ClientLoginResponse {
   timestamp: string;
 }
 
+// Update the interface name and structure
+interface ClientPendingRegistrationResponse {
+  success: boolean;
+  data: Registration[];
+  count: number;
+  timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -1486,6 +1494,17 @@ const api = {
         }
     },
 
+    // Add new method to get client pending prospectus
+    async getClientPendingRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/pending`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1495,7 +1514,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | 'author') {
         if (!token || !role) {
             throw new Error('Invalid auth data: missing token or role');
         }
@@ -1615,6 +1634,7 @@ export type {
     CreateClientRequest,
     CreateClientResponse,  
     ClientLoginRequest,
-    ClientLoginResponse
+    ClientLoginResponse,
+    ClientPendingRegistrationResponse
 };
 export default api;

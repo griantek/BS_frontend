@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Divider, Button, Spinner, Chip } from "@nextui-org/react";
 import { withClientAuth } from '@/components/withClientAuth';
@@ -11,62 +11,52 @@ import {
   CheckCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import api, { Registration } from '@/services/api';
 
-// Mock quotation data
-const mockQuotations = [
-  {
-    id: "Q-2023-001",
-    title: "IEEE Transactions Submission",
-    description: "Quotation for the submission of research paper to IEEE Transactions on Neural Networks and Learning Systems",
-    amount: 450,
-    currency: "USD",
-    status: "Pending",
-    created: "2023-11-10T10:00:00Z",
-    expiry: "2023-12-10T23:59:59Z",
-    services: [
-      { name: "Editorial Review", price: 150 },
-      { name: "Formatting", price: 100 },
-      { name: "Journal Submission Fee", price: 200 }
-    ]
-  },
-  {
-    id: "Q-2023-002",
-    title: "Nature Communications Submission",
-    description: "Quotation for the submission of research paper to Nature Communications including premium editing",
-    amount: 750,
-    currency: "USD",
-    status: "Paid",
-    created: "2023-10-05T14:30:00Z",
-    expiry: "2023-11-05T23:59:59Z",
-    services: [
-      { name: "Premium Editorial Review", price: 300 },
-      { name: "Advanced Formatting", price: 150 },
-      { name: "Journal Submission Fee", price: 300 }
-    ]
-  },
-  {
-    id: "Q-2023-003",
-    title: "Science Advances Submission",
-    description: "Quotation for preparation and submission to Science Advances",
-    amount: 950,
-    currency: "USD",
-    status: "Expired",
-    created: "2023-09-01T09:15:00Z",
-    expiry: "2023-10-01T23:59:59Z",
-    services: [
-      { name: "Premium Editorial Review", price: 350 },
-      { name: "Figure Preparation", price: 200 },
-      { name: "Advanced Formatting", price: 150 },
-      { name: "Journal Submission Fee", price: 250 }
-    ]
-  }
-];
+// Interface for the quotation data (based on Registration)
+interface Quotation extends Registration {
+  // We'll use the Registration interface directly
+}
 
 const QuotationsPage = () => {
   const router = useRouter();
-  const [quotations, setQuotations] = useState(mockQuotations);
-  const [selectedQuotation, setSelectedQuotation] = useState<typeof mockQuotations[0] | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingId, setLoadingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchRegistrationData = async () => {
+      setIsLoading(true);
+      try {
+        // Get the client data from localStorage
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          console.error('No user data found');
+          setIsLoading(false);
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        const clientId = user.id;
+        
+        if (!clientId) {
+          console.error('No client ID found in user data');
+          setIsLoading(false);
+          return;
+        }
+        
+        const response = await api.getClientPendingRegistration(clientId);
+        setQuotations(response.data);
+      } catch (error) {
+        console.error('Error fetching registration data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchRegistrationData();
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -78,23 +68,22 @@ const QuotationsPage = () => {
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'Pending': return 'warning';
-      case 'Paid': return 'success';
-      case 'Expired': return 'danger';
+      case 'pending': return 'warning';
+      case 'registered': return 'success';
       default: return 'default';
     }
   };
 
-  const handleAccept = (id: string) => {
-    setIsLoading(true);
+  const handleAccept = (id: number) => {
+    setLoadingId(id);
     
-    // Simulate API call
+    // Simulate API call - in a real implementation, this would call an API endpoint
     setTimeout(() => {
       setQuotations(quotations.map(q => 
-        q.id === id ? {...q, status: 'Paid'} : q
+        q.id === id ? {...q, status: 'registered' as 'registered'} : q
       ));
       setSelectedQuotation(null);
-      setIsLoading(false);
+      setLoadingId(null);
     }, 1500);
   };
 
@@ -120,13 +109,15 @@ const QuotationsPage = () => {
           <Card className="mb-6">
             <CardHeader className="flex justify-between">
               <div>
-                <h2 className="text-lg font-semibold">{selectedQuotation.title}</h2>
-                <p className="text-default-500 text-sm">Quotation #{selectedQuotation.id}</p>
+                <h2 className="text-lg font-semibold">Quotation #{selectedQuotation.id}</h2>
+                <p className="text-default-500 text-sm">Service: {selectedQuotation.services}</p>
               </div>
               <Button 
-                variant="light" 
-                size="sm"
+                color="primary"
+                variant="flat" 
+                size="md"
                 onClick={() => setSelectedQuotation(null)}
+                startContent={<ArrowLeftIcon className="h-4 w-4" />}
               >
                 Back to List
               </Button>
@@ -136,26 +127,28 @@ const QuotationsPage = () => {
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 <div>
                   <p className="text-default-500 text-sm">Issued on</p>
-                  <p className="font-medium">{formatDate(selectedQuotation.created)}</p>
+                  <p className="font-medium">{formatDate(selectedQuotation.created_at)}</p>
                 </div>
                 <div>
                   <p className="text-default-500 text-sm">Valid until</p>
-                  <p className="font-medium">{formatDate(selectedQuotation.expiry)}</p>
+                  <p className="font-medium">{formatDate(selectedQuotation.date)}</p>
                 </div>
                 <div>
                   <p className="text-default-500 text-sm">Status</p>
                   <Chip color={getStatusColor(selectedQuotation.status)} size="sm">
-                    {selectedQuotation.status}
+                    {selectedQuotation.status.charAt(0).toUpperCase() + selectedQuotation.status.slice(1)}
                   </Chip>
                 </div>
               </div>
               
               <div>
-                <p className="text-default-700 mb-2">{selectedQuotation.description}</p>
+                <p className="text-default-700 mb-2">
+                  {selectedQuotation.services} for {selectedQuotation.accept_period}
+                </p>
               </div>
               
               <div>
-                <h3 className="text-md font-semibold mb-2">Services</h3>
+                <h3 className="text-md font-semibold mb-2">Services & Pricing</h3>
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-default-50">
@@ -165,18 +158,42 @@ const QuotationsPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedQuotation.services.map((service, index) => (
-                        <tr key={index} className="border-t border-default-100">
-                          <td className="p-3">{service.name}</td>
-                          <td className="p-3 text-right">${service.price.toFixed(2)}</td>
+                      <tr className="border-t border-default-100">
+                        <td className="p-3">{selectedQuotation.services}</td>
+                        <td className="p-3 text-right">${selectedQuotation.init_amount.toFixed(2)}</td>
+                      </tr>
+                      {selectedQuotation.accept_amount > 0 && (
+                        <tr className="border-t border-default-100">
+                          <td className="p-3">Additional Services</td>
+                          <td className="p-3 text-right">${selectedQuotation.accept_amount.toFixed(2)}</td>
                         </tr>
-                      ))}
+                      )}
+                      {selectedQuotation.discount > 0 && (
+                        <tr className="border-t border-default-100">
+                          <td className="p-3 text-danger">Discount</td>
+                          <td className="p-3 text-right text-danger">-${selectedQuotation.discount.toFixed(2)}</td>
+                        </tr>
+                      )}
                       <tr className="border-t border-default-200 bg-default-50">
                         <td className="p-3 font-semibold">Total</td>
-                        <td className="p-3 text-right font-semibold">${selectedQuotation.amount.toFixed(2)}</td>
+                        <td className="p-3 text-right font-semibold">${selectedQuotation.total_amount.toFixed(2)}</td>
                       </tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-md font-semibold mb-2">Service Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-default-50 p-3 rounded-lg">
+                    <p className="text-sm text-default-500">Service Period</p>
+                    <p className="font-medium">{selectedQuotation.accept_period}</p>
+                  </div>
+                  <div className="bg-default-50 p-3 rounded-lg">
+                    <p className="text-sm text-default-500">Publication Period</p>
+                    <p className="font-medium">{selectedQuotation.pub_period}</p>
+                  </div>
                 </div>
               </div>
               
@@ -188,16 +205,16 @@ const QuotationsPage = () => {
                   Download PDF
                 </Button>
                 
-                {selectedQuotation.status === 'Pending' && (
+                {selectedQuotation.status === 'pending' && (
                   <div className="flex gap-2">
                     <Button 
                       color="success" 
                       onClick={() => handleAccept(selectedQuotation.id)}
-                      isLoading={isLoading}
+                      isLoading={loadingId === selectedQuotation.id}
                       spinner={<Spinner size="sm" />}
-                      startContent={!isLoading && <CheckCircleIcon className="h-4 w-4" />}
+                      startContent={loadingId !== selectedQuotation.id && <CheckCircleIcon className="h-4 w-4" />}
                     >
-                      {isLoading ? "Processing..." : "Accept & Pay"}
+                      {loadingId === selectedQuotation.id ? "Processing..." : "Accept & Pay"}
                     </Button>
                   </div>
                 )}
@@ -206,7 +223,11 @@ const QuotationsPage = () => {
           </Card>
         ) : (
           <>
-            {quotations.length === 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Spinner size="lg" />
+              </div>
+            ) : quotations.length === 0 ? (
               <Card>
                 <CardBody className="text-center py-12">
                   <DocumentTextIcon className="w-12 h-12 mx-auto text-default-300 mb-4" />
@@ -227,34 +248,36 @@ const QuotationsPage = () => {
                       <div className="flex flex-col md:flex-row justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-default-600">{quotation.id}</span>
+                            <span className="text-sm font-medium text-default-600">Quotation #{quotation.id}</span>
                             <Chip color={getStatusColor(quotation.status)} size="sm">
-                              {quotation.status}
+                              {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
                             </Chip>
                           </div>
-                          <h3 className="text-lg font-semibold mb-1">{quotation.title}</h3>
-                          <p className="text-sm text-default-500 line-clamp-1 mb-2">{quotation.description}</p>
+                          <h3 className="text-lg font-semibold mb-1">{quotation.services}</h3>
+                          <p className="text-sm text-default-500 line-clamp-1 mb-2">
+                            Service period: {quotation.accept_period} | Publication period: {quotation.pub_period}
+                          </p>
                           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-default-400">
-                            <span>Created: {formatDate(quotation.created)}</span>
-                            <span>Expires: {formatDate(quotation.expiry)}</span>
+                            <span>Created: {formatDate(quotation.created_at)}</span>
+                            <span>Valid until: {formatDate(quotation.date)}</span>
                           </div>
                         </div>
                         <div className="flex flex-col justify-center items-end gap-2">
-                          <div className="text-xl font-bold text-default-800">${quotation.amount.toFixed(2)}</div>
+                          <div className="text-xl font-bold text-default-800">${quotation.total_amount.toFixed(2)}</div>
                           <div className="flex items-center gap-2">
-                            {quotation.status === 'Pending' ? (
+                            {quotation.status === 'pending' ? (
                               <div className="flex items-center text-xs text-warning">
                                 <ClockIcon className="h-3 w-3 mr-1" />
                                 Awaiting payment
                               </div>
-                            ) : quotation.status === 'Paid' ? (
+                            ) : quotation.status === 'registered' ? (
                               <div className="flex items-center text-xs text-success">
                                 <CheckCircleIcon className="h-3 w-3 mr-1" />
                                 Payment complete
                               </div>
                             ) : (
-                              <div className="flex items-center text-xs text-danger">
-                                Expired
+                              <div className="flex items-center text-xs text-default-400">
+                                Unknown status
                               </div>
                             )}
                           </div>

@@ -32,7 +32,6 @@ import type {
 } from "@/services/api";
 import PasswordModal from "@/components/PasswordModal";
 
-// Add interface for better type safety
 interface ProspectData {
   id: number;
   entity_id: string;
@@ -50,7 +49,6 @@ interface ProspectData {
   services: string;
 }
 
-// Add this interface for select items
 interface SelectOptionProps {
   key: string;
   value: string;
@@ -61,7 +59,6 @@ const SelectOption: React.FC<SelectOptionProps> = ({ children, ...props }) => (
   <option {...props}>{children}</option>
 );
 
-// Create a content component to handle the main logic
 function QuotationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
