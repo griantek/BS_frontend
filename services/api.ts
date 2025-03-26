@@ -666,7 +666,7 @@ interface ApproveLeadRequest {
 interface CreateClientRequest {
   prospectus_id: number;
   email: string;
-  password: string;
+  password: string | null;
 }
 
 // Update the interface to match the actual response
@@ -1439,7 +1439,7 @@ const api = {
         }
     },
 
-    // Update the createClient method to handle the actual response format
+    // Update the createClient method to handle null passwords
     async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.post('/clients', data);
@@ -1471,6 +1471,17 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Client login error:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to check if client exists by email
+    async getClientByEmail(email: string): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/email/${email}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error checking client by email:', error);
             throw this.handleError(error);
         }
     },

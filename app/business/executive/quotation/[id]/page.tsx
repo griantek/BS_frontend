@@ -13,6 +13,7 @@ import {
   Listbox,
   ListboxItem,
   ScrollShadow,
+  useDisclosure, // Import useDisclosure properly
 } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import PDFTemplate from "@/components/PDFTemplate";
@@ -29,6 +30,7 @@ import type {
   BankAccount,
   Service,
 } from "@/services/api";
+import PasswordModal from "@/components/PasswordModal";
 
 // Add interface for better type safety
 interface ProspectData {
@@ -69,6 +71,8 @@ function QuotationContent({ regId }: { regId: string }) {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [clientId, setClientId] = React.useState<string | null>(null);
 
   const {
     register,
@@ -92,7 +96,6 @@ function QuotationContent({ regId }: { regId: string }) {
       selectedBank: "",
       selectedServicesData: [],
       transactionDate: new Date().toISOString().split("T")[0], // Add default date
-      password: "", // Add default value for password
     },
   });
 
@@ -180,90 +183,6 @@ function QuotationContent({ regId }: { regId: string }) {
     setValue("totalAmount", total);
   }, [initialAmount, acceptanceAmount, discountPercentage, setValue]);
 
-  const generatePDF = async () => {
-    try {
-      const element = document.getElementById("pdf-template");
-      if (!element) throw new Error("PDF template not found");
-
-      // Remove hidden style temporarily
-      element.style.visibility = "visible";
-      element.style.position = "absolute";
-      element.style.top = "0";
-      element.style.left = "0";
-
-      // Wait for rendering
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Create canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: "#ffffff",
-      });
-
-      // Reset element style
-      element.style.visibility = "hidden";
-      element.style.position = "absolute";
-      element.style.left = "-9999px";
-
-      // PDF dimensions (A4)
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Create PDF
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      // Handle multi-page
-      let heightLeft = imgHeight;
-      let position = 0;
-      let pageNumber = 1;
-
-      // Add first page
-      pdf.addImage(
-        canvas.toDataURL("image/jpeg", 1.0),
-        "JPEG",
-        0,
-        position,
-        imgWidth,
-        imgHeight
-      );
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if content overflows
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL("image/jpeg", 1.0),
-          "JPEG",
-          0,
-          position,
-          imgWidth,
-          imgHeight
-        );
-        heightLeft -= pageHeight;
-        pageNumber++;
-      }
-
-      // Add page numbers
-      for (let i = 1; i <= pageNumber; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(10);
-        pdf.text(`Page ${i} of ${pageNumber}`, imgWidth / 2, pageHeight - 10, {
-          align: "center",
-        });
-      }
-
-      pdf.save(`quotation_${prospectData?.reg_id}.pdf`);
-      return true;
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      throw error;
-    }
-  };
-
   const onSubmit = async (data: QuotationFormData) => {
     try {
       setIsGenerating(true);
@@ -279,87 +198,132 @@ function QuotationContent({ regId }: { regId: string }) {
 
       if (!prospectData) {
         throw new Error("Prospect data not found");
+        return;
       }
 
       try {
-        // First create the client account
-        const clientData = {
-          prospectus_id: prospectData.id,
-          email: prospectData.email,
-          password: data.password
-        };
-
+        // First check if a client already exists with this email
+        const clientResponse = await api.getClientByEmail(prospectData.email);
         
-        const clientResponse = await api.createClient(clientData);
-        
-        // Check if we have a valid client response
-        if (!clientResponse.success) {
-          throw new Error("Failed to create client account");
-        }
-        
-        // Extract the client ID correctly from the nested data structure
-        // The response has data.data.id structure
-        const clientId = clientResponse.data?.data?.id;
-        
-        if (!clientId) {
-          throw new Error("Client ID is missing in the response");
-        }
-
-        // Prepare registration data with updated fields and new client ID
-        const registrationData: CreateRegistrationRequest = {
-          // Transaction details 
-          transaction_type: "Cash",
-          transaction_id: "",
-          amount: 0,
-          transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
-          additional_info: {},
-          
-          entity_id: user.id,
-          client_id: clientId, // Use the extracted client ID
-          registered_by: user.id,
-          prospectus_id: prospectData.id,
-          services: data.selectedServices
-            .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
-            .filter(Boolean)
-            .join(", "),
-          init_amount: data.initialAmount || 0,
-          accept_amount: data.acceptanceAmount || 0,
-          discount: data.discountAmount || 0,
-          total_amount: data.totalAmount || 0,
-          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-          bank_id: data.selectedBank,
-          status: "pending",
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-        };
-
-        // Verify client_id is set before sending
-        if (!registrationData.client_id) {
-          console.error("Client ID is still missing in registration data!");
-          throw new Error("Client ID is required for registration");
-        }
-
-        // Submit registration
-        const response = await api.createRegistration(registrationData);
-
-        if (response.success) {
-          await generatePDF();
-          toast.success("Quotation generated and saved successfully!");
-          router.push("/business/executive");
+        if (clientResponse.success) {
+          // Client exists, call createClientWithPassword with null password
+          // This will ensure the backend logic is executed without showing the modal
+          createClientWithPassword(null);
         } else {
-          throw new Error("Failed to create registration");
+          // Client doesn't exist, open password modal
+          onOpen();
         }
-      } catch (error: any) { // Change clientError to error: any
-        console.error("Client creation error:", error);
-        toast.error("Failed to create client account: " + (error.message || "Unknown error"));
-        throw error; // Propagate error to the outer catch block
+      } catch (error: any) {
+        // If error occurs (client doesn't exist or other error)
+        console.error("Client check error:", error);
+        onOpen(); // Open password modal to create new client
       }
-    } catch (error: any) { // Add type annotation here as well
+    } catch (error: any) {
       console.error("Submission error:", error);
       toast.error("Failed to generate quotation");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // New function to handle client creation with password
+  const createClientWithPassword = async (password: string | null) => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        toast.error("User data not found");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const formData = watch();
+      
+      // Add null check for prospectData
+      if (!prospectData) {
+        toast.error("Prospect data not found");
+        return;
+      }
+
+      // Always attempt to create the client regardless of whether password is null
+      const clientData = {
+        prospectus_id: prospectData.id,
+        email: prospectData.email,
+        password: password, // This can be null, the backend should handle existing users
+      };
+
+      // Try to create client - backend should handle existing clients appropriately
+      const clientResponse = await api.createClient(clientData);
+      
+      // Get the client ID from the response or fetch it if needed
+      let newClientId: string;
+      
+      if (clientResponse.success && clientResponse.data?.data?.id) {
+        // Client was created successfully
+        newClientId = clientResponse.data.data.id;
+      } else {
+        // Client might already exist - try to fetch the existing client ID
+        try {
+          const existingClientResponse = await api.getClientByEmail(prospectData.email);
+          if (existingClientResponse.success && existingClientResponse.data.id) {
+            newClientId = existingClientResponse.data.id;
+          } else {
+            throw new Error("Failed to get client ID");
+          }
+        } catch (error) {
+          console.error("Error getting client:", error);
+          toast.error("Failed to find or create client account");
+          return;
+        }
+      }
+      
+      setClientId(newClientId);
+      
+      // Prepare registration data with updated fields
+      const registrationData: CreateRegistrationRequest = {
+        // Transaction details 
+        transaction_type: "Cash",
+        transaction_id: "",
+        amount: 0,
+        transaction_date: formData.transactionDate || new Date().toISOString().split("T")[0],
+        additional_info: {},
+        
+        entity_id: user.id,
+        client_id: newClientId,
+        registered_by: user.id,
+        prospectus_id: prospectData.id,
+        services: formData.selectedServices
+          .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
+          .filter(Boolean)
+          .join(", "),
+        init_amount: formData.initialAmount || 0,
+        accept_amount: formData.acceptanceAmount || 0,
+        discount: formData.discountAmount || 0,
+        total_amount: formData.totalAmount || 0,
+        accept_period: `${formData.acceptancePeriod} ${formData.acceptancePeriodUnit}`,
+        pub_period: `${formData.publicationPeriod} ${formData.publicationPeriodUnit}`,
+        bank_id: formData.selectedBank,
+        status: "pending",
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      };
+
+      // Submit registration
+      const response = await api.createRegistration(registrationData);
+
+      if (response.success) {
+        toast.success("Quotation generated and saved successfully!");
+        router.push("/business/executive/records/prospectus");
+      } else {
+        throw new Error("Failed to create registration");
+      }
+    } catch (error: any) {
+      console.error("Client creation error:", error);
+      toast.error(
+        "Failed to create client account: " +
+          (error.message || "Unknown error")
+      );
+    } finally {
+      onClose();
     }
   };
 
@@ -432,6 +396,7 @@ function QuotationContent({ regId }: { regId: string }) {
     setValue("selectedBank", event.target.value);
   };
 
+  // Add explicit null check before the return
   if (isLoading) return <div>Loading...</div>;
   if (!prospectData) return <div>No data found</div>;
 
@@ -730,18 +695,6 @@ function QuotationContent({ regId }: { regId: string }) {
                   </select>
                 </div>
 
-                {/* Password Field - Added */}
-                <div className="w-full space-y-2">
-                  <Input
-                    type="password"
-                    label="Create Password"
-                    placeholder="Enter password for client account"
-                    {...register("password")}
-                    isRequired
-                    description="This password will be used for the client's account"
-                  />
-                </div>
-
                 <div className="flex justify-end gap-3 mt-6">
                   <Button
                     color="danger"
@@ -755,7 +708,7 @@ function QuotationContent({ regId }: { regId: string }) {
                     type="submit"
                     isLoading={isGenerating}
                   >
-                    Generate PDF
+                    Generate Quotation
                   </Button>
                 </div>
               </form>
@@ -764,23 +717,13 @@ function QuotationContent({ regId }: { regId: string }) {
         </div>
       </div>
 
-      {/* Hidden PDF Template */}
-      <div
-        id="pdf-template"
-        style={{ position: "absolute", left: "-9999px", visibility: "hidden" }}
-      >
-        <PDFTemplate
-          id="pdf-content"
-          prospectData={prospectData}
-          quotationData={{
-            ...watch(), // Pass the selected services array
-            initialAmount: watch("initialAmount") || 0,
-            acceptanceAmount: watch("acceptanceAmount") || 0,
-            discountPercentage: watch("discountPercentage") || 0,
-            selectedServicesData: selectedServiceData,
-          }}
-        />
-      </div>
+      {/* Add the Password Modal */}
+      <PasswordModal
+        isOpen={isOpen}
+        onOpenChange={onOpen}
+        onConfirm={createClientWithPassword}
+        onCancel={onClose}
+      />
     </div>
   );
 }
