@@ -239,7 +239,7 @@ const JournalSubmissionsPage = () => {
               <Card>
                 <CardBody className="text-center py-12">
                   <ClipboardDocumentListIcon className="w-12 h-12 mx-auto text-default-300 mb-4" />
-                  <p className="text-default-600 mb-4">You haven't submitted any papers yet</p>
+                  <p className="text-default-600 mb-4">You haven&apos;t submitted any papers yet</p>
                   <Button 
                     color="primary" 
                     onClick={() => setShowNewSubmission(true)}
