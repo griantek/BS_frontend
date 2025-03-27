@@ -42,8 +42,14 @@ const JournalsEditorPage = () => {
         
         const fetchJournals = async () => {
             try {
+                setIsLoading(true);
                 const user = api.getStoredUser();
-                const response = await api.getAllJournalData();
+                if (!user?.id) {
+                    throw new Error("User ID not found");
+                }
+                
+                // Use the new endpoint to get journals by editor ID
+                const response = await api.getJournalDataByEditor(user.id);
                 if (response.success) {
                     setJournals(response.data);
                 }

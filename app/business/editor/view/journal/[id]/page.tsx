@@ -258,11 +258,11 @@ function JournalContent({ id }: { id: string }) {
                   Visit Journal
                 </a>
               </div>
-              <div>
+              {/* <div>
                 <h3 className="text-sm text-gray-500">Login Credentials</h3>
                 <p className="font-medium">Username: {journal.username}</p>
                 <p className="font-medium">Password: {journal.password}</p>
-              </div>
+              </div> */}
             </CardBody>
           </Card>
 
@@ -280,44 +280,53 @@ function JournalContent({ id }: { id: string }) {
         </div>
 
         {/* Journal Screenshot Section */}
-        <Card className="w-full">
-          <CardHeader className="flex justify-between items-center">
-            <p className="text-md font-semibold">Journal Status Screenshot</p>
-            {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                onClick={handleRefreshStatus}
-                isLoading={isRefreshing}
-              >
-                <ArrowPathIcon
-                  className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-              </Button>
-            )}
-          </CardHeader>
-          <Divider />
-          <CardBody>
-            <div className="flex justify-center">
-              {journal.status_link ? (
-                <div className="relative w-full h-[600px]">
-                  <Image
-                    src={`${journal.status_link}?t=${new Date().getTime()}`}
-                    alt="Click on the refresh button to load the image"
-                    fill
-                    className="rounded-lg shadow-lg object-contain"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
-                    priority
+        {canUpdateScreenshot && journal.journal_link && journal.username && journal.password ? (
+          <Card className="w-full">
+            <CardHeader className="flex justify-between items-center">
+              <p className="text-md font-semibold">Journal Status Screenshot</p>
+              {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onPress={handleRefreshStatus}
+                  isLoading={isRefreshing}
+                >
+                  <ArrowPathIcon
+                    className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
                   />
-                </div>
-              ) : (
-                <div className="text-gray-500">No screenshot available</div>
+                </Button>
               )}
-            </div>
-          </CardBody>
-        </Card>
-
+            </CardHeader>
+            <Divider />
+            <CardBody>
+              <div className="flex justify-center">
+                {journal.status_link ? (
+                  <div className="relative w-full h-[600px]">
+                    <Image
+                      src={`${journal.status_link}?t=${new Date().getTime()}`}
+                      alt="Click on the refresh button to load the image"
+                      fill
+                      className="rounded-lg shadow-lg object-contain"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                      priority
+                    />
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No screenshot available</div>
+                )}
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <Card className="w-full">
+            <CardBody>
+              <div className="flex justify-center">
+                <div className="text-gray-500">No screenshot available</div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
         {/* Delete Confirmation Modal */}
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalContent>

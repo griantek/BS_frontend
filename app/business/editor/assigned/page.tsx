@@ -86,7 +86,7 @@ function AssignedPage() {
     <div className="w-full p-6">
       <Card className="w-full">
         <CardHeader className="flex justify-between items-center px-6 py-4">
-          <h1 className="text-2xl font-bold">Assigned Registrations</h1>
+          <h1 className="text-2xl font-bold">Pending Submissions</h1>
           <div className="flex-1 max-w-md ml-4">
             <Input
               isClearable
@@ -100,10 +100,10 @@ function AssignedPage() {
         </CardHeader>
         <CardBody>
           {isLoading ? (
-            <LoadingSpinner text="Loading assigned registrations..." />
+            <LoadingSpinner text="Loading pending submissions..." />
           ) : (
             <Table
-              aria-label="Assigned registrations table"
+              aria-label="Pending Submissions table"
               classNames={{
                 wrapper: "min-h-[400px]",
               }}

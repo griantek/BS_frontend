@@ -526,13 +526,13 @@ interface AssignedRegistration {
     id: number;
     email: string;
     reg_id: string;
+    client_name: string;
+    requirement: string;
     entity: {
       id: string;
       email: string;
       username: string;
     };
-    client_name: string;
-    requirement: string;
   };
 }
 
@@ -1356,7 +1356,7 @@ const api = {
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
         try {
-                        const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
+            const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data:', error);
@@ -1500,25 +1500,6 @@ const api = {
             throw this.handleError(error);
         }
     },
-
-    async getEditorDashboardStats(): Promise<ApiResponse<DashboardStats>> {
-        try {
-            const response = await this.axiosInstance.get('/editor/dashboard/stats');
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
-    async getEditorRecentActivity(): Promise<ApiResponse<ActivityItem[]>> {
-        try {
-            const response = await this.axiosInstance.get('/editor/dashboard/recent-activity');
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
     // Leads endpoints
     async getAllLeads(): Promise<ApiResponse<Lead[]>> {
         try {
@@ -1928,7 +1909,18 @@ const api = {
                 error: error.message || 'An unexpected error occurred'
             };
         }
-    }
+    },
+
+    // Add new method to get journal data by editor ID
+    async getJournalDataByEditor(editorId: string): Promise<ApiResponse<JournalData[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/editor/journal-data/editor/${editorId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data by editor:', error);
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors

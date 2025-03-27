@@ -88,14 +88,14 @@ export const Sidebar = () => {
             items.push({ name: 'Dashboard', icon: HomeIcon, path: '/business/editor' });
         }
         
-        // Only add Assigned to me if user has permission
+        // Only add Pending Submissions if user has permission
         if (showAssignedTable) {
-            items.push({ name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' });
+            items.push({ name: 'Pending Submissions', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' });
         }
         
-        // Only add Journal Details if user has permission
+        // Only add Journal Submissions if user has permission
         if (showJournalTable) {
-            items.push({ name: 'Journal Details', icon: NewspaperIcon, path: '/business/editor/journals' });
+            items.push({ name: 'Journal Submissions', icon: NewspaperIcon, path: '/business/editor/journals' });
         }
         
         return items;
