@@ -118,7 +118,7 @@ function TaskDetail({ params }: { params: { id: string } }) {
           <CardBody className="p-6 text-center">
             <ExclamationCircleIcon className="h-12 w-12 text-danger mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Task Not Found</h2>
-            <p className="text-default-500 mb-4">The task you're looking for doesn't exist or you don't have permission to view it.</p>
+            <p className="text-default-500 mb-4">The task you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.</p>
             <Button color="primary" onClick={() => router.push('/business/author/tasks')}>
               Return to Task List
             </Button>
@@ -268,8 +268,9 @@ function TaskDetail({ params }: { params: { id: string } }) {
                   <CardBody>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Completion Percentage</label>
+                        <label htmlFor="completion-percentage" className="text-sm font-medium mb-1 block">Completion Percentage</label>
                         <Input
+                          id="completion-percentage"
                           type="number"
                           min="0"
                           max="100"
@@ -280,8 +281,9 @@ function TaskDetail({ params }: { params: { id: string } }) {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Status</label>
+                        <label htmlFor="status-update" className="text-sm font-medium mb-1 block">Status</label>
                         <select 
+                          id="status-update"
                           className="w-full rounded-md border-default-200 py-2 px-3 text-sm focus:border-primary focus:ring-primary"
                           value={statusUpdate}
                           onChange={(e) => setStatusUpdate(e.target.value)}
@@ -294,8 +296,9 @@ function TaskDetail({ params }: { params: { id: string } }) {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Document URL (when complete)</label>
+                        <label htmlFor="document-url" className="text-sm font-medium mb-1 block">Document URL (when complete)</label>
                         <Input
+                          id="document-url"
                           placeholder="https://example.com/document.pdf"
                           value={documentUrl}
                           onChange={(e) => setDocumentUrl(e.target.value)}
@@ -306,8 +309,9 @@ function TaskDetail({ params }: { params: { id: string } }) {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Add Comment/Note</label>
+                        <label htmlFor="comments" className="text-sm font-medium mb-1 block">Add Comment/Note</label>
                         <Textarea
+                          id="comments"
                           placeholder="Add a comment or progress note..."
                           value={comments}
                           onChange={(e) => setComments(e.target.value)}

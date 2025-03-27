@@ -16,7 +16,8 @@ import {
   DocumentCheckIcon,
   DocumentDuplicateIcon,
   CurrencyDollarIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 
 interface ClientUser {
@@ -250,7 +251,7 @@ const JournalDashboard = () => {
                         {recentJournals.length === 0 ? (
                             <div className="text-center py-6">
                                 <DocumentDuplicateIcon className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-default-300 mb-2" />
-                                <p className="text-default-500 text-sm">You don't have any journals yet</p>
+                                <p className="text-default-500 text-sm">You don&apos;t have any journals yet</p>
                                 <p className="text-xs mt-2 text-default-400">Contact your executive to initiate a journal submission</p>
                             </div>
                         ) : (
@@ -260,6 +261,13 @@ const JournalDashboard = () => {
                                         key={journal.id} 
                                         className="p-3 sm:p-4 border border-divider rounded-lg hover:bg-default-50 transition-colors cursor-pointer active:bg-default-100"
                                         onClick={() => router.push(`/business/clients/journals/${journal.id}`)}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                router.push(`/business/clients/journals/${journal.id}`);
+                                            }
+                                        }}
                                     >
                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
                                             <div>
@@ -328,6 +336,13 @@ const JournalDashboard = () => {
                                         key={quote.id} 
                                         className="p-3 border border-divider rounded-lg hover:bg-default-50 transition-colors cursor-pointer active:bg-default-100"
                                         onClick={() => router.push(`/business/clients/quotations/${quote.id}`)}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                router.push(`/business/clients/quotations/${quote.id}`);
+                                            }
+                                        }}
                                     >
                                         <div className="flex justify-between items-start mb-1">
                                             <h4 className="font-medium text-sm line-clamp-1 mr-2">{quote.title}</h4>

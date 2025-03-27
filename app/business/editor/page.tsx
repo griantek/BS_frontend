@@ -344,6 +344,13 @@ const EditorPage = () => {
                                     key={journal.id} 
                                     className="p-4 bg-default-50 rounded-lg hover:bg-default-100 transition-colors cursor-pointer"
                                     onClick={() => router.push(`/business/editor/view/journal/${journal.id}`)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            router.push(`/business/editor/view/journal/${journal.id}`);
+                                        }
+                                    }}
                                 >
                                     <div className="flex justify-between mb-2">
                                         <div className="flex items-center gap-2">
@@ -457,6 +464,13 @@ const ActivityItem = ({
     <div 
         className="flex items-center justify-between p-3 rounded-lg bg-default-50 hover:bg-default-100 transition-colors cursor-pointer"
         onClick={() => onClickJournal(activity.journal_id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                onClickJournal(activity.journal_id);
+            }
+        }}
     >
         <div className="space-y-1">
             <div className="flex items-center gap-2">

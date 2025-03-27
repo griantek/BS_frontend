@@ -365,7 +365,7 @@ export default function PendingApprovalsPage() {
                         Cannot Assign Registration
                       </h3>
                       <p>
-                        The requirement "{currentRequirement}" doesn't align
+                        The requirement &quot;{currentRequirement}&quot; doesn&apos;t align
                         with any available assignable entities. Please update
                         the requirement or contact an administrator.
                       </p>

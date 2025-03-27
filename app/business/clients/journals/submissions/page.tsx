@@ -207,7 +207,7 @@ const JournalSubmissionsPage = () => {
               
               <div className="border border-dashed border-default-300 rounded-lg p-6 text-center">
                 <CloudArrowUpIcon className="w-10 h-10 mx-auto text-default-400 mb-2" />
-                <p className="text-default-600 mb-2">Drag & drop your paper file here</p>
+                <p className="text-default-600 mb-2">Drag &amp; drop your paper file here</p>
                 <p className="text-xs text-default-400 mb-4">Supported formats: PDF, DOCX (max 20MB)</p>
                 <Button color="primary" variant="flat">
                   Browse Files

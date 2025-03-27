@@ -59,7 +59,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
         </ModalHeader>
         <ModalBody>
           <p className="text-sm text-gray-600 mb-4">
-            This client account doesn't exist yet. Please create a password for the new client account.
+            This client account doesn&apos;t exist yet. Please create a password for the new client account.
           </p>
           <Input
             type="password"

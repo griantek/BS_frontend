@@ -428,7 +428,7 @@ const AddLeadPage = () => {
                   {isOtherRequirement && (
                     <div className="p-3 border rounded-md bg-default-50">
                       <div className="mb-2 text-sm text-default-600">
-                        <p>You selected "Other". Please specify the requirement in the field below:</p>
+                        <p>You selected &quot;Other&quot;. Please specify the requirement in the field below:</p>
                       </div>
                       <Input
                         label="Specify Requirement"
