@@ -32,6 +32,8 @@ const AddLeadPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Add state to track if "Other" option is selected for requirement
+  const [isOtherRequirement, setIsOtherRequirement] = useState(false);
 
   // Form fields state - updated field names to match DB schema and removed service
   const [formData, setFormData] = useState<Partial<CreateLeadRequest>>({
@@ -50,6 +52,7 @@ const AddLeadPage = () => {
     // Fields for handling "Other" option inputs, not sent directly to API
     other_source: "",
     other_domain: "",
+    // Remove other_requirement as we'll use requirement directly
   });
 
   // Options for dropdown fields
@@ -89,6 +92,14 @@ const AddLeadPage = () => {
     "Prospect",
   ]);
 
+  // Add requirement types
+  const [requirementTypes, setRequirementTypes] = useState<string[]>([
+    "Publication",
+    "Paper writing",
+    "Publication and Paper writing",
+    "Other",
+  ]);
+
   useEffect(() => {
     // Remove manual auth check since we're using the HOC
     // checkAuth(router, 'leads');
@@ -118,10 +129,21 @@ const AddLeadPage = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // Check if requirement selection is changing to or from "Other"
+    if (name === "requirement") {
+      setIsOtherRequirement(value === "Other");
+      
+      // Always set the dropdown value, even for "Other"
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,6 +176,9 @@ const AddLeadPage = () => {
       if (domainValue === "Other" && formData.other_domain) {
         domainValue = formData.other_domain;
       }
+
+      // Remove the requirement value handling since we're using requirement directly
+      // for both dropdown selection and custom input
 
       // Format data for API with corrected field names, removed service field
       const leadData: CreateLeadRequest = {
@@ -194,6 +219,7 @@ const AddLeadPage = () => {
         prospectus_type: "",
         other_source: "",
         other_domain: "",
+        // Remove other_requirement from reset
       });
 
       // Navigate back to leads page after short delay
@@ -386,14 +412,33 @@ const AddLeadPage = () => {
                 <Divider className="mb-4" />
                 
                 <div className="space-y-4">
-                  <Textarea
+                  <Select
                     label="Brief Requirement"
-                    placeholder="Enter brief requirement summary"
-                    name="requirement"
-                    value={formData.requirement}
-                    onChange={handleChange}
-                    minRows={2}
-                  />
+                    placeholder="Select requirement type"
+                    selectedKeys={formData.requirement ? [formData.requirement] : []}
+                    onChange={(e) => handleSelectChange("requirement", e.target.value)}
+                  >
+                    {requirementTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                  
+                  {isOtherRequirement && (
+                    <div className="p-3 border rounded-md bg-default-50">
+                      <div className="mb-2 text-sm text-default-600">
+                        <p>You selected "Other". Please specify the requirement in the field below:</p>
+                      </div>
+                      <Input
+                        label="Specify Requirement"
+                        name="requirement"
+                        placeholder="Enter specific requirement"
+                        value={formData.requirement === "Other" ? "" : formData.requirement}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  )}
                   
                   <Textarea
                     label="Detailed Requirement"

@@ -56,6 +56,7 @@ function RegistrationPage() {
   const [filterService, setFilterService] = React.useState<string>("");
   const [departments, setDepartments] = React.useState<string[]>([]);
   const [services, setServices] = React.useState<string[]>([]);
+  const [statuses, setStatuses] = React.useState<string[]>([]);
   
   // Permissions state
   const [canClickRegistrationRows, setCanClickRegistrationRows] = React.useState(false);
@@ -78,6 +79,7 @@ function RegistrationPage() {
     if (registrations.length > 0) {
       const departmentsSet = new Set<string>();
       const servicesSet = new Set<string>();
+      const statusesSet = new Set<string>();
 
       registrations.forEach((reg) => {
         if (reg.prospectus?.department) departmentsSet.add(reg.prospectus.department);
@@ -88,10 +90,12 @@ function RegistrationPage() {
             if (service) servicesSet.add(service);
           });
         }
+        if (reg.status) statusesSet.add(reg.status);
       });
 
       setDepartments(Array.from(departmentsSet));
       setServices(Array.from(servicesSet));
+      setStatuses(Array.from(statusesSet));
     }
 
     // Check permissions
@@ -373,8 +377,11 @@ function RegistrationPage() {
               onChange={handleStatusChange}
             >
               <SelectItem key="" value="">All Statuses</SelectItem>
-              <SelectItem key="pending" value="pending">Pending</SelectItem>
-              <SelectItem key="registered" value="registered">Registered</SelectItem>
+              {statuses.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </SelectItem>
+              )) as any}
             </Select>
 
             <Select
@@ -518,12 +525,16 @@ function RegistrationPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={registration.status === 'registered' ? 'success' : 'warning'}
+                        <Chip
+                        color={
+                          registration.status === 'registered' ? 'success' :
+                          registration.status === 'waiting for approval' ? 'danger' :
+                          'warning'
+                        }
                         variant="flat"
-                      >
+                        >
                         {registration.status}
-                      </Chip>
+                        </Chip>
                     </TableCell>
                   </TableRow>
                 )

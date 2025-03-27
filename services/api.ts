@@ -191,7 +191,7 @@ interface Registration {
   accept_period: string;
   pub_period: string;
   bank_id: string;  // Added
-  status: 'pending' | 'registered';
+  status: 'pending' | 'registered' | 'waiting for approval';
   month: number;
   year: number;
   created_at: string;
@@ -271,7 +271,7 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'registered' | 'pending';  // Explicitly define literal types
+  status: 'registered' | 'pending '  | 'waiting for approval';  // Explicitly define literal types
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
@@ -289,7 +289,7 @@ interface RegistrationRecord {
   total_amount: number;
   accept_period: string;
   pub_period: string;
-  status: 'pending' | 'registered';
+  status: 'pending' | 'registered' | 'waiting for approval';
   month: number;
   year: number;
   created_at: string;
@@ -747,6 +747,105 @@ interface AuthorStats {
   tasks_past_due: number;
 }
 
+// Add new interface for pending registration response
+interface PendingRegistrationResponse {
+  registration: {
+    id: number;
+    date: string;
+    services: string;
+    initialAmount: number;
+    acceptedAmount: number;
+    discount: number;
+    totalAmount: number;
+    acceptPeriod: string;
+    pubPeriod: string;
+    status: string;
+    month: number;
+    year: number;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+    adminAssigned: boolean;
+  };
+  prospectus: {
+    id: number;
+    regId: string;
+    clientName: string;
+    email: string;
+    phone: string;
+    department: string;
+    state: string;
+    techPerson: string;
+    requirement: string;
+    services: string;
+    proposedServicePeriod: string;
+    notes: string;
+    nextFollowUp: string;
+    createdBy: {
+      id: string;
+      username: string;
+      email: string;
+    };
+  };
+  leads: {
+    id: number;
+    date: string;
+    leadSource: string;
+    clientName: string;
+    phoneNumber: string;
+    domain: string;
+    researchArea: string | null;
+    title: string | null;
+    degree: string | null;
+    university: string | null;
+    state: string;
+    country: string;
+    requirement: string;
+    detailedRequirement: string;
+    prospectusType: string;
+    followupDate: string;
+    remarks: string;
+    followupStatus: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  registeredBy: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  bankDetails: {
+    id: string;
+    bank: string;
+    branch: string;
+    upi_id: string;
+    ifsc_code: string;
+    created_at: string;
+    updated_at: string;
+    account_name: string;
+    account_type: string;
+    account_number: string;
+    account_holder_name: string;
+  };
+  transactionDetails: {
+    id: number;
+    amount: number;
+    entity_id: string;
+    updated_at: string;
+    transaction_id: string;
+    additional_info: Record<string, any>;
+    transaction_date: string;
+    transaction_type: string;
+  };
+}
+
+interface PendingRegistrationsResponse {
+  success: boolean;
+  data: PendingRegistrationResponse[];
+  count: number;
+  timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -981,19 +1080,6 @@ const api = {
             const response = await this.axiosInstance.delete(`/common/services/${id}`);
             return response.data;
         } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
-    // Add new method for getting executives
-    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
-        try {
-            // Try one of these endpoints based on your backend structure:
-            const response = await this.axiosInstance.get('/entity/all');
-            
-            return response.data;
-        } catch (error: any) {
-            console.error('API getAllExecutives error:', error);
             throw this.handleError(error);
         }
     },
@@ -1322,6 +1408,19 @@ const api = {
         }
     },
 
+    // Add new method for getting executives
+    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
+        try {
+            // Try one of these endpoints based on your backend structure:
+            const response = await this.axiosInstance.get('/entity/all');
+            
+            return response.data;
+        } catch (error: any) {
+            console.error('API getAllExecutives error:', error);
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method for fetching editors
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
@@ -1330,6 +1429,40 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Error in getAllEditors:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+    // Add new method for fetching editors
+    async getAllAuthors(): Promise<ApiResponse<Editor[]>> {
+        try {
+            
+            const response = await this.axiosInstance.get('/entity/author/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllAuthors:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+
+    async getAllEditorsAndAuthors(): Promise<ApiResponse<Editor[]>> {
+        try {
+            
+            const response = await this.axiosInstance.get('/entity/editors-authors/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllEditorsAndAuthors:', {
                 message: error.message,
                 response: error.response?.data,
                 status: error.response?.status,
@@ -1683,6 +1816,30 @@ const api = {
         };
       },
 
+    // Add new method for fetching pending registrations
+    async getPendingRegistrations(): Promise<PendingRegistrationsResponse> {
+        try {
+            const response = await this.axiosInstance.get('/admin/registrations/pending');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add method to approve/assign a registration
+    async assignRegistration(registrationId: number, editorId: string): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/assign`, {
+                assigned_to: editorId
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error assigning registration:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },
@@ -1797,13 +1954,13 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-    Editor,  // Add this export
+    Editor,
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
     DashboardStats,
     ActivityItem,
-    Permission,  // Add this export
+    Permission,
     Lead,
     CreateLeadRequest,
     UpdateLeadRequest,
@@ -1816,6 +1973,8 @@ export type {
     ClientPendingRegistrationResponse,
     AuthorTask,
     AuthorTaskUpdateRequest,
-    AuthorStats
+    AuthorStats,
+    PendingRegistrationResponse,
+    PendingRegistrationsResponse
 };
 export default api;

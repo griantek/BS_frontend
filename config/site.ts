@@ -28,6 +28,7 @@ import {
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
   CheckIcon,
+  CurrencyDollarIcon
 } from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
@@ -41,27 +42,27 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/admin",
-      icon: Home
+      icon: ChartPieIcon
     },
     {
       label: "Users",
-      href: "/admin/users/executives",
-      icon: Users
+      href: "/admin/users",
+      icon: UserGroupIcon
     },
     {
       label: "Services",
       href: "/admin/services",
-      icon: Briefcase
+      icon: WrenchScrewdriverIcon
     },
     {
-      label: "Clients",
-      href: "/admin/clients",
-      icon: Building2
+      label: "Approval",
+      href: "/admin/approval",
+      icon: ClipboardDocumentCheckIcon
     },
     {
       label: "Finance",
       href: "/admin/finance",
-      icon: Banknote
+      icon: CurrencyDollarIcon
     },
     {
       label: "Departments",

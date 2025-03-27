@@ -18,7 +18,7 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { BellIcon, ChartPieIcon, UsersIcon, UserGroupIcon, DocumentTextIcon, UserIcon, BriefcaseIcon, TableCellsIcon, UserPlusIcon, BellAlertIcon } from "@heroicons/react/24/outline";
+import { BellIcon, ChartPieIcon, UserGroupIcon,TableCellsIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";
@@ -28,7 +28,7 @@ import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 import { ProfileMenu } from '@/components/ProfileMenu';
-import { currentUserHasRecordsAccess, currentUserHasPermission, getCurrentUser, PERMISSIONS } from '@/utils/permissions';
+import { currentUserHasRecordsAccess, currentUserHasPermission,  PERMISSIONS } from '@/utils/permissions';
 
 interface NavItem {
   label: string;
@@ -53,6 +53,7 @@ export const Navbar = () => {
   const [showClientsTab, setShowClientsTab] = React.useState(false); 
   const [showFinanceTab, setShowFinanceTab] = React.useState(false);
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
+  const [showApprovalNav, setShowApprovalNav] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
   const isLeadsPath = pathname?.startsWith('/business/conversion');
@@ -100,6 +101,7 @@ export const Navbar = () => {
         setShowClientsTab(true);
         setShowFinanceTab(true);  // SuperAdmin has finance tab access
         setShowDepartmentTab(true);  // SuperAdmin has department tab access
+        setShowApprovalNav(true);
         return;
       }
       
@@ -119,6 +121,9 @@ export const Navbar = () => {
 
         // Check for department tab permission
         setShowDepartmentTab(currentUserHasPermission(PERMISSIONS.SHOW_DEPARTMENT_TAB));
+        
+        // Check for approval nav permission
+        setShowApprovalNav(currentUserHasPermission(PERMISSIONS.SHOW_APPROVAL_NAV));
       }
     };
     
@@ -143,6 +148,10 @@ export const Navbar = () => {
         }
         if (typeof event.detail.showDepartmentTab === 'boolean') {
           setShowDepartmentTab(event.detail.showDepartmentTab);
+        }
+        // Add handler for approval nav permission
+        if (typeof event.detail.showApprovalNav === 'boolean') {
+          setShowApprovalNav(event.detail.showApprovalNav);
         }
       }
     };
@@ -256,6 +265,10 @@ export const Navbar = () => {
         
         if (link.href.includes('/admin/department')) {
           return showDepartmentTab;
+        }
+        
+        if (link.href.includes('/admin/approval')) {
+          return showApprovalNav;
         }
         
         return true;

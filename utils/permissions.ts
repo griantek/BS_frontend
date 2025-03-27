@@ -51,6 +51,7 @@ export const PERMISSIONS = {
   SHOW_ADD_BANK_BUTTON: 'show_add_bank_btn',
   SHOW_DEPARTMENT_TAB: 'show_dept_tab',
   SHOW_ADD_DEPARTMENT_BUTTON: 'show_add_dept_btn',
+  SHOW_APPROVAL_NAV: 'show_approval_nav',
 
   // LEADS PERMISSIONS
   VIEW_DASHBOARD_LEADS: 'view_dash_leads',

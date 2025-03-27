@@ -104,7 +104,7 @@ function ClientLoginContent() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <h1 className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-success to-success-600">
-                Journal Portal
+                Client Portal
               </h1>
               <Input
                 label="Email"

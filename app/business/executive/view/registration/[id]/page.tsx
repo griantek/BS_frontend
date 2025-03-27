@@ -1,8 +1,8 @@
-"use client"
-import React, { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { checkAuth } from '@/utils/authCheck';
-import { toast } from 'react-toastify';
+"use client";
+import React, { Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { checkAuth } from "@/utils/authCheck";
+import { toast } from "react-toastify";
 import {
   Card,
   CardHeader,
@@ -18,15 +18,24 @@ import {
   useDisclosure,
   Input,
   Select,
-  SelectItem
-} from "@nextui-org/react";  // Correct import
-import { format } from 'date-fns';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import api from '@/services/api';
-import { withExecutiveAuth } from '@/components/withExecutiveAuth';
+  SelectItem,
+} from "@nextui-org/react"; // Correct import
+import { format } from "date-fns";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import api from "@/services/api";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import { useForm } from "react-hook-form";
-import type { Registration, BankAccount, TransactionInfo, Editor } from '@/services/api';
-import { hasPermission, PERMISSIONS, UserWithPermissions } from '@/utils/permissions';
+import type {
+  Registration,
+  BankAccount,
+  TransactionInfo,
+  Editor,
+} from "@/services/api";
+import {
+  hasPermission,
+  PERMISSIONS,
+  UserWithPermissions,
+} from "@/utils/permissions";
 
 interface ExtendedRegistration extends Registration {
   date: string;
@@ -37,7 +46,7 @@ interface ExtendedRegistration extends Registration {
     branch: string;
     upi_id: string;
     ifsc_code: string;
-    created_at: string;  // Add this property
+    created_at: string; // Add this property
     account_name: string;
     account_type: string;
     account_number: string;
@@ -47,7 +56,7 @@ interface ExtendedRegistration extends Registration {
     id: number;
     amount: number;
     entity_id: string;
-    executive: object;  // Add this property
+    executive: object; // Add this property
     transaction_id: string;
     transaction_date: string;
     transaction_type: string;
@@ -60,7 +69,15 @@ interface ExtendedRegistration extends Registration {
 
 // Add payment form interface
 interface PaymentFormData {
-  paymentMode: 'cash' | 'upi' | 'netbanking' | 'card' | 'cheque' | 'wallet' | 'gateway' | 'crypto';
+  paymentMode:
+    | "cash"
+    | "upi"
+    | "netbanking"
+    | "card"
+    | "cheque"
+    | "wallet"
+    | "gateway"
+    | "crypto";
   amount: number;
   transactionDate: string;
   transactionId?: string;
@@ -70,37 +87,40 @@ interface PaymentFormData {
   cardLastFourDigits?: string;
   receiptNumber?: string;
   chequeNumber?: string;
-  walletProvider?: 'paytm' | 'phonepe' | 'other';
-  gatewayProvider?: 'razorpay' | 'stripe' | 'other';
+  walletProvider?: "paytm" | "phonepe" | "other";
+  gatewayProvider?: "razorpay" | "stripe" | "other";
   transactionHash?: string;
   cryptoCurrency?: string;
-  assigned_to: string;  // Add this field
+  assigned_to: string; // Add this field
 }
 
 // Add PAYMENT_MODE_MAP constant
-const PAYMENT_MODE_MAP: Record<string, TransactionInfo['transaction_type']> = {
-  cash: 'Cash',
-  upi: 'UPI',
-  netbanking: 'Bank Transfer',
-  card: 'Card',
-  cheque: 'Cheque',
-  wallet: 'Wallet',
-  gateway: 'Online Payment',
-  crypto: 'Crypto',
+const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
+  cash: "Cash",
+  upi: "UPI",
+  netbanking: "Bank Transfer",
+  card: "Card",
+  cheque: "Cheque",
+  wallet: "Wallet",
+  gateway: "Online Payment",
+  crypto: "Crypto",
 } as const;
 
 // Add a helper function to calculate balance amount
-const calculateBalanceAmount = (totalAmount: number, paidAmount: number = 0): number => {
+const calculateBalanceAmount = (
+  totalAmount: number,
+  paidAmount: number = 0
+): number => {
   return Math.max(0, totalAmount - paidAmount);
 };
 
 // Add a helper component to display payment status with balance
-const PaymentStatusDisplay = ({ 
-  status, 
+const PaymentStatusDisplay = ({
+  status,
   totalAmount,
   paidAmount,
-  paymentType
-}: { 
+  paymentType,
+}: {
   status: string;
   totalAmount: number;
   paidAmount?: number;
@@ -108,33 +128,45 @@ const PaymentStatusDisplay = ({
 }) => {
   // Calculate the balance amount
   const balanceAmount = calculateBalanceAmount(totalAmount, paidAmount || 0);
-  const isPartiallyPaid = status === 'registered' && paidAmount && paidAmount < totalAmount;
-  
+  const isPartiallyPaid =
+    status === "registered" && paidAmount && paidAmount < totalAmount;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center">
         <Chip
-          color={status === 'registered' ? 'success' : 'warning'}
+          color={
+            status === "registered"
+              ? "success"
+              : status === "waiting for approval"
+                ? "danger"
+                : "warning"
+          }
           variant="flat"
           size="sm"
         >
-          {status === 'registered' ? (
-            isPartiallyPaid ? 'Partially Paid' : 'Paid'
-          ) : 'Pending'}
+          {status === "registered"
+            ? isPartiallyPaid
+              ? "Partially Paid"
+              : "Paid"
+            : "Pending"}
         </Chip>
-        
-        {paymentType && status === 'registered' && (
+
+        {paymentType && status === "registered" && (
           <Chip className="ml-2" color="primary" variant="flat" size="sm">
             {paymentType}
           </Chip>
         )}
       </div>
-      
+
       {isPartiallyPaid && (
         <div className="text-sm bg-warning-50 dark:bg-warning-900/20 p-2 rounded text-warning-700 dark:text-warning-400">
-          <div className="font-medium">Balance Due: ₹{balanceAmount.toLocaleString()}</div>
+          <div className="font-medium">
+            Balance Due: ₹{balanceAmount.toLocaleString()}
+          </div>
           <div className="text-xs">
-            Paid: ₹{paidAmount.toLocaleString()} of ₹{totalAmount.toLocaleString()}
+            Paid: ₹{paidAmount.toLocaleString()} of ₹
+            {totalAmount.toLocaleString()}
           </div>
         </div>
       )}
@@ -144,11 +176,20 @@ const PaymentStatusDisplay = ({
 
 function RegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
-  const { isOpen: isPaymentModalOpen, onOpen: onPaymentModalOpen, onClose: onPaymentModalClose } = useDisclosure();
-  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
+  const {
+    isOpen: isPaymentModalOpen,
+    onOpen: onPaymentModalOpen,
+    onClose: onPaymentModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isDeleteModalOpen,
+    onOpen: onDeleteModalOpen,
+    onClose: onDeleteModalClose,
+  } = useDisclosure();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [registrationData, setRegistrationData] = React.useState<ExtendedRegistration | null>(null);
+  const [registrationData, setRegistrationData] =
+    React.useState<ExtendedRegistration | null>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [editors, setEditors] = React.useState<Editor[]>([]);
 
@@ -156,7 +197,7 @@ function RegistrationContent({ regId }: { regId: string }) {
   const [permissions, setPermissions] = React.useState({
     canEditRegistration: false,
     canDeleteRegistration: false,
-    canApproveRegistration: false
+    canApproveRegistration: false,
   });
 
   const {
@@ -164,46 +205,56 @@ function RegistrationContent({ regId }: { regId: string }) {
     handleSubmit,
     watch,
     formState: { errors },
-    reset
+    reset,
   } = useForm<PaymentFormData>({
     defaultValues: {
-      paymentMode: 'cash',
+      paymentMode: "cash",
       amount: 0,
-      transactionDate: new Date().toISOString().split('T')[0],
-      assigned_to: '', // Add this default value
-    }
+      transactionDate: new Date().toISOString().split("T")[0],
+      assigned_to: "", // Add this default value
+    },
   });
 
   React.useEffect(() => {
     if (!checkAuth(router)) return;
-    
-    const userStr = localStorage.getItem('user');
+
+    const userStr = localStorage.getItem("user");
     if (!userStr) return;
-    
+
     const userData: UserWithPermissions = JSON.parse(userStr);
-    
+
     // Check permissions
     setPermissions({
-      canEditRegistration: hasPermission(userData, PERMISSIONS.SHOW_EDIT_REGISTRATION_BUTTON),
-      canDeleteRegistration: hasPermission(userData, PERMISSIONS.SHOW_DELETE_REGISTRATION_BUTTON),
-      canApproveRegistration: hasPermission(userData, PERMISSIONS.SHOW_APPROVE_BUTTON)
+      canEditRegistration: hasPermission(
+        userData,
+        PERMISSIONS.SHOW_EDIT_REGISTRATION_BUTTON
+      ),
+      canDeleteRegistration: hasPermission(
+        userData,
+        PERMISSIONS.SHOW_DELETE_REGISTRATION_BUTTON
+      ),
+      canApproveRegistration: hasPermission(
+        userData,
+        PERMISSIONS.SHOW_APPROVE_BUTTON
+      ),
     });
 
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [registrationResponse, bankResponse, editorsResponse] = await Promise.all([
-          api.getRegistrationById(parseInt(regId)),
-          api.getAllBankAccounts(),
-          api.getAllEditors(),
-        ]);
+        const [registrationResponse, bankResponse, editorsResponse] =
+          await Promise.all([
+            api.getRegistrationById(parseInt(regId)),
+            api.getAllBankAccounts(),
+            api.getAllEditors(),
+          ]);
         setRegistrationData(registrationResponse.data as ExtendedRegistration);
         setBankAccounts(bankResponse.data);
         setEditors(editorsResponse.data);
       } catch (error) {
-        console.error('Error fetching registration:', error);
-        toast.error('Failed to load registration data');
-        router.push('/busines/executives');
+        console.error("Error fetching registration:", error);
+        toast.error("Failed to load registration data");
+        router.push("/busines/executives");
       } finally {
         setIsLoading(false);
       }
@@ -215,7 +266,7 @@ function RegistrationContent({ regId }: { regId: string }) {
   if (isLoading) return <div>Loading...</div>;
   if (!registrationData) return <div>No data found</div>;
 
-  const formatDate = (date: string) => format(new Date(date), 'dd/MM/yyyy');
+  const formatDate = (date: string) => format(new Date(date), "dd/MM/yyyy");
 
   const renderPaymentFields = () => {
     const paymentMode = watch("paymentMode");
@@ -246,11 +297,7 @@ function RegistrationContent({ regId }: { regId: string }) {
               label="Account Number"
               {...register("accountNumber")}
             />
-            <Input 
-              type="text" 
-              label="IFSC Code" 
-              {...register("ifscCode")} 
-            />
+            <Input type="text" label="IFSC Code" {...register("ifscCode")} />
             <Input
               type="text"
               label="Transaction Reference"
@@ -297,13 +344,16 @@ function RegistrationContent({ regId }: { regId: string }) {
       case "wallet":
         return (
           <>
-            <Select
-              label="Wallet Provider"
-              {...register("walletProvider")}
-            >
-              <SelectItem key="paytm" value="paytm">Paytm</SelectItem>
-              <SelectItem key="phonepe" value="phonepe">PhonePe</SelectItem>
-              <SelectItem key="other" value="other">Other</SelectItem>
+            <Select label="Wallet Provider" {...register("walletProvider")}>
+              <SelectItem key="paytm" value="paytm">
+                Paytm
+              </SelectItem>
+              <SelectItem key="phonepe" value="phonepe">
+                PhonePe
+              </SelectItem>
+              <SelectItem key="other" value="other">
+                Other
+              </SelectItem>
             </Select>
             <Input
               type="text"
@@ -316,13 +366,16 @@ function RegistrationContent({ regId }: { regId: string }) {
       case "gateway":
         return (
           <>
-            <Select
-              label="Payment Gateway"
-              {...register("gatewayProvider")}
-            >
-              <SelectItem key="razorpay" value="razorpay">Razorpay</SelectItem>
-              <SelectItem key="stripe" value="stripe">Stripe</SelectItem>
-              <SelectItem key="other" value="other">Other</SelectItem>
+            <Select label="Payment Gateway" {...register("gatewayProvider")}>
+              <SelectItem key="razorpay" value="razorpay">
+                Razorpay
+              </SelectItem>
+              <SelectItem key="stripe" value="stripe">
+                Stripe
+              </SelectItem>
+              <SelectItem key="other" value="other">
+                Other
+              </SelectItem>
             </Select>
             <Input
               type="text"
@@ -359,43 +412,43 @@ function RegistrationContent({ regId }: { regId: string }) {
 
       // Add validation for editor assignment
       if (!data.assigned_to) {
-        toast.error('Please select an editor to assign');
+        toast.error("Please select an editor to assign");
         return;
       }
 
       // Get user data for entity_id
       const user = api.getStoredUser();
       if (!user?.id) {
-        toast.error('User data not found');
+        toast.error("User data not found");
         return;
       }
 
       // Prepare additional info based on payment mode
       const additionalInfo: Record<string, any> = {};
       switch (data.paymentMode) {
-        case 'upi':
+        case "upi":
           additionalInfo.upi_id = data.upiId;
           break;
-        case 'netbanking':
+        case "netbanking":
           additionalInfo.account_number = data.accountNumber;
           additionalInfo.ifsc_code = data.ifscCode;
           break;
-        case 'card':
+        case "card":
           additionalInfo.card_last_four = data.cardLastFourDigits;
           break;
-        case 'cash':
+        case "cash":
           additionalInfo.receipt_number = data.receiptNumber;
           break;
-        case 'cheque':
+        case "cheque":
           additionalInfo.cheque_number = data.chequeNumber;
           break;
-        case 'wallet':
+        case "wallet":
           additionalInfo.wallet_provider = data.walletProvider;
           break;
-        case 'gateway':
+        case "gateway":
           additionalInfo.gateway_provider = data.gatewayProvider;
           break;
-        case 'crypto':
+        case "crypto":
           additionalInfo.transaction_hash = data.transactionHash;
           additionalInfo.crypto_currency = data.cryptoCurrency;
           break;
@@ -403,9 +456,9 @@ function RegistrationContent({ regId }: { regId: string }) {
 
       // Prepare update data
       const updateData = {
-        status: 'registered' as const,
+        status: "registered" as const,
         transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
-        transaction_id: data.transactionId || '',
+        transaction_id: data.transactionId || "",
         amount: data.amount,
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
@@ -414,18 +467,21 @@ function RegistrationContent({ regId }: { regId: string }) {
       };
 
       // Send update request
-      const response = await api.approveRegistration(registrationData.id, updateData);
-      
+      const response = await api.approveRegistration(
+        registrationData.id,
+        updateData
+      );
+
       if (response.success) {
-        toast.success('Registration approved successfully');
+        toast.success("Registration approved successfully");
         // Refresh the page data
         window.location.reload();
       } else {
-        toast.error('Failed to approve registration');
+        toast.error("Failed to approve registration");
       }
     } catch (error) {
-      console.error('Approval error:', error);
-      toast.error('Failed to approve registration');
+      console.error("Approval error:", error);
+      toast.error("Failed to approve registration");
     } finally {
       onPaymentModalClose();
     }
@@ -435,19 +491,19 @@ function RegistrationContent({ regId }: { regId: string }) {
   const handleDelete = async () => {
     try {
       if (!registrationData) return;
-      
+
       setIsDeleting(true);
       const response = await api.deleteRegistration(registrationData.id);
-      
+
       if (response.success) {
-        toast.success('Registration deleted successfully');
-        router.push('/business/executive');
+        toast.success("Registration deleted successfully");
+        router.push("/business/executive");
       } else {
-        toast.error('Failed to delete registration');
+        toast.error("Failed to delete registration");
       }
     } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete registration');
+      console.error("Delete error:", error);
+      toast.error("Failed to delete registration");
     } finally {
       setIsDeleting(false);
       onDeleteModalClose();
@@ -460,7 +516,7 @@ function RegistrationContent({ regId }: { regId: string }) {
         isIconOnly
         variant="light"
         className="fixed top-4 left-4 z-50"
-        onClick={() => router.push('/business/executive/records')}  // Changed from '/business/executive' to '/business/executive/records'
+        onClick={() => router.push("/business/executive/records")} // Changed from '/business/executive' to '/business/executive/records'
       >
         <ArrowLeftIcon className="h-5 w-5" />
       </Button>
@@ -471,24 +527,31 @@ function RegistrationContent({ regId }: { regId: string }) {
           <CardHeader className="flex justify-between items-center px-6 py-4">
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold">Registration Details</h1>
-              <p className="text-small text-default-500">ID: {registrationData.prospectus.reg_id}</p>
+              <p className="text-small text-default-500">
+                ID: {registrationData.prospectus.reg_id}
+              </p>
             </div>
             <div className="flex gap-3">
               {/* Check both registration status and permission */}
-              {registrationData.status === 'pending' && permissions.canApproveRegistration && (
-                <Button
-                  color="success"
-                  variant="flat"
-                  onPress={onPaymentModalOpen}
-                >
-                  Approve Registration
-                </Button>
-              )}
+              {registrationData.status === "pending" &&
+                permissions.canApproveRegistration && (
+                  <Button
+                    color="success"
+                    variant="flat"
+                    onPress={onPaymentModalOpen}
+                  >
+                    Approve Registration
+                  </Button>
+                )}
               {permissions.canEditRegistration && (
                 <Button
                   color="primary"
                   variant="flat"
-                  onPress={() => router.push(`/business/executive/edit/registration/${regId}`)}
+                  onPress={() =>
+                    router.push(
+                      `/business/executive/edit/registration/${regId}`
+                    )
+                  }
                 >
                   Edit Registration
                 </Button>
@@ -515,20 +578,45 @@ function RegistrationContent({ regId }: { regId: string }) {
             <Divider />
             <CardBody className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <InfoField label="Client Name" value={registrationData.prospectus.client_name} />
-                <InfoField label="Email" value={registrationData.prospectus.email} />
-                <InfoField label="Phone" value={registrationData.prospectus.phone} />
-                <InfoField label="Department" value={registrationData.prospectus.department} />
-                <InfoField label="State" value={registrationData.prospectus.state} />
+                <InfoField
+                  label="Client Name"
+                  value={registrationData.prospectus.client_name}
+                />
+                <InfoField
+                  label="Email"
+                  value={registrationData.prospectus.email}
+                />
+                <InfoField
+                  label="Phone"
+                  value={registrationData.prospectus.phone}
+                />
+                <InfoField
+                  label="Department"
+                  value={registrationData.prospectus.department}
+                />
+                <InfoField
+                  label="State"
+                  value={registrationData.prospectus.state}
+                />
                 {registrationData.assigned_to && (
-                  <InfoField 
-                    label="Assigned Editor" 
-                    value={editors?.find(e => e.id === registrationData.assigned_to)?.username || registrationData.assigned_to} 
+                  <InfoField
+                    label="Assigned Editor"
+                    value={
+                      editors?.find(
+                        (e) => e.id === registrationData.assigned_to
+                      )?.username || registrationData.assigned_to
+                    }
                   />
                 )}
                 <InfoField label="Status">
                   <Chip
-                    color={registrationData.status === 'registered' ? 'success' : 'warning'}
+                    color={
+                      registrationData.status === "registered"
+                        ? "success"
+                        : registrationData.status === "waiting for approval"
+                          ? "danger"
+                          : "warning"
+                    }
                     variant="flat"
                   >
                     {registrationData.status}
@@ -546,11 +634,23 @@ function RegistrationContent({ regId }: { regId: string }) {
             <Divider />
             <CardBody className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <InfoField label="Registration Date" value={formatDate(registrationData.date)} />
+                <InfoField
+                  label="Registration Date"
+                  value={formatDate(registrationData.date)}
+                />
                 <InfoField label="Services" value={registrationData.services} />
-                <InfoField label="Accept Period" value={registrationData.accept_period} />
-                <InfoField label="Publication Period" value={registrationData.pub_period} />
-                <InfoField label="Month/Year" value={`${registrationData.month}/${registrationData.year}`} />
+                <InfoField
+                  label="Accept Period"
+                  value={registrationData.accept_period}
+                />
+                <InfoField
+                  label="Publication Period"
+                  value={registrationData.pub_period}
+                />
+                <InfoField
+                  label="Month/Year"
+                  value={`${registrationData.month}/${registrationData.year}`}
+                />
               </div>
             </CardBody>
           </Card>
@@ -566,23 +666,35 @@ function RegistrationContent({ regId }: { regId: string }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                   <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                  <p className="text-2xl font-bold">₹{registrationData.total_amount.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">Inclusive of all charges</p>
+                  <p className="text-2xl font-bold">
+                    ₹{registrationData.total_amount.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Inclusive of all charges
+                  </p>
                 </div>
-                {registrationData.status === 'registered' && (
+                {registrationData.status === "registered" && (
                   <>
                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                       <p className="text-sm text-gray-600 mb-1">Amount Paid</p>
-                      <p className="text-2xl font-bold text-success">₹{registrationData.transactions.amount.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500 mt-1">Payment completed</p>
+                      <p className="text-2xl font-bold text-success">
+                        ₹{registrationData.transactions.amount.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Payment completed
+                      </p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                      <p className="text-sm text-gray-600 mb-1">Payment Status</p>
-                      <PaymentStatusDisplay 
+                      <p className="text-sm text-gray-600 mb-1">
+                        Payment Status
+                      </p>
+                      <PaymentStatusDisplay
                         status={registrationData.status}
                         totalAmount={registrationData.total_amount}
                         paidAmount={registrationData.transactions?.amount}
-                        paymentType={registrationData.transactions?.transaction_type}
+                        paymentType={
+                          registrationData.transactions?.transaction_type
+                        }
                       />
                     </div>
                   </>
@@ -595,51 +707,80 @@ function RegistrationContent({ regId }: { regId: string }) {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                     <span className="text-gray-400">Initial Amount</span>
-                    <span className="font-medium">₹{registrationData.init_amount.toLocaleString()}</span>
+                    <span className="font-medium">
+                      ₹{registrationData.init_amount.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-400">
                     <span className="text-gray-400">Acceptance Amount</span>
-                    <span className="font-medium">₹{registrationData.accept_amount.toLocaleString()}</span>
+                    <span className="font-medium">
+                      ₹{registrationData.accept_amount.toLocaleString()}
+                    </span>
                   </div>
                   {registrationData.discount > 0 && (
                     <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                       <span className="text-gray-400">Discount Applied</span>
-                      <span className="font-medium text-green-600">- ₹{registrationData.discount.toLocaleString()}</span>
+                      <span className="font-medium text-green-600">
+                        - ₹{registrationData.discount.toLocaleString()}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-2">
                     <span className="font-semibold">Total Amount</span>
-                    <span className="font-bold text-lg">₹{registrationData.total_amount.toLocaleString()}</span>
+                    <span className="font-bold text-lg">
+                      ₹{registrationData.total_amount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Transaction Details - Only show if registered */}
-              {registrationData.status === 'registered' && (
+              {registrationData.status === "registered" || registrationData.status === "waiting for approval" && (
                 <div className="bg-default-50 dark:bg-default-900/20 p-6 rounded-xl">
-                  <h3 className="text-md font-semibold mb-4">Transaction Information</h3>
+                  <h3 className="text-md font-semibold mb-4">
+                    Transaction Information
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Payment Method</p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Payment Method
+                      </p>
                       <Chip
-                        color={registrationData.transactions.transaction_type === 'Cash' ? 'warning' : 'primary'}
+                        color={
+                          registrationData.transactions.transaction_type ===
+                          "Cash"
+                            ? "warning"
+                            : "primary"
+                        }
                         variant="flat"
                       >
                         {registrationData.transactions.transaction_type}
                       </Chip>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Transaction ID</p>
-                      <p className="font-medium">{registrationData.transactions.transaction_id}</p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Transaction ID
+                      </p>
+                      <p className="font-medium">
+                        {registrationData.transactions.transaction_id}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Transaction Date</p>
-                      <p className="font-medium">{formatDate(registrationData.transactions.transaction_date)}</p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Transaction Date
+                      </p>
+                      <p className="font-medium">
+                        {formatDate(
+                          registrationData.transactions.transaction_date
+                        )}
+                      </p>
                     </div>
                     {registrationData.transactions.additional_info.upi_id && (
                       <div>
                         <p className="text-sm text-gray-600 mb-1">UPI ID</p>
-                        <p className="font-medium">{registrationData.transactions.additional_info.upi_id}</p>
+                        <p className="font-medium">
+                          {registrationData.transactions.additional_info.upi_id}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -649,7 +790,7 @@ function RegistrationContent({ regId }: { regId: string }) {
           </Card>
 
           {/* Bank Details - Show after financial details */}
-          {registrationData.status === 'registered' && (
+          {registrationData.status === "registered" || registrationData.status === "waiting for approval" && (
             <Card className="w-full md:col-span-2">
               <CardHeader>
                 <h2 className="text-xl font-bold">Bank Information</h2>
@@ -657,15 +798,39 @@ function RegistrationContent({ regId }: { regId: string }) {
               <Divider />
               <CardBody className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <InfoField label="Bank Name" value={registrationData.bank_accounts.bank} />
-                  <InfoField label="Branch" value={registrationData.bank_accounts.branch} />
-                  <InfoField label="Account Name" value={registrationData.bank_accounts.account_name} />
-                  <InfoField label="Account Holder" value={registrationData.bank_accounts.account_holder_name} />
-                  <InfoField label="Account Number" value={registrationData.bank_accounts.account_number} />
-                  <InfoField label="Account Type" value={registrationData.bank_accounts.account_type} />
-                  <InfoField label="IFSC Code" value={registrationData.bank_accounts.ifsc_code} />
+                  <InfoField
+                    label="Bank Name"
+                    value={registrationData.bank_accounts.bank}
+                  />
+                  <InfoField
+                    label="Branch"
+                    value={registrationData.bank_accounts.branch}
+                  />
+                  <InfoField
+                    label="Account Name"
+                    value={registrationData.bank_accounts.account_name}
+                  />
+                  <InfoField
+                    label="Account Holder"
+                    value={registrationData.bank_accounts.account_holder_name}
+                  />
+                  <InfoField
+                    label="Account Number"
+                    value={registrationData.bank_accounts.account_number}
+                  />
+                  <InfoField
+                    label="Account Type"
+                    value={registrationData.bank_accounts.account_type}
+                  />
+                  <InfoField
+                    label="IFSC Code"
+                    value={registrationData.bank_accounts.ifsc_code}
+                  />
                   {registrationData.bank_accounts.upi_id && (
-                    <InfoField label="UPI ID" value={registrationData.bank_accounts.upi_id} />
+                    <InfoField
+                      label="UPI ID"
+                      value={registrationData.bank_accounts.upi_id}
+                    />
                   )}
                 </div>
               </CardBody>
@@ -688,8 +853,8 @@ function RegistrationContent({ regId }: { regId: string }) {
       </div>
 
       {/* Payment Modal */}
-      <Modal 
-        isOpen={isPaymentModalOpen} 
+      <Modal
+        isOpen={isPaymentModalOpen}
         onClose={() => {
           onPaymentModalClose();
           reset();
@@ -701,18 +866,31 @@ function RegistrationContent({ regId }: { regId: string }) {
             <ModalHeader>Payment Details</ModalHeader>
             <ModalBody className="space-y-4">
               {/* Payment Mode */}
-              <Select
-                label="Payment Mode"
-                {...register("paymentMode")}
-              >
-                <SelectItem key="cash" value="cash">Cash</SelectItem>
-                <SelectItem key="upi" value="upi">UPI</SelectItem>
-                <SelectItem key="netbanking" value="netbanking">Net Banking</SelectItem>
-                <SelectItem key="card" value="card">Card</SelectItem>
-                <SelectItem key="cheque" value="cheque">Cheque</SelectItem>
-                <SelectItem key="wallet" value="wallet">Wallet</SelectItem>
-                <SelectItem key="gateway" value="gateway">Payment Gateway</SelectItem>
-                <SelectItem key="crypto" value="crypto">Cryptocurrency</SelectItem>
+              <Select label="Payment Mode" {...register("paymentMode")}>
+                <SelectItem key="cash" value="cash">
+                  Cash
+                </SelectItem>
+                <SelectItem key="upi" value="upi">
+                  UPI
+                </SelectItem>
+                <SelectItem key="netbanking" value="netbanking">
+                  Net Banking
+                </SelectItem>
+                <SelectItem key="card" value="card">
+                  Card
+                </SelectItem>
+                <SelectItem key="cheque" value="cheque">
+                  Cheque
+                </SelectItem>
+                <SelectItem key="wallet" value="wallet">
+                  Wallet
+                </SelectItem>
+                <SelectItem key="gateway" value="gateway">
+                  Payment Gateway
+                </SelectItem>
+                <SelectItem key="crypto" value="crypto">
+                  Cryptocurrency
+                </SelectItem>
               </Select>
 
               {/* Amount and Date */}
@@ -735,7 +913,9 @@ function RegistrationContent({ regId }: { regId: string }) {
               {/* Add editor selection */}
               <select
                 className="w-full p-2 rounded-lg border border-gray-300"
-                {...register("assigned_to", { required: "Editor assignment is required" })}
+                {...register("assigned_to", {
+                  required: "Editor assignment is required",
+                })}
               >
                 <option value="">Select Editor to Assign</option>
                 {editors.map((editor) => (
@@ -746,7 +926,11 @@ function RegistrationContent({ regId }: { regId: string }) {
               </select>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={onPaymentModalClose}>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={onPaymentModalClose}
+              >
                 Cancel
               </Button>
               <Button color="primary" type="submit">
@@ -762,14 +946,19 @@ function RegistrationContent({ regId }: { regId: string }) {
         <ModalContent>
           <ModalHeader>Confirm Delete</ModalHeader>
           <ModalBody>
-            Are you sure you want to delete this registration? This action cannot be undone.
+            Are you sure you want to delete this registration? This action
+            cannot be undone.
           </ModalBody>
           <ModalFooter>
-            <Button color="default" variant="light" onPress={onDeleteModalClose}>
+            <Button
+              color="default"
+              variant="light"
+              onPress={onDeleteModalClose}
+            >
               Cancel
             </Button>
-            <Button 
-              color="danger" 
+            <Button
+              color="danger"
               onPress={handleDelete}
               isLoading={isDeleting}
             >
@@ -783,7 +972,15 @@ function RegistrationContent({ regId }: { regId: string }) {
 }
 
 // Helper component for displaying info fields
-const InfoField = ({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) => (
+const InfoField = ({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+}) => (
   <div className="space-y-1">
     <p className="text-sm text-gray-600">{label}</p>
     {children || <p className="font-medium">{value}</p>}
@@ -796,7 +993,7 @@ interface PageProps {
 
 function RegistrationView({ params }: PageProps) {
   const resolvedParams = React.use(params);
-  
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <RegistrationContent regId={resolvedParams.id} />

@@ -24,7 +24,6 @@ import type {
   Service,
   CreateRegistrationRequest,
   TransactionInfo,
-  Editor,
 } from "@/services/api";
 import PasswordModal from "@/components/PasswordModal";
 
@@ -63,7 +62,6 @@ interface RegistrationFormData {
   transactionHash?: string;
   cryptoCurrency?: string;
   transactionId?: string;
-  assigned_to?: string;
 }
 
 const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
@@ -83,7 +81,6 @@ function RegistrationContent({ regId }: { regId: string }) {
   const [prospectData, setProspectData] = React.useState<any>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
-  const [editors, setEditors] = React.useState<Editor[]>([]);
   const [clientId, setClientId] = React.useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -124,18 +121,15 @@ function RegistrationContent({ regId }: { regId: string }) {
           prospectResponse,
           servicesResponse,
           bankResponse,
-          editorsResponse,
         ] = await Promise.all([
           api.getProspectusByRegId(regId),
           api.getAllServices(),
           api.getAllBankAccounts(),
-          api.getAllEditors(),
         ]);
 
         setProspectData(prospectResponse.data);
         setServices(servicesResponse.data);
         setBankAccounts(bankResponse.data);
-        setEditors(editorsResponse.data);
 
         if (prospectResponse.data.services) {
           const serviceMatch = servicesResponse.data.find(
@@ -368,12 +362,11 @@ const createClientWithPassword = async (password: string | null) => {
       init_amount: formData.initialAmount,
       accept_amount: formData.acceptanceAmount,
       discount: formData.discountAmount,
-      assigned_to: formData.assigned_to,
       total_amount: formData.totalAmount,
       accept_period: `${formData.acceptancePeriod} ${formData.acceptancePeriodUnit}`,
       pub_period: `${formData.publicationPeriod} ${formData.publicationPeriodUnit}`,
       bank_id: formData.selectedBank,
-      status: "registered" as const,
+      status: "waiting for approval" as const,
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
     };
@@ -763,20 +756,6 @@ const createClientWithPassword = async (password: string | null) => {
                 </div>
 
                 <div className="space-y-4">
-                  <select
-                    className="w-full p-2 rounded-lg border border-gray-300"
-                    {...register("assigned_to", {
-                      required: "Editor assignment is required",
-                    })}
-                  >
-                    <option value="">Select Editor to Assign</option>
-                    {editors.map((editor) => (
-                      <option key={editor.id} value={editor.id}>
-                        {editor.username}
-                      </option>
-                    ))}
-                  </select>
-
                   <div className="flex justify-end gap-3">
                     <Button
                       color="danger"
