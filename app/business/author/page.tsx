@@ -115,7 +115,7 @@ function AuthorDashboard() {
               </ul>
               
               <p className="text-default-600">
-                When you've completed a paper, please submit it through the task detail page for review by management. They will handle the publication process after review.
+                When you&apos;ve completed a paper, please submit it through the task detail page for review by management. They will handle the publication process after review.
               </p>
             </div>
           </CardBody>

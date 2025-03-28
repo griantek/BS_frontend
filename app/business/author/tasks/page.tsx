@@ -428,7 +428,7 @@ function AuthorTasks() {
                   </Button>
                 ) : (
                   <p className="text-default-400 text-sm">
-                    You don't have any assigned tasks yet.
+                    You don&apos;t have any assigned tasks yet.
                   </p>
                 )}
               </div>
