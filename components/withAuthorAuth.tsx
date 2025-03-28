@@ -20,7 +20,8 @@ const withAuthorAuth = (Component: React.ComponentType<any>) => {
           // Get user role
           const userRole = localStorage.getItem('userRole');
           
-          if (!token || userRole !== 'author') {
+          // Check if we have a token and the user is an author
+          if (!token || (userRole !== 'author' && userRole !== 'Author')) {
             // Redirect to login if not authenticated or not an author
             router.push('/business/executive/login');
             return;

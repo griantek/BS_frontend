@@ -522,12 +522,17 @@ interface AssignedRegistration {
   notes: string | null;
   updated_at: string;
   assigned_to: string;
+  author_status:string;
   prospectus: {
     id: number;
     email: string;
     reg_id: string;
     client_name: string;
     requirement: string;
+    phone:string;
+    department:string;
+    tech_person:string;
+    state:string;
     entity: {
       id: string;
       email: string;
@@ -1240,6 +1245,16 @@ const api = {
             throw this.handleError(error);
         }
     },
+    
+    async getAssignedRegistrationsAuthor(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/authors/assigned-registrations/${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching assigned registrations:', error);
+            throw this.handleError(error);
+        }
+    },
 
     // Department management methods
     async getAllDepartments(): Promise<ApiResponse<Department[]>> {
@@ -1918,6 +1933,32 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data by editor:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update this method to handle just the status and optional comments update
+    async updateAuthorStatus(regId: number, data: {status: string, comments?: string}): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.put(`/authors/status/${regId}`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating author status:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update this method to handle optional file uploads with status update
+    async updateAuthorStatusWithFile(formData: FormData): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post('/authors/upload-paper', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error uploading paper:', error);
             throw this.handleError(error);
         }
     },
