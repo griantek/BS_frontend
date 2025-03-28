@@ -390,7 +390,7 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
                     />
                     
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-default-700">
+                      <label className="text-sm font-medium text-default-700" htmlFor="file-upload">
                         Upload Receipt(s)
                       </label>
                       <div className="border-2 border-dashed border-default-200 rounded-lg p-4 text-center">
