@@ -20,49 +20,78 @@ import { SearchIcon } from '@/components/icons';
 import { withEditorAuth } from '@/components/withEditorAuth';
 import api, { JournalData } from '@/services/api';
 import { toast } from 'react-toastify';
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, EyeSlashIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
+import { useJournalCache } from '@/hooks/useJournalCache';
 import clsx from 'clsx';
 
 const JournalsEditorPage = () => {
     const [journals, setJournals] = React.useState<JournalData[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [initialLoadComplete, setInitialLoadComplete] = React.useState(false);
     const [filterValue, setFilterValue] = React.useState("");
     const [page, setPage] = React.useState(1);
     const [showPassword, setShowPassword] = React.useState<{ [key: number]: boolean }>({});
     const [canClickRows, setCanClickRows] = React.useState(false);
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
+    const { cachedJournals, saveToCache, clearCache } = useJournalCache();
     const rowsPerPage = 10;
     const router = useRouter();
+
+    // Fetch journals from API
+    const fetchJournals = React.useCallback(async (skipCache = false) => {
+        try {
+            if (isRefreshing) {
+                setIsLoading(false);
+            } else {
+                setIsLoading(true);
+            }
+
+            const user = api.getStoredUser();
+            if (!user?.id) {
+                throw new Error("User ID not found");
+            }
+            
+            const response = await api.getJournalDataByEditor(user.id);
+            if (response.success) {
+                setJournals(response.data);
+                saveToCache(response.data);
+            }
+        } catch (error) {
+            const errorMessage = api.handleError(error);
+            toast.error(errorMessage.error || 'Failed to load journals');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+            setInitialLoadComplete(true);
+        }
+    }, [saveToCache, isRefreshing]);
+
+    // Handle manual refresh
+    const handleRefresh = () => {
+        setIsRefreshing(true);
+        fetchJournals(true);
+    };
 
     React.useEffect(() => {
         // Check permission for clicking rows
         setCanClickRows(currentUserHasPermission(PERMISSIONS.CLICK_JOURNAL_ROWS));
         
-        const fetchJournals = async () => {
-            try {
-                setIsLoading(true);
-                const user = api.getStoredUser();
-                if (!user?.id) {
-                    throw new Error("User ID not found");
-                }
-                
-                // Use the new endpoint to get journals by editor ID
-                const response = await api.getJournalDataByEditor(user.id);
-                if (response.success) {
-                    setJournals(response.data);
-                }
-            } catch (error) {
-                const errorMessage = api.handleError(error);
-                toast.error(errorMessage.error || 'Failed to load journals');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchJournals();
-    }, []);
+        // Use cached data if available
+        if (cachedJournals && cachedJournals.length > 0) {
+            setJournals(cachedJournals);
+            setIsLoading(false);
+            setInitialLoadComplete(true);
+            
+            // Fetch fresh data in the background
+            fetchJournals();
+        } else {
+            // No cached data, fetch from API
+            fetchJournals();
+        }
+    }, [fetchJournals, cachedJournals]);
 
     const columns = [
         { key: "id", label: "ID" },
@@ -167,18 +196,6 @@ const JournalsEditorPage = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <span>{journal.password}</span>
-                            {/* <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                onClick={(e) => handlePasswordToggle(e, journal.id)}
-                            >
-                                {showPassword[journal.id] ? (
-                                    <EyeSlashIcon className="h-4 w-4" />
-                                ) : (
-                                    <EyeIcon className="h-4 w-4" />
-                                )}
-                            </Button> */}
                         </div>
                     </div>
                 );
@@ -192,23 +209,35 @@ const JournalsEditorPage = () => {
             <Card>
                 <CardHeader className="flex justify-between items-center px-6 py-4">
                     <h1 className="text-2xl font-bold">Journal Management</h1>
-                    <div className="flex-1 max-w-md ml-4">
-                        <Input
-                            isClearable
-                            classNames={{
-                                base: "w-full",
-                                inputWrapper: "border-1",
-                            }}
-                            placeholder="Search journals..."
-                            startContent={<SearchIcon />}
-                            value={filterValue}
-                            onClear={() => setFilterValue("")}
-                            onValueChange={setFilterValue}
-                        />
+                    <div className="flex items-center gap-4">
+                        <Button
+                            isIconOnly
+                            variant="light"
+                            color="primary"
+                            onClick={handleRefresh}
+                            isLoading={isRefreshing}
+                            className="min-w-10"
+                        >
+                            {!isRefreshing && <ArrowPathIcon className="h-5 w-5" />}
+                        </Button>
+                        <div className="flex-1 max-w-md ml-4">
+                            <Input
+                                isClearable
+                                classNames={{
+                                    base: "w-full",
+                                    inputWrapper: "border-1",
+                                }}
+                                placeholder="Search journals..."
+                                startContent={<SearchIcon />}
+                                value={filterValue}
+                                onClear={() => setFilterValue("")}
+                                onValueChange={setFilterValue}
+                            />
+                        </div>
                     </div>
                 </CardHeader>
                 <CardBody>
-                    {isLoading ? (
+                    {isLoading && !initialLoadComplete ? (
                         <LoadingSpinner text="Loading journals..." />
                     ) : (
                         <Table
@@ -240,6 +269,8 @@ const JournalsEditorPage = () => {
                             <TableBody
                                 items={items}
                                 emptyContent="No journals found"
+                                loadingContent={isRefreshing ? <LoadingSpinner /> : undefined}
+                                isLoading={isRefreshing}
                             >
                                 {(journal) => (
                                     <TableRow 

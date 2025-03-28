@@ -271,7 +271,7 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'registered' | 'pending '  | 'waiting for approval';  // Explicitly define literal types
+  status: 'registered' | 'pending'  | 'waiting for approval';  // Explicitly define literal types
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
@@ -849,6 +849,16 @@ interface PendingRegistrationsResponse {
   data: PendingRegistrationResponse[];
   count: number;
   timestamp: string;
+}
+
+// Add new interfaces for client payment
+interface ClientPaymentRequest {
+  quotation_id: number;
+  name: string;
+  amount: number;
+  notes?: string;
+  transaction_date: string;
+  entity_id: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1962,6 +1972,21 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add the new client payment method
+    async submitClientPayment(paymentData: FormData): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post('/clients/payment/submit', paymentData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error submitting client payment:', error);
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
@@ -2008,6 +2033,7 @@ export type {
     AuthorTaskUpdateRequest,
     AuthorStats,
     PendingRegistrationResponse,
-    PendingRegistrationsResponse
+    PendingRegistrationsResponse,
+    ClientPaymentRequest
 };
 export default api;

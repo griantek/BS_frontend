@@ -75,16 +75,8 @@ const QuotationsPage = () => {
   };
 
   const handleAccept = (id: number) => {
-    setLoadingId(id);
-    
-    // Simulate API call - in a real implementation, this would call an API endpoint
-    setTimeout(() => {
-      setQuotations(quotations.map(q => 
-        q.id === id ? {...q, status: 'registered' as 'registered'} : q
-      ));
-      setSelectedQuotation(null);
-      setLoadingId(null);
-    }, 1500);
+    // Navigate to the payment page instead of simulating API call
+    router.push(`/business/clients/journals/quotations/${id}`);
   };
 
   return (
@@ -160,23 +152,23 @@ const QuotationsPage = () => {
                     <tbody>
                       <tr className="border-t border-default-100">
                         <td className="p-3">{selectedQuotation.services}</td>
-                        <td className="p-3 text-right">${selectedQuotation.init_amount.toFixed(2)}</td>
+                        <td className="p-3 text-right">₹{selectedQuotation.init_amount.toFixed(2)}</td>
                       </tr>
                       {selectedQuotation.accept_amount > 0 && (
                         <tr className="border-t border-default-100">
                           <td className="p-3">Additional Services</td>
-                          <td className="p-3 text-right">${selectedQuotation.accept_amount.toFixed(2)}</td>
+                          <td className="p-3 text-right">₹{selectedQuotation.accept_amount.toFixed(2)}</td>
                         </tr>
                       )}
                       {selectedQuotation.discount > 0 && (
                         <tr className="border-t border-default-100">
                           <td className="p-3 text-danger">Discount</td>
-                          <td className="p-3 text-right text-danger">-${selectedQuotation.discount.toFixed(2)}</td>
+                          <td className="p-3 text-right text-danger">-₹{selectedQuotation.discount.toFixed(2)}</td>
                         </tr>
                       )}
                       <tr className="border-t border-default-200 bg-default-50">
                         <td className="p-3 font-semibold">Total</td>
-                        <td className="p-3 text-right font-semibold">${selectedQuotation.total_amount.toFixed(2)}</td>
+                        <td className="p-3 text-right font-semibold">₹{selectedQuotation.total_amount.toFixed(2)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -210,11 +202,9 @@ const QuotationsPage = () => {
                     <Button 
                       color="success" 
                       onClick={() => handleAccept(selectedQuotation.id)}
-                      isLoading={loadingId === selectedQuotation.id}
-                      spinner={<Spinner size="sm" />}
-                      startContent={loadingId !== selectedQuotation.id && <CheckCircleIcon className="h-4 w-4" />}
+                      startContent={<CheckCircleIcon className="h-4 w-4" />}
                     >
-                      {loadingId === selectedQuotation.id ? "Processing..." : "Accept & Pay"}
+                      Accept & Pay
                     </Button>
                   </div>
                 )}
@@ -263,7 +253,7 @@ const QuotationsPage = () => {
                           </div>
                         </div>
                         <div className="flex flex-col justify-center items-end gap-2">
-                          <div className="text-xl font-bold text-default-800">${quotation.total_amount.toFixed(2)}</div>
+                          <div className="text-xl font-bold text-default-800">₹{quotation.total_amount.toFixed(2)}</div>
                           <div className="flex items-center gap-2">
                             {quotation.status === 'pending' ? (
                               <div className="flex items-center text-xs text-warning">
