@@ -99,7 +99,7 @@ function TaskDetail({ params }: { params: Promise<{ id: string }> }) {
           formData.append('comments', comments);
         }
         
-        formData.append('reg_id', task.prospectus.reg_id);
+        formData.append('reg_id', task.prospectus.id.toString());
         
         // Call API function to update author status with file
         const response = await api.updateAuthorStatusWithFile(formData);

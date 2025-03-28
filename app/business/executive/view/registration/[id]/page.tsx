@@ -91,7 +91,6 @@ interface PaymentFormData {
   gatewayProvider?: "razorpay" | "stripe" | "other";
   transactionHash?: string;
   cryptoCurrency?: string;
-  assigned_to: string; // Add this field
 }
 
 // Add PAYMENT_MODE_MAP constant
@@ -211,7 +210,6 @@ function RegistrationContent({ regId }: { regId: string }) {
       paymentMode: "cash",
       amount: 0,
       transactionDate: new Date().toISOString().split("T")[0],
-      assigned_to: "", // Add this default value
     },
   });
 
@@ -410,12 +408,6 @@ function RegistrationContent({ regId }: { regId: string }) {
     try {
       if (!registrationData) return;
 
-      // Add validation for editor assignment
-      if (!data.assigned_to) {
-        toast.error("Please select an editor to assign");
-        return;
-      }
-
       // Get user data for entity_id
       const user = api.getStoredUser();
       if (!user?.id) {
@@ -456,14 +448,13 @@ function RegistrationContent({ regId }: { regId: string }) {
 
       // Prepare update data
       const updateData = {
-        status: "registered" as const,
+        status: "waiting for approval" as const,
         transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
         transaction_id: data.transactionId || "",
         amount: data.amount,
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
         entity_id: user.id,
-        assigned_to: data.assigned_to, // Add this field
       };
 
       // Send update request
@@ -909,21 +900,6 @@ function RegistrationContent({ regId }: { regId: string }) {
 
               {/* Dynamic Payment Fields */}
               {renderPaymentFields()}
-
-              {/* Add editor selection */}
-              <select
-                className="w-full p-2 rounded-lg border border-gray-300"
-                {...register("assigned_to", {
-                  required: "Editor assignment is required",
-                })}
-              >
-                <option value="">Select Editor to Assign</option>
-                {editors.map((editor) => (
-                  <option key={editor.id} value={editor.id}>
-                    {editor.username}
-                  </option>
-                ))}
-              </select>
             </ModalBody>
             <ModalFooter>
               <Button
