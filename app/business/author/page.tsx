@@ -306,6 +306,7 @@ function AuthorDashboard() {
                           handleNavigation(`/business/author/tasks/${task.id}`);
                         }
                       }}
+                      aria-label={`View task for ${task.prospectus.client_name}`}
                     >
                       <div className="flex justify-between mb-1">
                         <h4 className="font-medium">{task.prospectus.client_name}</h4>
@@ -480,6 +481,14 @@ function AuthorDashboard() {
                       key={task.id}
                       className="flex items-start gap-3 p-2 hover:bg-default-50 rounded-md cursor-pointer"
                       onClick={() => handleNavigation(`/business/author/tasks/${task.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleNavigation(`/business/author/tasks/${task.id}`);
+                        }
+                      }}
+                      aria-label={`View task for ${task.prospectus.client_name}`}
                     >
                       <div className={`p-2 rounded-full bg-${getStatusColor(task.author_status)}/10`}>
                         <ArrowTrendingUpIcon className={`h-5 w-5 text-${getStatusColor(task.author_status)}`} />
