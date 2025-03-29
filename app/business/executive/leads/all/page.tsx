@@ -280,6 +280,7 @@ const AllLeadsPage = () => {
                 placeholder="Name, phone, requirements..."
                 value={searchQuery}
                 onChange={handleSearchChange}
+                
               />
 
               <Select

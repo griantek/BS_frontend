@@ -877,6 +877,53 @@ interface ChangePasswordRequest {
   newPassword: string;
 }
 
+// Add new interface for journal data with leads information
+interface JournalDataWithLeads extends JournalData {
+  prospectus: {
+    id: number;
+    email: string;
+    leads?: {
+      id: number;
+      domain: string;
+      client_name: string;
+      lead_source: string;
+      phone_number: string;
+      research_area: string | null;
+    };
+    phone: string;
+    reg_id: string;
+    client_name: string;
+    requirement: string;
+  };
+}
+
+interface JournalDataByLeadsResponse {
+  success: boolean;
+  data: JournalDataWithLeads[];
+  count: number;
+  timestamp: string;
+}
+
+// Update the interface for journal data with leads information to match new response format
+interface JournalDataWithExecutive extends JournalData {
+  prospectus: {
+    id: number;
+    email: string;
+    phone: string;
+    reg_id: string;
+    entity_id: string;
+    client_name: string;
+    requirement: string;
+  };
+}
+
+interface JournalDataByExecutiveResponse {
+  success: boolean;
+  data: JournalDataWithExecutive[];
+  count: number;
+  timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -2077,6 +2124,19 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add this method to the api object
+    async getJournalDataByExecutive(userId: string): Promise<JournalDataByExecutiveResponse> {
+      try {
+        const response = await this.axiosInstance.post('/entity/journal-data-by-executive', {
+          user_id: userId
+        });
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by executive:', error);
+        throw this.handleError(error);
+      }
+    },
 };
 
 // Initialize the interceptors
@@ -2127,6 +2187,10 @@ export type {
     ClientPaymentRequest,
     UpdateProfileRequest,
     VerifyPasswordRequest,
-    ChangePasswordRequest
+    ChangePasswordRequest,
+    JournalDataWithLeads,
+    JournalDataByLeadsResponse,
+    JournalDataWithExecutive,
+    JournalDataByExecutiveResponse,
 };
 export default api;

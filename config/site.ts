@@ -87,6 +87,11 @@ export const siteConfig = {
       label: "Records",
       href: "/business/executive/records",
       icon: DocumentTextIcon,
+    },
+    {
+      label: "Journals",
+      href: "/business/executive/journals",
+      icon: NewspaperIconHero,
     }
   ],
 
