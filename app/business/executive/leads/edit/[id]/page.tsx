@@ -277,7 +277,7 @@ const EditLeadPage = () => {
             <ExclamationCircleIcon className="h-12 w-12 mx-auto mb-4 text-danger" />
             <h2 className="text-xl font-bold mb-2">Lead Not Found</h2>
             <p className="text-foreground-600 mb-4">
-              The requested lead could not be found or you don't have permission to edit it.
+              The requested lead could not be found or you don&apos;t have permission to edit it.
             </p>
             <Button 
               color="primary"
