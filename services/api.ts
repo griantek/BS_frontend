@@ -643,6 +643,9 @@ interface UpdateLeadRequest {
   status?: string;
   assigned_to?: string;
   followup_status?:string;
+  other_source?: string;
+  other_domain?: string;
+  other_service?: string;
 }
 
 interface TodayFollowupResponse {

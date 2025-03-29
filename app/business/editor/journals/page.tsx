@@ -230,8 +230,10 @@ const JournalsEditorPage = () => {
                             <span className="font-medium line-clamp-1">{journal.journal_name}</span>
                             {journal.journal_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
                                 <span className="text-xs text-success">Screenshot available</span>
-                            ) : (
-                                <span className="text-xs text-default-400">No screenshot</span>
+                            ) : journal.journal_link && journal.username && journal.password && journal.status_link == "https://dummyimage.com/16:9x1080/" ? (
+                                <span className="text-xs text-warning">No screenshot loaded</span>
+                            ):(
+                                <span className="text-xs text-danger">No screenshot</span>
                             )}
                         </div>
                     </Tooltip>

@@ -388,8 +388,7 @@ const LeadDetailPage = () => {
                     startContent={<PencilIcon className="h-4 w-4" />}
                     className="w-full"
                     onClick={() => {
-                      // This will be implemented in future
-                      console.log("Edit lead clicked");
+                      router.push(`/business/executive/leads/edit/${lead.id}`);
                     }}
                   >
                     Edit Lead
