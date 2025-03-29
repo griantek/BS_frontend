@@ -14,18 +14,19 @@ import {
   ModalBody,
   ModalFooter
 } from "@heroui/react";
-import { UserCircleIcon, KeyIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import { UserCircleIcon, KeyIcon, EnvelopeIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import api from "@/services/api";
 import { toast } from "react-toastify";
 
 export default function AccountsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [user, setUser] = useState<{id: string; username: string; email: string} | null>(null);
+  const [user, setUser] = useState<{id: string; username: string; email: string; is_protected?: boolean} | null>(null);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
   });
+  const [isProtected, setIsProtected] = useState(false);
   
   // Password change state
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -42,10 +43,16 @@ export default function AccountsPage() {
         const userData = api.getStoredUser();
         if (userData) {
           setUser(userData);
-          setFormData({
-            username: userData.username || "",
-            email: userData.email || "",
-          });
+          
+          // Check if user is protected
+          if (userData.is_protected) {
+            setIsProtected(true);
+          } else {
+            setFormData({
+              username: userData.username || "",
+              email: userData.email || "",
+            });
+          }
         }
         setIsLoading(false);
       } catch (error) {
@@ -173,6 +180,28 @@ export default function AccountsPage() {
     return (
       <div className="flex justify-center items-center h-[80vh]">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (isProtected) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <ExclamationTriangleIcon className="h-6 w-6 text-yellow-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <span className="font-medium">Access Restricted:</span> Your account is protected and cannot be modified through this interface.
+              </p>
+              <p className="mt-2 text-sm text-yellow-700">
+                Please contact an administrator if you need to update your account information.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
