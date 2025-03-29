@@ -924,6 +924,20 @@ interface JournalDataByExecutiveResponse {
   timestamp: string;
 }
 
+// Add new interface for paginated journal response
+interface PaginatedJournalResponse {
+  success: boolean;
+  data: JournalData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+  timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -2019,14 +2033,44 @@ const api = {
     },
 
     // Add new method to get journal data by editor ID
-    async getJournalDataByEditor(editorId: string): Promise<ApiResponse<JournalData[]>> {
-        try {
-            const response = await this.axiosInstance.get(`/editor/journal-data/editor/${editorId}`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Error fetching journal data by editor:', error);
-            throw this.handleError(error);
-        }
+    async getJournalDataByEditor(
+      editorId: string, 
+      options: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        searchTerm?: string;
+      } = {}
+    ): Promise<PaginatedJournalResponse> {
+      try {
+        const { 
+          page = 1, 
+          limit = 10, 
+          status, 
+          sortBy = 'created_at', 
+          sortOrder = 'desc',
+          searchTerm = '' 
+        } = options;
+        
+        // Build query params
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (status && status !== 'all') params.append('status', status);
+        params.append('sortBy', sortBy);
+        params.append('sortOrder', sortOrder);
+        if (searchTerm) params.append('searchTerm', searchTerm);
+        
+        const response = await this.axiosInstance.get(
+          `/editor/journal-data/editor/${editorId}?${params.toString()}`
+        );
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by editor:', error);
+        throw this.handleError(error);
+      }
     },
 
     // Update this method to handle just the status and optional comments update
@@ -2192,5 +2236,6 @@ export type {
     JournalDataByLeadsResponse,
     JournalDataWithExecutive,
     JournalDataByExecutiveResponse,
+    PaginatedJournalResponse,
 };
 export default api;

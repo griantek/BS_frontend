@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Table,
   TableHeader,
@@ -17,52 +17,57 @@ import {
   Pagination,
   Select,
   SelectItem,
+  Spinner,
 } from "@heroui/react";
 import { SearchIcon } from '@/components/icons';
 import { withEditorAuth } from '@/components/withEditorAuth';
-import api, { JournalData } from '@/services/api';
+import api, { JournalData, PaginatedJournalResponse } from '@/services/api';
 import { toast } from 'react-toastify';
 import { 
-  EyeIcon, 
-  EyeSlashIcon, 
   ArrowPathIcon, 
   FunnelIcon,
   XMarkIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
-import { useJournalCache } from '@/hooks/useJournalCache';
 import clsx from 'clsx';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const JournalsEditorPage = () => {
     const router = useRouter();
-    const { cachedJournals, saveToCache, clearCache, isLoaded, shouldRefreshInBackground } = useJournalCache();
-    const [journals, setJournals] = React.useState<JournalData[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [isRefreshing, setIsRefreshing] = React.useState(false);
-    const [filterValue, setFilterValue] = React.useState("");
-    const [page, setPage] = React.useState(1);
-    const [canClickRows, setCanClickRows] = React.useState(false);
-    const [statusFilter, setStatusFilter] = React.useState<string>("all");
-    const [executiveFilter, setExecutiveFilter] = React.useState<string>("all");
-    const rowsPerPage = 10;
-    const isMounted = React.useRef(false);
+    // State for journals and pagination
+    const [journals, setJournals] = useState<JournalData[]>([]);
+    const [pagination, setPagination] = useState({
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+      hasMore: false
+    });
+    
+    // State for loading and filters
+    const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filterValue, setFilterValue] = useState("");
+    const [debouncedFilterValue, setDebouncedFilterValue] = useDebounce(filterValue, 500);
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [executiveFilter, setExecutiveFilter] = useState<string>("all");
+    const [canClickRows, setCanClickRows] = useState(false);
+    
+    // State for sorting
+    const [sortBy, setSortBy] = useState<string>("created_at");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-    // Get unique executives from journal data
-    const executives = React.useMemo(() => {
-        const uniqueExecutives = new Set<string>();
-        journals.forEach(journal => {
-            if (journal.entities?.username) {
-                uniqueExecutives.add(journal.entities.username);
-            }
-        });
-        return Array.from(uniqueExecutives).sort();
-    }, [journals]);
+    // Executives fetched separately for the filter dropdown
+    const [executives, setExecutives] = useState<string[]>([]);
+    const [isLoadingExecs, setIsLoadingExecs] = useState(true);
 
     // Fetch journals from API
-    const fetchJournals = React.useCallback(async (silent = false) => {
+    const fetchJournals = useCallback(async (silent = false) => {
         try {
             const user = api.getStoredUser();
             if (!user?.id) {
@@ -73,11 +78,19 @@ const JournalsEditorPage = () => {
                 setIsRefreshing(true);
             }
             
-            const response = await api.getJournalDataByEditor(user.id);
+            // Use the new paginated API
+            const response = await api.getJournalDataByEditor(user.id, {
+                page: pagination.page,
+                limit: pagination.limit,
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                sortBy,
+                sortOrder,
+                searchTerm: debouncedFilterValue,
+            });
             
             if (response.success) {
                 setJournals(response.data);
-                saveToCache(response.data);
+                setPagination(response.pagination);
             }
         } catch (error) {
             if (!silent) {
@@ -90,95 +103,85 @@ const JournalsEditorPage = () => {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [saveToCache]);
+    }, [debouncedFilterValue, pagination.limit, pagination.page, sortBy, sortOrder, statusFilter]);
+
+    // Fetch executives for filter dropdown
+    const fetchExecutives = useCallback(async () => {
+        try {
+            setIsLoadingExecs(true);
+            const response = await api.getAllExecutives();
+            if (response.success) {
+                const executiveNames = response.data.map(exec => exec.username);
+                setExecutives(executiveNames);
+            }
+        } catch (error) {
+            console.error('Error fetching executives:', error);
+        } finally {
+            setIsLoadingExecs(false);
+        }
+    }, []);
 
     // Handle manual refresh
     const handleRefresh = () => {
         fetchJournals(false);
     };
 
-    // Initial load effect - run once
+    // Initial load effect
     React.useEffect(() => {
         setCanClickRows(currentUserHasPermission(PERMISSIONS.CLICK_JOURNAL_ROWS));
-        
-        if (isLoaded && !isMounted.current) {
-            isMounted.current = true;
-            
-            if (cachedJournals && cachedJournals.length > 0) {
-                // Immediately display cached data
-                setJournals(cachedJournals);
-                setIsLoading(false);
-                
-                // Check if we need to refresh in the background
-                if (shouldRefreshInBackground()) {
-                    setTimeout(() => {
-                        fetchJournals(true); // Silent refresh
-                    }, 1000);
-                }
-            } else {
-                // No cache, load from API
-                fetchJournals(false);
-            }
-        }
-    }, [isLoaded, cachedJournals, fetchJournals, shouldRefreshInBackground]);
+        fetchExecutives();
+        // We don't need to fetch journals here, it will be triggered by the pagination effect
+    }, [fetchExecutives]);
+
+    // Effect for when search or filters change
+    React.useEffect(() => {
+        // Reset to first page when filters change
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [debouncedFilterValue, statusFilter, executiveFilter, sortBy, sortOrder]);
+
+    // Effect to fetch data when pagination changes
+    React.useEffect(() => {
+        fetchJournals();
+    }, [fetchJournals, pagination.page, debouncedFilterValue, statusFilter, sortBy, sortOrder]);
 
     // Clear all filters
     const clearFilters = () => {
         setFilterValue("");
         setStatusFilter("all");
         setExecutiveFilter("all");
+        setSortBy("created_at");
+        setSortOrder("desc");
+    };
+
+    // Handle page change
+    const handlePageChange = (newPage: number) => {
+        setPagination(prev => ({ ...prev, page: newPage }));
+    };
+
+    // Handle sort change
+    const handleSortChange = (column: string) => {
+        if (sortBy === column) {
+            // Toggle sort order
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        } else {
+            // Set new sort column and default to ascending
+            setSortBy(column);
+            setSortOrder("asc");
+        }
     };
 
     // Columns for the table
     const columns = [
-        { key: "id", label: "ID" },
-        { key: "prospectus_id", label: "PID" },
-        { key: "reg_id", label: "REG NUMBER" },
-        { key: "client_name", label: "CLIENT NAME" },
-        { key: "requirement", label: "REQUIREMENT" },
-        { key: "personal_email", label: "EMAIL" },
-        { key: "executive", label: "APPLIED EXECUTIVE" },
-        { key: "journal_name", label: "JOURNAL" },
-        { key: "status", label: "STATUS" },
-        { key: "paper_title", label: "PAPER TITLE" },
+        { key: "id", label: "ID", sortable: true },
+        { key: "reg_id", label: "REG NUMBER", sortable: true },
+        { key: "client_name", label: "CLIENT NAME", sortable: true },
+        { key: "personal_email", label: "EMAIL", sortable: false },
+        { key: "executive", label: "APPLIED EXECUTIVE", sortable: false },
+        { key: "journal_name", label: "JOURNAL", sortable: true },
+        { key: "status", label: "STATUS", sortable: true },
+        { key: "paper_title", label: "PAPER TITLE", sortable: false },
+        { key: "created_at", label: "CREATED", sortable: true },
     ];
-
-    // Filter items based on search
-    const filteredItems = React.useMemo(() => {
-        return journals.filter((journal) => {
-            // Simple search across client name, email, and registration number
-            if (filterValue) {
-                const searchTerms = filterValue.toLowerCase();
-                const matchesSearch = 
-                    journal.client_name?.toLowerCase().includes(searchTerms) ||
-                    journal.journal_name?.toLowerCase().includes(searchTerms) ||
-                    journal.personal_email?.toLowerCase().includes(searchTerms) ||
-                    journal.prospectus?.reg_id?.toLowerCase().includes(searchTerms);
-                
-                if (!matchesSearch) return false;
-            }
-
-            // Executive filter
-            if (executiveFilter !== "all" && journal.entities?.username !== executiveFilter) {
-                return false;
-            }
-            
-            // Status filter
-            if (statusFilter !== "all" && journal.status !== statusFilter) {
-                return false;
-            }
-            
-            return true;
-        });
-    }, [journals, filterValue, executiveFilter, statusFilter]);
-
-    // Pagination
-    const pages = Math.ceil(filteredItems.length / rowsPerPage);
-    const items = React.useMemo(() => {
-        const start = (page - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        return filteredItems.slice(start, end);
-    }, [page, filteredItems]);
 
     // Row click handler
     const handleRowClick = (journalId: number) => {
@@ -186,9 +189,6 @@ const JournalsEditorPage = () => {
             router.push(`/business/editor/view/journal/${journalId}`);
         }
     };
-
-    // Show loading only when no data is available
-    const showLoading = isLoading && journals.length === 0;
 
     // Format date for display
     const formatDate = (dateString: string) => {
@@ -206,25 +206,14 @@ const JournalsEditorPage = () => {
         switch(key) {
             case "id":
                 return <span className="text-default-500 font-mono text-xs font-medium bg-default-100 px-1.5 py-0.5 rounded">#{journal.id}</span>;
-            case "prospectus_id":
-                return <span className="font-medium">{journal.prospectus?.id}</span>;
             case "reg_id":
                 return (
                     <div className="flex flex-col">
                         <span className="text-sm font-medium">{journal.prospectus?.reg_id || "-"}</span>
-                        <span className="text-xs text-default-400">{formatDate(journal.created_at)}</span>
                     </div>
                 );
             case "client_name":
                 return <span className="font-medium">{journal.client_name || "-"}</span>;
-            case "requirement":
-                return journal.requirement ? (
-                    <Tooltip content={journal.requirement} className="max-w-md">
-                        <span className="text-default-500 line-clamp-2">
-                            {journal.requirement.slice(0, 50)}...
-                        </span>
-                    </Tooltip>
-                ) : <span className="text-default-400">-</span>;
             case "executive":
                 return (
                     <div className="flex items-center gap-2">
@@ -278,10 +267,21 @@ const JournalsEditorPage = () => {
                         </span>
                     </Tooltip>
                 ) : <span className="text-default-400">-</span>;
+            case "created_at":
+                return <span className="text-xs text-default-400">{formatDate(journal.created_at)}</span>;
             default:
                 const value = journal[key as keyof JournalData];
                 return <span>{typeof value === 'string' ? value : '-'}</span>;
         }
+    };
+
+    // Render sort icon
+    const renderSortIcon = (column: string) => {
+        if (sortBy !== column) return null;
+        
+        return sortOrder === 'asc' 
+            ? <ArrowUpIcon className="h-3 w-3 inline ml-1" />
+            : <ArrowDownIcon className="h-3 w-3 inline ml-1" />;
     };
 
     return (
@@ -316,10 +316,10 @@ const JournalsEditorPage = () => {
                     </div>
 
                     <div className="p-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <Input
                                 label="Search"
-                                placeholder="Search client name, email or registration..."
+                                placeholder="Search by client, journal, or title..."
                                 labelPlacement="outside"
                                 startContent={
                                     <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -332,10 +332,11 @@ const JournalsEditorPage = () => {
 
                             <Select
                                 label="Applied Executive"
-                                placeholder="All Executives"
+                                placeholder={isLoadingExecs ? "Loading..." : "All Executives"}
                                 labelPlacement="outside"
                                 selectedKeys={[executiveFilter]}
                                 onChange={(e) => setExecutiveFilter(e.target.value)}
+                                isDisabled={isLoadingExecs}
                             >
                                 <SelectItem key="all" value="all">
                                     All Executives
@@ -373,12 +374,25 @@ const JournalsEditorPage = () => {
                                     Submitted
                                 </SelectItem>
                             </Select>
+
+                            <div className="flex items-end">
+                                <Button
+                                    size="md"
+                                    color="default"
+                                    variant="flat"
+                                    startContent={<XMarkIcon className="h-4 w-4" />}
+                                    onClick={clearFilters}
+                                    className="w-full"
+                                >
+                                    Clear Filters
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </Card>
 
                 {/* Active filters */}
-                {(filterValue || executiveFilter !== "all" || statusFilter !== "all") && (
+                {(filterValue || statusFilter !== "all" || executiveFilter !== "all" || sortBy !== "created_at") && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-default-500">Active filters:</span>
                         <div className="flex flex-wrap gap-2">
@@ -420,15 +434,18 @@ const JournalsEditorPage = () => {
                                     Status: {statusFilter}
                                 </Chip>
                             )}
-                            <Button
-                                size="sm"
-                                variant="flat"
-                                color="default"
-                                startContent={<XMarkIcon className="h-4 w-4" />}
-                                onClick={clearFilters}
-                            >
-                                Clear All
-                            </Button>
+                            {sortBy !== "created_at" && (
+                                <Chip
+                                    onClose={() => {
+                                        setSortBy("created_at");
+                                        setSortOrder("desc");
+                                    }}
+                                    variant="flat"
+                                    size="sm"
+                                >
+                                    Sort: {sortBy} ({sortOrder})
+                                </Chip>
+                            )}
                         </div>
                     </div>
                 )}
@@ -436,13 +453,13 @@ const JournalsEditorPage = () => {
                 {/* Results count */}
                 <div className="flex justify-between items-center">
                     <div className="text-sm text-default-500">
-                        {filteredItems.length} journals found
+                        {pagination.total} total journals | Page {pagination.page} of {pagination.totalPages}
                     </div>
                 </div>
 
                 {/* Table section */}
                 <Card className="shadow-sm">
-                    {showLoading ? (
+                    {isLoading ? (
                         <div className="p-12">
                             <LoadingSpinner text="Loading journals..." />
                         </div>
@@ -450,16 +467,16 @@ const JournalsEditorPage = () => {
                         <Table
                             aria-label="Journals table"
                             bottomContent={
-                                pages > 1 ? (
+                                pagination.totalPages > 1 ? (
                                     <div className="flex w-full justify-center py-3">
                                         <Pagination
                                             isCompact
                                             showControls
                                             showShadow
                                             color="primary"
-                                            page={page}
-                                            total={pages}
-                                            onChange={setPage}
+                                            page={pagination.page}
+                                            total={pagination.totalPages}
+                                            onChange={handlePageChange}
                                         />
                                     </div>
                                 ) : null
@@ -476,40 +493,55 @@ const JournalsEditorPage = () => {
                                         key={column.key}
                                         className={clsx(
                                             "bg-default-50 text-default-700 font-medium",
-                                            column.key === "status" ? "text-center" : ""
+                                            column.key === "status" ? "text-center" : "",
+                                            column.sortable && "cursor-pointer hover:bg-default-100"
                                         )}
+                                        onClick={() => column.sortable && handleSortChange(column.key)}
                                     >
                                         {column.label}
+                                        {column.sortable && renderSortIcon(column.key)}
                                     </TableColumn>
                                 )}
                             </TableHeader>
                             <TableBody
-                                items={items}
+                                items={journals}
                                 emptyContent={
-                                    <div className="py-12 text-center">
-                                        <div className="text-default-400 text-3xl mb-4">😕</div>
-                                        <p className="text-default-500">
-                                            No journals found matching your criteria
-                                        </p>
-                                        <Button
-                                            className="mt-4"
-                                            size="sm"
-                                            variant="flat"
-                                            color="primary"
-                                            onClick={clearFilters}
-                                        >
-                                            Clear Filters
-                                        </Button>
-                                    </div>
+                                    isRefreshing ? (
+                                        <div className="py-12 text-center">
+                                            <Spinner size="sm" color="primary" />
+                                            <p className="text-default-500 mt-2">
+                                                Refreshing data...
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 text-center">
+                                            <div className="text-default-400 text-3xl mb-4">😕</div>
+                                            <p className="text-default-500">
+                                                No journals found matching your criteria
+                                            </p>
+                                            <Button
+                                                className="mt-4"
+                                                size="sm"
+                                                variant="flat"
+                                                color="primary"
+                                                onClick={clearFilters}
+                                            >
+                                                Clear Filters
+                                            </Button>
+                                        </div>
+                                    )
                                 }
+                                loadingContent={<LoadingSpinner />}
+                                loadingState={isRefreshing ? "loading" : "idle"}
                             >
                                 {(journal) => (
                                     <TableRow
                                         key={journal.id}
                                         className={clsx(
-                                            canClickRows &&
-                                                "cursor-pointer hover:bg-default-50 dark:hover:bg-default-50/20 transition-colors",
-                                            !canClickRows && "cursor-default"
+                                            "transition-colors",
+                                            canClickRows 
+                                                ? "cursor-pointer hover:bg-primary-50/30 dark:hover:bg-primary-900/20 border-l-2 hover:border-l-primary" 
+                                                : "cursor-default hover:bg-default-100/50 dark:hover:bg-default-50/10",
                                         )}
                                         onClick={() => handleRowClick(journal.id)}
                                     >

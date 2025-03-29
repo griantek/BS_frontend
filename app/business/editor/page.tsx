@@ -70,35 +70,66 @@ const EditorPage = () => {
                 throw new Error("User data not found");
             }
             
-            // Fetch journals and calculate stats
-            const journalsResponse = await api.getJournalDataByEditor(user.id);
+            // Use the new paginated API to fetch the first page of journals
+            const journalsResponse = await api.getJournalDataByEditor(user.id, {
+                page: 1,
+                limit: 10,
+                sortBy: 'created_at',
+                sortOrder: 'desc'
+            });
+            
             if (journalsResponse.success) {
-                const journals = journalsResponse.data;
+                // Set the first 3 journals for display
+                setAssignedJournals(journalsResponse.data.slice(0, 3));
+                
+                // Get the total number of journals from pagination metadata
+                const totalJournals = journalsResponse.pagination.total;
+                
+                // To calculate stats by status, we need to make additional API calls with status filters
+                const pendingResponse = await api.getJournalDataByEditor(user.id, {
+                    page: 1,
+                    limit: 1,
+                    status: 'pending'
+                });
+                
+                const underReviewResponse = await api.getJournalDataByEditor(user.id, {
+                    page: 1,
+                    limit: 1,
+                    status: 'under review'
+                });
+                
+                const approvedResponse = await api.getJournalDataByEditor(user.id, {
+                    page: 1,
+                    limit: 1,
+                    status: 'approved'
+                });
+                
+                const rejectedResponse = await api.getJournalDataByEditor(user.id, {
+                    page: 1,
+                    limit: 1, 
+                    status: 'rejected'
+                });
                 
                 // Fetch assigned registrations count
                 const regsResponse = await api.getAssignedRegistrations(user.id);
                 const registrationsCount = regsResponse.success ? regsResponse.data.length : 0;
                 setRegistrationsCount(registrationsCount);
                 
-                // Calculate stats from journals
+                // Calculate stats from journal count responses
                 const calculatedStats: DashboardStats = {
-                    total_journals: journals.length, // Use journals assigned to this editor
-                    published_count: journals.filter(j => j.status === 'approved').length,
-                    pending_count: journals.filter(j => j.status === 'pending').length,
-                    under_review_count: journals.filter(j => j.status === 'under review').length,
-                    approved_count: journals.filter(j => j.status === 'approved').length,
-                    rejected_count: journals.filter(j => j.status === 'rejected').length,
+                    total_journals: totalJournals, // Use the total from pagination metadata
+                    published_count: approvedResponse.pagination.total,
+                    pending_count: pendingResponse.pagination.total,
+                    under_review_count: underReviewResponse.pagination.total,
+                    approved_count: approvedResponse.pagination.total,
+                    rejected_count: rejectedResponse.pagination.total,
                     total_assigned: registrationsCount
                 };
                 
                 setStats(calculatedStats);
                 
-                // Set assigned journals (first 3)
-                setAssignedJournals(journals.slice(0, 3));
-                
                 // Create synthetic activities from journal updates
-                const syntheticActivities: ActivityItem[] = journals
-                    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                const syntheticActivities: ActivityItem[] = journalsResponse.data
                     .slice(0, 5)
                     .map((journal, index) => ({
                         id: index + 1,
@@ -245,7 +276,7 @@ const EditorPage = () => {
                             </div>
                             <Progress 
                                 value={stats?.pending_count || 0} 
-                                maxValue={stats?.total_journals || 1} 
+                                maxValue={Math.max(stats?.total_journals || 1, 1)} 
                                 color="primary"
                                 className="h-2"
                             />
@@ -256,7 +287,7 @@ const EditorPage = () => {
                             </div>
                             <Progress 
                                 value={stats?.under_review_count || 0} 
-                                maxValue={stats?.total_journals || 1} 
+                                maxValue={Math.max(stats?.total_journals || 1, 1)} 
                                 color="warning"
                                 className="h-2"
                             />
@@ -267,7 +298,7 @@ const EditorPage = () => {
                             </div>
                             <Progress 
                                 value={stats?.approved_count || 0} 
-                                maxValue={stats?.total_journals || 1} 
+                                maxValue={Math.max(stats?.total_journals || 1, 1)} 
                                 color="success"
                                 className="h-2"
                             />
@@ -278,7 +309,7 @@ const EditorPage = () => {
                             </div>
                             <Progress 
                                 value={stats?.rejected_count || 0} 
-                                maxValue={stats?.total_journals || 1} 
+                                maxValue={Math.max(stats?.total_journals || 1, 1)} 
                                 color="danger"
                                 className="h-2"
                             />
@@ -405,31 +436,6 @@ const EditorPage = () => {
                     )}
                 </CardBody>
             </Card>
-
-            {/* Recent Activity */}
-            {/* <Card>
-                <CardHeader>
-                    <h2 className="text-lg font-bold">Recent Activity</h2>
-                </CardHeader>
-                <Divider />
-                <CardBody>
-                    {activities.length > 0 ? (
-                        <div className="space-y-4">
-                            {activities.map((activity) => (
-                                <ActivityItem 
-                                    key={activity.id} 
-                                    activity={activity} 
-                                    onClickJournal={(journalId) => router.push(`/business/editor/view/journal/${journalId}`)} 
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-4 text-default-500">
-                            No recent activity
-                        </div>
-                    )}
-                </CardBody>
-            </Card> */}
         </div>
     );
 };
@@ -451,47 +457,6 @@ const StatsCard = ({ title, value, color, icon }: {
                 {icon}
             </div>
         </div>
-    </div>
-);
-
-const ActivityItem = ({ 
-    activity, 
-    onClickJournal 
-}: { 
-    activity: ActivityItem;
-    onClickJournal: (journalId: number) => void;
-}) => (
-    <div 
-        className="flex items-center justify-between p-3 rounded-lg bg-default-50 hover:bg-default-100 transition-colors cursor-pointer"
-        onClick={() => onClickJournal(activity.journal_id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                onClickJournal(activity.journal_id);
-            }
-        }}
-    >
-        <div className="space-y-1">
-            <div className="flex items-center gap-2">
-                <p className="font-medium">{activity.journal_name}</p>
-                <Chip size="sm" variant="flat">
-                    {activity.client_name}
-                </Chip>
-            </div>
-            <p className="text-sm text-default-500">
-                {activity.action === 'status_changed' ? (
-                    <>Status changed {activity.old_status ? `from ${activity.old_status}` : ""} to {activity.new_status}</>
-                ) : activity.action === 'created' ? (
-                    'New journal created'
-                ) : (
-                    'Journal updated'
-                )}
-            </p>
-        </div>
-        <p className="text-sm text-default-400">
-            {format(new Date(activity.timestamp), 'MMM dd, yyyy HH:mm')}
-        </p>
     </div>
 );
 
