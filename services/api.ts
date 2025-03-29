@@ -94,6 +94,7 @@ interface ApiResponse<T> {
     success: boolean;
     data: T;
     timestamp: string;
+    message:string;
 }
 
 // Add new interfaces for services
@@ -861,11 +862,27 @@ interface ClientPaymentRequest {
   entity_id: string;
 }
 
+// Add new interfaces for profile update
+interface UpdateProfileRequest {
+  username?: string;
+  email?: string;
+}
+
+interface VerifyPasswordRequest {
+  entityId: string;
+  password: string;
+}
+
+interface ChangePasswordRequest {
+  newPassword: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
     '/admin/login',
-    '/clients/login'
+    '/clients/login',
+    '/entity/verify-password' // Add this to public endpoints to prevent auto-logout
 ];
 
 // API service
@@ -886,7 +903,15 @@ const api = {
                 );
 
                 if (isPublicEndpoint) {
-                    return config; // Allow public endpoints without auth
+                    // For verify-password, we still need to add the auth token
+                    if (config.url?.includes('/entity/verify-password')) {
+                        const token = this.getStoredToken();
+                        if (token) {
+                            const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                            config.headers.Authorization = finalToken;
+                        }
+                    }
+                    return config; // Allow public endpoints without auth requirement
                 }
 
                 const token = this.getStoredToken();
@@ -908,9 +933,14 @@ const api = {
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
+                // Ignore 401 errors from verify-password endpoint
+                if (error?.config?.url?.includes('/entity/verify-password')) {
+                    return Promise.reject(error);
+                }
+                
                 // Only handle auth errors for non-public endpoints
                 if (error?.response?.status === 401 && 
-                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.endsWith(endpoint))) {
+                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.includes(endpoint))) {
                     const userRole = localStorage.getItem(USER_ROLE_KEY) || 'executive';
                     const path = window.location.pathname;
                     
@@ -1629,7 +1659,8 @@ const api = {
             return {
                 success: true,
                 data: response.data, // Keep the original nested structure
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                message: "Client created successfully"
             };
         } catch (error: any) {
             console.error('Error creating client:', error);
@@ -1695,7 +1726,8 @@ const api = {
         return {
           success: true,
           data: mockStats,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          message: "Author stats retrieved successfully"
         };
       },
       
@@ -1783,7 +1815,8 @@ const api = {
         return {
           success: true,
           data: mockTasks,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          message: "Tasks retrieved successfully"
         };
       },
       
@@ -1799,7 +1832,8 @@ const api = {
         return {
           success: true,
           data: task,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          message:"Task retrieved successfully"
         };
       },
       
@@ -1818,7 +1852,8 @@ const api = {
         return {
           success: true,
           data: updatedTask,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          message: "Task updated successfully"
         };
       },
 
@@ -1987,6 +2022,61 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add these methods to the api object
+    async updateUserProfile(userId: string, data: UpdateProfileRequest): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.put(`/entity/${userId}/user-profile`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating user profile:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async verifyPassword(data: VerifyPasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+        try {
+            const response = await this.axiosInstance.post('/entity/verify-password', data);
+            
+            // If the request is successful, make sure to return the proper structure
+            return {
+                success: true,
+                data: { success: true },
+                timestamp: new Date().toISOString(),
+                message: 'Password verified successfully'
+            };
+        } catch (error: any) {
+            console.error('Error verifying password:', error);
+            
+            // Check if the error response matches the expected format for wrong password
+            if (error.response?.data?.error === 'Invalid password') {
+                return {
+                    success: false,
+                    data: { success: false },
+                    timestamp: new Date().toISOString(),
+                    message: 'Current password is incorrect'
+                };
+            }
+            
+            // Return a generic error for other error types
+            return {
+                success: false,
+                data: { success: false },
+                timestamp: new Date().toISOString(),
+                message: 'Failed to verify password'
+            };
+        }
+    },
+
+    async changePassword(userId: string, data: ChangePasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+        try {
+            const response = await this.axiosInstance.put(`/entity/${userId}/change-password`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error changing password:', error);
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
@@ -2034,6 +2124,9 @@ export type {
     AuthorStats,
     PendingRegistrationResponse,
     PendingRegistrationsResponse,
-    ClientPaymentRequest
+    ClientPaymentRequest,
+    UpdateProfileRequest,
+    VerifyPasswordRequest,
+    ChangePasswordRequest
 };
 export default api;

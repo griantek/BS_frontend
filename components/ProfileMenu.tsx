@@ -12,7 +12,8 @@ import {
 import { 
   UserCircleIcon, 
   ArrowRightStartOnRectangleIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import api from '@/services/api';
 
@@ -40,6 +41,10 @@ export const ProfileMenu = ({ username, isMobile = false, userRole = '' }: Profi
     }
   };
 
+  const handleEditProfile = () => {
+    router.push('/accounts');
+  };
+
   // Only show icon for mobile version
   if (isMobile) {
     return (
@@ -60,6 +65,14 @@ export const ProfileMenu = ({ username, isMobile = false, userRole = '' }: Profi
               <UserCircleIcon className="h-4 w-4" />
               <span className="font-medium">{username}</span>
             </div>
+          </DropdownItem>
+          <DropdownItem 
+            key="edit_profile" 
+            startContent={<PencilSquareIcon className="h-4 w-4" />}
+            description="Edit your profile information"
+            onPress={handleEditProfile}
+          >
+            Edit Profile
           </DropdownItem>
           <DropdownItem 
             key="logout" 
@@ -97,6 +110,14 @@ export const ProfileMenu = ({ username, isMobile = false, userRole = '' }: Profi
               fallback: username?.charAt(0)?.toUpperCase() || "U",
             }}
           />
+        </DropdownItem>
+        <DropdownItem 
+          key="edit_profile" 
+          startContent={<PencilSquareIcon className="h-4 w-4" />}
+          description="Edit your profile information"
+          onPress={handleEditProfile}
+        >
+          Edit Profile
         </DropdownItem>
         <DropdownItem 
           key="logout" 
