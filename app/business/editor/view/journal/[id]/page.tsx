@@ -301,7 +301,7 @@ function JournalContent({ id }: { id: string }) {
             <Divider />
             <CardBody>
               <div className="flex justify-center">
-                {journal.status_link ? (
+                {journal.status_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
                   <div className="relative w-full h-[600px]">
                     <Image
                       src={`${journal.status_link}?t=${new Date().getTime()}`}

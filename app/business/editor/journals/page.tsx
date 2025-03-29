@@ -228,7 +228,7 @@ const JournalsEditorPage = () => {
                     <Tooltip content={journal.journal_name}>
                         <div className="flex flex-col">
                             <span className="font-medium line-clamp-1">{journal.journal_name}</span>
-                            {journal.journal_link && journal.status_link ? (
+                            {journal.journal_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
                                 <span className="text-xs text-success">Screenshot available</span>
                             ) : (
                                 <span className="text-xs text-default-400">No screenshot</span>

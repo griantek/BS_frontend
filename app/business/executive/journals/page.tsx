@@ -227,7 +227,7 @@ const JournalsExecutivePage = () => {
               <span className="font-medium line-clamp-1">
                 {journal.journal_name}
               </span>
-              {journal.journal_link && journal.status_link ? (
+              {journal.status_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
                 <span className="text-xs text-success">
                   Screenshot available
                 </span>

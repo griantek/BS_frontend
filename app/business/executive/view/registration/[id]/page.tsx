@@ -547,7 +547,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                   Edit Registration
                 </Button>
               )}
-              {permissions.canDeleteRegistration && (
+              {/* {permissions.canDeleteRegistration && (
                 <Button
                   color="danger"
                   variant="flat"
@@ -555,7 +555,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 >
                   Delete Registration
                 </Button>
-              )}
+              )} */}
             </div>
           </CardHeader>
         </Card>
