@@ -69,13 +69,17 @@ export default function SAdminLayout({
               // Check for department tab permission
               const hasDepartmentTabPermission = currentUserHasPermission(PERMISSIONS.SHOW_DEPARTMENT_TAB);
               
+              // Check for approval tab permission explicitly
+              const hasApprovalPermission = currentUserHasPermission(PERMISSIONS.SHOW_APPROVAL_NAV);
+              
               // Send explicit permission states for tabs we care about
               const navPermissions = {
                 showUsersNav: currentUserHasPermission(PERMISSIONS.SHOW_USERS_NAV),
                 showServicesTab: currentUserHasPermission(PERMISSIONS.SHOW_SERVICES_TAB),
                 showClientsTab: shouldShowClientsTab ? currentUserHasPermission(PERMISSIONS.SHOW_CLIENTS_TAB) : false,
                 showFinanceTab: shouldShowFinanceTab ? currentUserHasPermission(PERMISSIONS.SHOW_FINANCE_TAB) : false,
-                showDepartmentTab: hasDepartmentTabPermission
+                showDepartmentTab: hasDepartmentTabPermission,
+                showApprovalNav: hasApprovalPermission
               };
               
               // Dispatch a custom event to notify navbar of permission changes
@@ -92,7 +96,8 @@ export default function SAdminLayout({
                   showServicesTab: true,
                   showClientsTab: true,
                   showFinanceTab: true,
-                  showDepartmentTab: true
+                  showDepartmentTab: true,
+                  showApprovalNav: true
                 }
               }));
             }
