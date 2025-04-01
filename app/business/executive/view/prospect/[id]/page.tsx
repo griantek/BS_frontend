@@ -116,7 +116,7 @@ function ProspectContent({ regId }: { regId: string }) {
         console.error('Error fetching prospect:', error);
         const errorMessage = api.handleError(error);
         toast.error(errorMessage.error || 'Failed to load prospect data');
-        router.push('/business/executive');
+        // router.push('/business/executive');
       } finally {
         setIsLoading(false);
       }

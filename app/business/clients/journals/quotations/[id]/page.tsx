@@ -45,6 +45,16 @@ interface PaymentFormData {
   notes?: string;
 }
 
+// Wrap the component to handle params correctly
+function QuotationDetailPageWrapper({ params }: { params: Promise<{ id: string }> }) {
+  // Use React.use to unwrap the params Promise
+  const resolvedParams = React.use(params);
+  
+  // Pass the unwrapped id to the main component
+  return <QuotationDetailPage params={{ id: resolvedParams.id }} />;
+}
+
+// Modify the QuotationDetailPage component to accept unwrapped params
 const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
   const [quotation, setQuotation] = useState<Quotation | null>(null);
@@ -152,19 +162,40 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
 
       // Prepare form data for API
       const formDataToSend = new FormData();
+      
+      // Add required fields
       formDataToSend.append('quotation_id', quotation.id.toString());
       formDataToSend.append('name', formData.name);
       formDataToSend.append('amount', formData.amount.toString());
-      formDataToSend.append('notes', formData.notes || '');
       formDataToSend.append('transaction_date', new Date().toISOString().split('T')[0]);
-      formDataToSend.append('entity_id', user.id);
+      formDataToSend.append('client_id', user.id);
       
-      // Append all files
-      formData.files.forEach((file, index) => {
-        formDataToSend.append(`files`, file);
+      // Add optional fields if present
+      if (formData.notes) {
+        formDataToSend.append('notes', formData.notes);
+      }
+      
+      // Modify how files are appended - use "files[]" to indicate an array to the server
+      if (formData.files.length > 0) {
+        // Append each file individually with "files[]" to indicate an array
+        formData.files.forEach((file) => {
+          formDataToSend.append('files[]', file);
+        });
+      }
+
+      // Debug: Log the FormData entries
+      console.log('FormData contents before submission:');
+      const entries = Array.from(formDataToSend.entries());
+      entries.forEach(pair => {
+        const [key, value] = pair;
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
       });
 
-      // Send request to new API endpoint
+      // Send request using the API
       const response = await api.submitClientPayment(formDataToSend);
       
       if (response.success) {
@@ -223,11 +254,11 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
   return (
     <div className="flex">
       <Sidebar />
-      <div className="flex-1 p-6 ml-16 md:ml-64">
+      <div className="flex-1 p-6 ml-16 md:ml-20">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Quotation #{quotation.id}</h1>
-            <p className="text-default-500">Review and make payment</p>
+            <h1 className="text-xl md:text-2xl font-bold">Quotation #{quotation.id}</h1>
+            <p className="text-default-500 text-sm md:text-base">Review and make payment</p>
           </div>
           <Button
             variant="light"
@@ -500,4 +531,4 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
   );
 };
 
-export default withClientAuth(QuotationDetailPage);
+export default withClientAuth(QuotationDetailPageWrapper);

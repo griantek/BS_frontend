@@ -23,7 +23,7 @@ import {
   Select,
   SelectItem,
   useDisclosure,
-} from "@heroui/react";
+} from "@nextui-org/react";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -35,6 +35,7 @@ import {
 import api, { PendingRegistrationResponse, Editor } from "@/services/api";
 import { formatDate } from "../../../utils/dateUtils";
 import { formatCurrency } from "../../../utils/formatUtils";
+import { useRouter } from "next/navigation"; // Changed from 'next/router' to 'next/navigation'
 
 export default function PendingApprovalsPage() {
   const [pendingRegistrations, setPendingRegistrations] = useState<
@@ -53,6 +54,7 @@ export default function PendingApprovalsPage() {
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [currentRequirement, setCurrentRequirement] = useState<string>("");
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
 
   // Fetch pending registrations and editors
   useEffect(() => {
@@ -280,7 +282,7 @@ export default function PendingApprovalsPage() {
                               <ClockIcon className="w-4 h-4" />
                             )} */}
                             {item.registration.status === "waiting for approval" ? "Approval needed"
-                              : "Quotation send"}
+                              : item.registration.status === "quotation accepted" ? "Quotation accepted":"Quotation send"}
                           </div>
                         </Chip>
                       </TableCell>
@@ -298,6 +300,16 @@ export default function PendingApprovalsPage() {
                           <UserPlusIcon className="w-4 h-4" />
                           Assign
                         </Button>
+                        ) : item.registration.status === "quotation accepted" ? (
+                            <Button
+                              color="success"
+                              onPress={() => router.push(`/admin/approval/${item.registration.id}`)}
+                              size="sm"
+                              className="flex items-center gap-1"
+                            >
+                              <CheckCircleIcon className="w-4 h-4" />
+                              Process Payment
+                            </Button>
                         ) : null}
                         
                       </TableCell>

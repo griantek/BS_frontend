@@ -941,6 +941,42 @@ interface PaginatedJournalResponse {
   timestamp: string;
 }
 
+// Add interface for quotation file
+interface QuotationFile {
+  id: number;
+  originalName: string;
+  filename: string;
+  size: number;
+  mimetype: string;
+  url: string;
+  created_at: string;
+}
+
+// Add interface for client quotation
+interface ClientQuotation {
+  id: number;
+  quotation_id: number;
+  name: string;
+  amount: number;
+  notes?: string;
+  transaction_date: string;
+  client_id: string;
+  created_at: string;
+  updated_at: string;
+  files: QuotationFile[];
+}
+
+// Add response interface for client registration with quotation
+interface ClientRegistrationWithQuotationResponse {
+  success: boolean;
+  data: {
+    registrations: Registration[];
+    quotations: ClientQuotation[];
+  };
+  timestamp: string;
+  message: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -2102,11 +2138,27 @@ const api = {
         }
     },
 
-    // Add the new client payment method
+    // Update the client payment method to match the successful updateAuthorStatusWithFile method
     async submitClientPayment(paymentData: FormData): Promise<ApiResponse<any>> {
         try {
+            // Log for debugging purposes
+            console.log('Submitting client payment with FormData:');
+            
+            // Log files separately for better visibility
+            const entries = Array.from(paymentData.entries());
+            entries.forEach(pair => {
+                const [key, value] = pair;
+                if (value instanceof File) {
+                    console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+                } else {
+                    console.log(`${key}: ${value}`);
+                }
+            });
+            
+            // Make sure to use the correct content type for multipart/form-data
             const response = await this.axiosInstance.post('/clients/payment/submit', paymentData, {
                 headers: {
+                    // Do NOT set Content-Type as axios will set it correctly with the boundary
                     'Content-Type': 'multipart/form-data'
                 }
             });
@@ -2184,6 +2236,17 @@ const api = {
         throw this.handleError(error);
       }
     },
+
+    // Add the new method to the api object
+    async getClientRegistrationWithQuotation(registrationId: number): Promise<ClientRegistrationWithQuotationResponse> {
+      try {
+        const response = await this.axiosInstance.get(`/clients/prosReg/${registrationId}`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching registration with quotation:', error);
+        throw this.handleError(error);
+      }
+    },
 };
 
 // Initialize the interceptors
@@ -2240,5 +2303,8 @@ export type {
     JournalDataWithExecutive,
     JournalDataByExecutiveResponse,
     PaginatedJournalResponse,
+    QuotationFile,
+    ClientQuotation,
+    ClientRegistrationWithQuotationResponse,
 };
 export default api;

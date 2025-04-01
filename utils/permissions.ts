@@ -131,14 +131,7 @@ export const currentUserHasPermission = (permissionName: string): boolean => {
   
   const result = hasPermission(currentUser, permissionName);
   
-  // Add debug logs for critical navigation permissions
-  if (permissionName === 'show_users_nav' || 
-      permissionName === 'show_svc_tab' || 
-      permissionName === 'show_clients_tab') {
-    console.log(`Permission check: ${permissionName} => ${result}`, 
-      { currentUser, permissions: currentUser?.permissions });
-  }
-  
+
   return result;
 };
 
