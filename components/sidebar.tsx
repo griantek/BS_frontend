@@ -294,9 +294,8 @@ export const Sidebar = () => {
         <Card 
             ref={sidebarRef}
             className={clsx(
-                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-50",
+                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-20",
                 isCollapsed && !isHovering ? "w-16" : "w-64",
-                "hidden md:block",
                 "border-t-0 rounded-none bg-background/80 backdrop-blur-md",
                 "shadow-sm border-r border-divider"
             )}

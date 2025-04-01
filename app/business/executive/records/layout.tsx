@@ -50,7 +50,7 @@ export default function RecordsLayout({
       <Sidebar />
 
       <main
-        className="transition-all duration-300"
+        className="transition-all duration-300 pt-16"
         style={{
           paddingLeft: `var(--sidebar-width, ${sidebarWidth})`,
         }}

@@ -233,7 +233,12 @@ function ProspectusPage() {
   }
 
   return (
-    <div className="w-full p-6">
+    <div className="p-6 w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Prospectus Management</h1>
+        {/* Add your other content */}
+      </div>
+      
       <Card className="mb-6">
         <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center px-6 py-4 gap-4">
           <div>

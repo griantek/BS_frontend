@@ -104,7 +104,7 @@ const JournalSubmissionsPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <div className="flex-1 p-6 ml-16 md:ml-64">
+      <div className="flex-1 p-6 pl-[var(--sidebar-width,4rem)] transition-all duration-300">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold">Journal Submissions</h1>

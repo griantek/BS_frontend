@@ -54,6 +54,7 @@ export const Navbar = () => {
   const [showFinanceTab, setShowFinanceTab] = React.useState(false);
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
   const [showApprovalNav, setShowApprovalNav] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
   const isLeadsPath = pathname?.startsWith('/business/conversion');
@@ -193,6 +194,8 @@ export const Navbar = () => {
 
   const handleNavigation = (path: string) => {
     setIsNavigating(true);
+    // Close the mobile menu when navigation occurs
+    setIsMenuOpen(false);
     router.push(path);
   };
 
@@ -365,7 +368,13 @@ export const Navbar = () => {
   const hasNavigationLinks = navigationLinks.length > 0;
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
+    <HeroUINavbar 
+      maxWidth="xl" 
+      position="sticky" 
+      className="z-[100]" // Add higher z-index to ensure navbar is above sidebar
+      isMenuOpen={isMenuOpen}
+      onMenuOpenChange={setIsMenuOpen}
+    >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <Button
@@ -426,7 +435,10 @@ export const Navbar = () => {
         )}
         {/* Only show menu toggle if there are navigation links */}
         {hasNavigationLinks && (
-          <NavbarMenuToggle className="ml-1" aria-label="Open menu" />
+          <NavbarMenuToggle 
+            className="ml-1" 
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          />
         )}
       </NavbarContent>
 
@@ -440,16 +452,17 @@ export const Navbar = () => {
                 <NextLink 
                   className={clsx(
                     linkStyles(),
-                    "flex items-center gap-2 py-3", // Added more padding for better touch targets
+                    "flex items-center gap-2 py-3",
                     isActiveMainPath(link.href) && "text-primary font-medium"
                   )} 
                   href={link.href}
                   onClick={(e) => {
                     e.preventDefault();
                     handleNavigation(link.href);
+                    // handleNavigation will close the menu
                   }}
                 >
-                  <link.icon className="w-5 h-5" /> {/* Increased icon size for better visibility */}
+                  <link.icon className="w-5 h-5" />
                   {link.label}
                 </NextLink>
               </NavbarMenuItem>
