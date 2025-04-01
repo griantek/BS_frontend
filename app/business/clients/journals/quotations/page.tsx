@@ -81,7 +81,7 @@ const QuotationsPage = () => {
   };
 
   return (
-    <div className="flex">
+    <div className="flex ml-10">
       <Sidebar />
       <div className="flex-1 p-6 pl-[var(--sidebar-width,4rem)] transition-all duration-300">
         <div className="flex justify-between items-center mb-6">

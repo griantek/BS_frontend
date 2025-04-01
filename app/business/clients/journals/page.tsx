@@ -80,7 +80,7 @@ const JournalsPage = () => {
   };
 
   return (
-    <div className="flex">
+    <div className="flex ml-16">
       <Sidebar />
       <div className="flex-1 p-6 pl-[var(--sidebar-width,4rem)] transition-all duration-300">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">

@@ -252,7 +252,7 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
   const canPay = quotation.status === 'pending';
 
   return (
-    <div className="flex">
+    <div className="flex ml-16">
       <Sidebar />
       <div className="flex-1 p-6 ml-16 md:ml-20">
         <div className="flex justify-between items-center mb-6">
