@@ -31,6 +31,7 @@ import type {
   Service,
 } from "@/services/api";
 import PasswordModal from "@/components/PasswordModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface ProspectData {
   id: number;
@@ -394,8 +395,8 @@ function QuotationContent({ regId }: { regId: string }) {
   };
 
   // Add explicit null check before the return
-  if (isLoading) return <div>Loading...</div>;
-  if (!prospectData) return <div>No data found</div>;
+  if (isLoading) return <LoadingSpinner text="Loading quotation data..." />;
+  if (!prospectData) return <LoadingSpinner text="No prospect data found" />;
 
   return (
     <div className="w-full p-4 md:p-6">
@@ -734,7 +735,7 @@ function QuotationPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <QuotationContent regId={resolvedParams.id} />
     </Suspense>
   );

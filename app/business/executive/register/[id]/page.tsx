@@ -26,6 +26,7 @@ import type {
   TransactionInfo,
 } from "@/services/api";
 import PasswordModal from "@/components/PasswordModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface RegistrationFormData {
   selectedServices: string[];
@@ -93,19 +94,19 @@ function RegistrationContent({ regId }: { regId: string }) {
   } = useForm<RegistrationFormData>({
     defaultValues: {
       selectedServices: [],
-      initialAmount: 0,
-      acceptanceAmount: 0,
-      discountPercentage: 0,
+      initialAmount: undefined,
+      acceptanceAmount: undefined,
+      discountPercentage: undefined,
       discountAmount: 0,
       subTotal: 0,
       totalAmount: 0,
-      acceptancePeriod: 0,
+      acceptancePeriod: undefined,
       acceptancePeriodUnit: "months",
-      publicationPeriod: 0,
+      publicationPeriod: undefined,
       publicationPeriodUnit: "months",
       selectedBank: "",
       paymentMode: "cash",
-      amount: 0,
+      amount: undefined,
       transactionDate: new Date().toISOString().split("T")[0],
       transactionId: "",
     },
@@ -524,8 +525,8 @@ const createClientWithPassword = async (password: string | null) => {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!prospectData) return <div>No data found</div>;
+  if (isLoading) return <LoadingSpinner text="Loading registration data..." />;
+  if (!prospectData) return <LoadingSpinner text="No prospect data found" />;
 
   return (
     <div className="w-full p-4 md:p-6">
@@ -592,6 +593,7 @@ const createClientWithPassword = async (password: string | null) => {
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-4 md:space-y-6"
               >
+                {/* Service Selection - Updated to match quotation style */}
                 <div className="space-y-4">
                   <select
                     className="w-full p-2 rounded-lg border border-gray-300"
@@ -644,31 +646,107 @@ const createClientWithPassword = async (password: string | null) => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    type="number"
-                    label="Initial Amount (₹)"
-                    value={watch("initialAmount")?.toString()}
-                    readOnly
-                  />
-                  <Input
-                    type="number"
-                    label="Acceptance Amount (₹)"
-                    {...register("acceptanceAmount")}
-                  />
-                  <Input
-                    type="number"
-                    label="Discount (%)"
-                    {...register("discountPercentage")}
-                  />
-                  <Input
-                    type="number"
-                    label="Total Amount (₹)"
-                    value={watch("totalAmount")?.toString()}
-                    readOnly
-                  />
+                {/* Amount Fields - Updated layout */}
+                <div className="space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Initial Amount (INR)"
+                      value={watch("initialAmount")?.toString()}
+                      readOnly
+                    />
+                    <Input
+                      type="number"
+                      label="Acceptance Amount (INR)"
+                      {...register("acceptanceAmount")}
+                    />
+                    <Input
+                      type="number"
+                      label="Discount (%)"
+                      min="0"
+                      max="100"
+                      {...register("discountPercentage")}
+                    />
+                  </div>
+
+                  {/* Total Amount Summary - Styled like in quotation */}
+                  <Card
+                    className="relative overflow-hidden"
+                    classNames={{
+                      base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50",
+                    }}
+                  >
+                    <CardBody className="p-6">
+                      <div className="space-y-4">
+                        {/* Sub Total Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-default-600">Sub Total</span>
+                          <Chip
+                            variant="flat"
+                            classNames={{
+                              base: "bg-default-100 border-default-200",
+                              content:
+                                "text-default-600 font-semibold text-medium",
+                            }}
+                          >
+                            ₹ {watch("subTotal").toLocaleString()}
+                          </Chip>
+                        </div>
+
+                        {/* Discount Row */}
+                        {getNumericValue(watch("discountPercentage")) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-danger-600">Discount</span>
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                classNames={{
+                                  base: "h-5 bg-danger-50 dark:bg-danger-100",
+                                  content:
+                                    "text-tiny font-medium px-2 text-danger",
+                                }}
+                              >
+                                {watch("discountPercentage")}% off
+                              </Chip>
+                            </div>
+                            <span className="text-danger font-medium">
+                              - ₹ {watch("discountAmount").toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+
+                        <Divider className="my-4 bg-default-200/50" />
+
+                        {/* Total Amount Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xl font-semibold text-default-900">
+                            Total Amount
+                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <Chip
+                              size="lg"
+                              classNames={{
+                                base: "bg-primary/10 border-primary/20 px-4",
+                                content: "text-xl font-bold text-primary",
+                              }}
+                            >
+                              ₹ {watch("totalAmount").toLocaleString()}
+                            </Chip>
+                            <span className="text-tiny text-default-500">
+                              {getNumericValue(watch("discountPercentage")) > 0
+                                ? "After discount applied"
+                                : "No discount applied"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
                 </div>
 
+                {/* Period Settings - Updated layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex gap-2">
                     <Input
@@ -706,20 +784,32 @@ const createClientWithPassword = async (password: string | null) => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                {/* Bank Selection - Updated layout */}
+                <div className="w-full space-y-2">
+                  <label htmlFor="bank-select" className="text-sm font-medium">
+                    Select Bank Account
+                  </label>
                   <select
+                    id="bank-select"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     {...register("selectedBank")}
                   >
-                    <option value="">Select Bank Account</option>
+                    <option value="">Choose a bank account</option>
                     {bankAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.account_name} - {account.bank}
                       </option>
                     ))}
                   </select>
+                </div>
 
+                {/* Payment Method Selection */}
+                <div className="w-full space-y-2">
+                  <label htmlFor="payment-mode" className="text-sm font-medium">
+                    Payment Method
+                  </label>
                   <select
+                    id="payment-mode"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     {...register("paymentMode")}
                   >
@@ -732,42 +822,45 @@ const createClientWithPassword = async (password: string | null) => {
                     <option value="gateway">Payment Gateway</option>
                     <option value="crypto">Cryptocurrency</option>
                   </select>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      type="date"
-                      label="Transaction Date"
-                      defaultValue={new Date().toISOString().split("T")[0]}
-                      {...register("transactionDate", {
-                        required: "Transaction date is required",
-                      })}
-                    />
-                    <Input
-                      type="number"
-                      label="Amount Paid (₹)"
-                      required
-                      {...register("amount", {
-                        required: "Amount is required",
-                      })}
-                    />
-                  </div>
+                {/* Payment Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    type="date"
+                    label="Transaction Date"
+                    defaultValue={new Date().toISOString().split("T")[0]}
+                    {...register("transactionDate", {
+                      required: "Transaction date is required",
+                    })}
+                  />
+                  <Input
+                    type="number"
+                    label="Amount Paid (₹)"
+                    required
+                    {...register("amount", {
+                      required: "Amount is required",
+                    })}
+                  />
+                </div>
 
+                {/* Dynamic payment fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {renderPaymentFields()}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      color="danger"
-                      variant="light"
-                      onClick={() => router.back()}
-                    >
-                      Cancel
-                    </Button>
-                    <Button color="primary" type="submit">
-                      Complete Registration
-                    </Button>
-                  </div>
+                {/* Form actions */}
+                <div className="flex justify-end gap-3 mt-6">
+                  <Button
+                    color="danger"
+                    variant="light"
+                    onClick={() => router.back()}
+                  >
+                    Cancel
+                  </Button>
+                  <Button color="primary" type="submit">
+                    Complete Registration
+                  </Button>
                 </div>
               </form>
             </CardBody>
@@ -793,7 +886,7 @@ function RegistrationPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <RegistrationContent regId={resolvedParams.id} />
     </Suspense>
   );
