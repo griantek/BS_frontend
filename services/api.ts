@@ -192,7 +192,7 @@ interface Registration {
   accept_period: string;
   pub_period: string;
   bank_id: string;  // Added
-  status: 'pending' | 'registered' | 'waiting for approval';
+  status: string;
   month: number;
   year: number;
   created_at: string;
@@ -1806,6 +1806,26 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Error fetching client pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientRegisteredRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/registered`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client registered registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client registered registrations:', error);
             throw this.handleError(error);
         }
     },

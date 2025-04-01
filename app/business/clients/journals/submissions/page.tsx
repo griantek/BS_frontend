@@ -1,41 +1,33 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, CardHeader, Divider, Button, Input, Spinner, Chip, Textarea, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Divider, Button, Input, Spinner, Chip, Textarea, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Progress, Tooltip } from "@nextui-org/react";
 import { withClientAuth } from '@/components/withClientAuth';
 import { Sidebar } from '@/components/sidebar';
 import { 
   CloudArrowUpIcon, 
   ClipboardDocumentListIcon, 
   ArrowLeftIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  ExclamationCircleIcon,
+  CalendarIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-
-// Mock submission data
-const mockSubmissions = [
-  {
-    id: "SUB-2023-001",
-    journalName: "IEEE Transactions on Neural Networks and Learning Systems",
-    paperTitle: "Advanced Machine Learning Techniques in Healthcare",
-    submissionDate: "2023-10-15",
-    status: "Under Review",
-    feedback: null
-  },
-  {
-    id: "SUB-2023-002",
-    journalName: "Renewable and Sustainable Energy Reviews",
-    paperTitle: "Sustainable Energy Solutions for Urban Development",
-    submissionDate: "2023-11-10",
-    status: "Accepted",
-    feedback: "Paper accepted with minor revisions. Please address reviewer comments within 30 days."
-  }
-];
+import api, { Registration } from "@/services/api";
+import { motion } from "framer-motion";
 
 const JournalSubmissionsPage = () => {
   const router = useRouter();
-  const [submissions, setSubmissions] = useState(mockSubmissions);
-  const [isUploading, setIsUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [showNewSubmission, setShowNewSubmission] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [newSubmission, setNewSubmission] = useState({
     journalName: '',
     paperTitle: '',
@@ -53,14 +45,110 @@ const JournalSubmissionsPage = () => {
     "Cell Reports"
   ];
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'Under Review': return 'warning';
-      case 'Accepted': return 'success';
-      case 'Rejected': return 'danger';
-      case 'Pending': return 'primary';
-      default: return 'default';
+  useEffect(() => {
+    const fetchRegistrations = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get current user from storage
+        const user = api.getStoredUser();
+        if (!user || !user.id) {
+          throw new Error("User information not found");
+        }
+
+        // Fetch registered registrations using the real API endpoint
+        const response = await api.getClientRegisteredRegistration(user.id);
+
+        if (response.success) {
+          setRegistrations(response.data);
+          setFilteredRegistrations(response.data);
+        } else {
+          throw new Error("Failed to fetch registered submissions");
+        }
+      } catch (error: any) {
+        console.error("Error fetching registrations:", error);
+        setError(error.message || "Failed to load registered submissions");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRegistrations();
+  }, []);
+
+  useEffect(() => {
+    // Apply filters whenever status or search changes
+    let result = registrations;
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      result = result.filter((reg) => {
+        // Match status either from status field or any custom status field you might have
+        return reg.status === statusFilter;
+      });
     }
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (reg) =>
+          reg.prospectus?.client_name?.toLowerCase().includes(query) ||
+          reg.prospectus?.reg_id?.toLowerCase().includes(query) ||
+          reg.services?.toLowerCase().includes(query) ||
+          reg.prospectus?.requirement?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredRegistrations(result);
+  }, [statusFilter, searchQuery, registrations]);
+
+  const getStatusColor = (status: string = "pending") => {
+    switch(status) {
+      case 'registered':
+      case 'completed':
+      case 'published':
+        return 'success';
+      case 'in progress':
+      case 'drafting': 
+        return 'primary';
+      case 'under review':
+      case 'submitted':
+        return 'secondary';
+      case 'revisions required':
+      case 'rejected':
+        return 'danger';
+      case 'waiting for approval':
+      case 'pending':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusLabel = (status: string = "pending") => {
+    // Capitalize the words in the status
+    return status
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const getProgressFromStatus = (status: string = "pending") => {
+    const statusMap: { [key: string]: number } = {
+      "pending": 10,
+      "waiting for approval": 25,
+      "registered": 50,
+      "in progress": 75,
+      "completed": 100,
+    };
+
+    return statusMap[status] || 0;
+  };
+
+  const handleViewDetails = (registrationId: number) => {
+    router.push(`/business/clients/journals/details/${registrationId}`);
   };
 
   const handleUpload = () => {
@@ -69,20 +157,7 @@ const JournalSubmissionsPage = () => {
     setTimeout(() => {
       setIsUploading(false);
       setShowNewSubmission(false);
-      // Add new submission to list (in a real app, this would come from API)
-      setSubmissions([
-        {
-          id: `SUB-2023-00${submissions.length + 1}`,
-          journalName: newSubmission.selectedJournal !== 'Select Journal' ? 
-            newSubmission.selectedJournal : newSubmission.journalName,
-          paperTitle: newSubmission.paperTitle,
-          submissionDate: new Date().toISOString().split('T')[0],
-          status: "Pending",
-          feedback: null
-        },
-        ...submissions
-      ]);
-      // Reset form
+      // In a real app, this would actually submit to the backend
       setNewSubmission({
         journalName: '',
         paperTitle: '',
@@ -100,6 +175,31 @@ const JournalSubmissionsPage = () => {
       [name]: value
     }));
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" color="secondary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="shadow-md">
+          <CardBody className="p-6 text-center">
+            <ExclamationCircleIcon className="h-12 w-12 text-danger mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Error Loading Submissions</h2>
+            <p className="text-default-500 mb-4">{error}</p>
+            <Button color="primary" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex ml-16">
@@ -234,59 +334,214 @@ const JournalSubmissionsPage = () => {
             </CardBody>
           </Card>
         ) : (
-          <>
-            {submissions.length === 0 ? (
-              <Card>
-                <CardBody className="text-center py-12">
-                  <ClipboardDocumentListIcon className="w-12 h-12 mx-auto text-default-300 mb-4" />
-                  <p className="text-default-600 mb-4">You haven&apos;t submitted any papers yet</p>
-                  <Button 
-                    color="primary" 
-                    onClick={() => setShowNewSubmission(true)}
-                  >
-                    Submit Your First Paper
-                  </Button>
-                </CardBody>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {submissions.map(submission => (
-                  <Card key={submission.id} className="hover:shadow-md transition-shadow">
-                    <CardBody className="p-5">
-                      <div className="flex flex-col md:flex-row justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-default-600">{submission.id}</span>
-                            <Chip color={getStatusColor(submission.status)} size="sm">
-                              {submission.status}
-                            </Chip>
-                          </div>
-                          <h3 className="text-lg font-semibold mb-1">{submission.paperTitle}</h3>
-                          <p className="text-sm text-default-500 mb-2">{submission.journalName}</p>
-                          <p className="text-xs text-default-400">Submitted on: {submission.submissionDate}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" color="primary" variant="flat">
-                            View Details
-                          </Button>
-                          <Button size="sm" color="secondary" variant="flat">
-                            Track Status
-                          </Button>
-                        </div>
-                      </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="mb-6 shadow-md">
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center border-b">
+                <h2 className="text-xl font-bold text-secondary">
+                  Your Registered Submissions
+                </h2>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    classNames={{
+                      base: "max-w-full sm:max-w-[14rem]",
+                      inputWrapper: "h-9",
+                    }}
+                    placeholder="Search submissions..."
+                    startContent={
+                      <MagnifyingGlassIcon className="h-4 w-4 text-default-400" />
+                    }
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        variant="flat"
+                        endContent={<ChevronDownIcon className="h-4 w-4" />}
+                      >
+                        Status:{" "}
+                        {statusFilter === "all"
+                          ? "All"
+                          : getStatusLabel(statusFilter)}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Filter by status"
+                      onAction={(key) => setStatusFilter(key as string)}
+                      selectedKeys={[statusFilter]}
+                      selectionMode="single"
+                    >
+                      <DropdownItem key="all">All</DropdownItem>
+                      <DropdownItem key="pending">Pending</DropdownItem>
+                      <DropdownItem key="waiting for approval">Waiting For Approval</DropdownItem>
+                      <DropdownItem key="registered">Registered</DropdownItem>
+                      <DropdownItem key="in progress">In Progress</DropdownItem>
+                      <DropdownItem key="completed">Completed</DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
+              </CardHeader>
+              <CardBody>
+                {filteredRegistrations.length > 0 ? (
+                  <div className="space-y-5">
+                    {filteredRegistrations.map((registration) => {
+                      // Get current status
+                      const currentStatus = registration.status;
+                      // Calculate progress percentage
+                      const progressPercentage = getProgressFromStatus(currentStatus);
                       
-                      {submission.feedback && (
-                        <div className="mt-4 p-3 bg-default-50 rounded-lg">
-                          <p className="text-sm font-medium mb-1">Feedback:</p>
-                          <p className="text-sm text-default-700">{submission.feedback}</p>
-                        </div>
-                      )}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
+                      // Calculate days since creation
+                      const daysSinceCreated = Math.floor(
+                        (new Date().getTime() - new Date(registration.created_at).getTime()) /
+                          (1000 * 3600 * 24)
+                      );
+
+                      return (
+                        <Card
+                          key={registration.id}
+                          className={`border-l-4 border-l-primary hover:shadow-lg transition-all duration-200`}
+                        >
+                          <CardBody className="p-5">
+                            <div className="flex flex-col md:flex-row gap-6">
+                              <div className="flex-grow">
+                                {/* Client and Status Header */}
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-primary-800 flex items-center gap-2">
+                                      {registration.prospectus?.client_name}
+                                    </h3>
+                                    <div className="text-sm text-default-500 flex items-center mt-1">
+                                      <span className="font-medium">ID:</span>{" "}
+                                      {registration.prospectus?.reg_id} •
+                                      <span>
+                                        {` ${daysSinceCreated} days since registration`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Chip
+                                    color={getStatusColor(currentStatus)}
+                                    variant="flat"
+                                    size="sm"
+                                    className="self-start sm:self-auto"
+                                  >
+                                    {getStatusLabel(currentStatus)}
+                                  </Chip>
+                                </div>
+
+                                {/* Project Requirements */}
+                                <div className="mb-3 bg-default-50 p-3 rounded border border-default-200">
+                                  <p className="font-medium text-sm text-default-700 mb-1">
+                                    Project Requirements:
+                                  </p>
+                                  <p className="text-sm text-default-600 line-clamp-2">
+                                    {registration.prospectus?.requirement}
+                                  </p>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="mb-3">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className="font-semibold">Progress</span>
+                                    <span className="font-medium">
+                                      {progressPercentage}%
+                                    </span>
+                                  </div>
+                                  <Progress
+                                    value={progressPercentage}
+                                    color={getStatusColor(currentStatus)}
+                                    size="sm"
+                                    aria-label="Submission progress"
+                                    className="h-2"
+                                  />
+                                </div>
+
+                                {/* Service Details */}
+                                <div className="text-sm font-medium mb-2">
+                                  {registration.services}
+                                </div>
+
+                                {/* Info Icons Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 mt-3">
+                                  <div className="flex items-center text-xs text-default-600">
+                                    <Tooltip content="Acceptance Period">
+                                      <div className="flex items-center gap-1">
+                                        <ClockIcon className="h-3.5 w-3.5 text-default-400" />
+                                        <span>{registration.accept_period}</span>
+                                      </div>
+                                    </Tooltip>
+                                  </div>
+                                  <div className="flex items-center text-xs text-default-600">
+                                    <Tooltip content="Publication Period">
+                                      <div className="flex items-center gap-1">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-default-400" />
+                                        <span>{registration.pub_period}</span>
+                                      </div>
+                                    </Tooltip>
+                                  </div>
+                                  <div className="flex items-center text-xs text-default-600">
+                                    <Tooltip content="Registration Date">
+                                      <div className="flex items-center gap-1">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-default-400" />
+                                        <span>
+                                          {new Date(registration.created_at).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    </Tooltip>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action Button */}
+                              <div className="flex justify-end items-center">
+                                <Button
+                                  color="primary"
+                                  onClick={() => handleViewDetails(registration.id)}
+                                  className="min-w-[120px]"
+                                  endContent={
+                                    <DocumentTextIcon className="h-4 w-4" />
+                                  }
+                                  size="md"
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-default-50 rounded-lg">
+                    <ClipboardDocumentListIcon className="h-16 w-16 text-default-300 mx-auto mb-4" />
+                    <p className="text-default-600 text-lg mb-4">
+                      No submissions found matching your filters.
+                    </p>
+                    {statusFilter !== "all" || searchQuery ? (
+                      <Button
+                        color="primary"
+                        variant="flat"
+                        onClick={() => {
+                          setStatusFilter("all");
+                          setSearchQuery("");
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    ) : (
+                      <p className="text-default-400 text-sm">
+                        You don&apos;t have any registered submissions yet.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </motion.div>
         )}
       </div>
     </div>
