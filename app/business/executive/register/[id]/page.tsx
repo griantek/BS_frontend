@@ -63,6 +63,7 @@ interface RegistrationFormData {
   transactionHash?: string;
   cryptoCurrency?: string;
   transactionId?: string;
+  selectedServicePrices: Record<string, number>; // Add this field to track custom prices
 }
 
 const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
@@ -109,6 +110,7 @@ function RegistrationContent({ regId }: { regId: string }) {
       amount: undefined,
       transactionDate: new Date().toISOString().split("T")[0],
       transactionId: "",
+      selectedServicePrices: {}, // Add this field to track custom prices
     },
   });
 
@@ -183,14 +185,13 @@ function RegistrationContent({ regId }: { regId: string }) {
       ];
       setValue("selectedServices", updatedServices);
 
-      const initialAmount = updatedServices.reduce((sum, serviceId) => {
-        const selectedService = services.find(
-          (s) => s.id === parseInt(serviceId)
-        );
-        return sum + (selectedService?.fee || 0);
-      }, 0);
+      // Set the initial price in the selectedServicePrices
+      const updatedPrices = { ...watch("selectedServicePrices") };
+      updatedPrices[service.id.toString()] = service.fee;
+      setValue("selectedServicePrices", updatedPrices);
 
-      setValue("initialAmount", initialAmount);
+      // Calculate initial amount based on custom prices
+      recalculateInitialAmount(updatedServices, updatedPrices);
     }
   };
 
@@ -200,9 +201,32 @@ function RegistrationContent({ regId }: { regId: string }) {
     );
     setValue("selectedServices", updatedServices);
 
-    const initialAmount = updatedServices.reduce((sum, id) => {
-      const service = services.find((s) => s.id === parseInt(id));
-      return sum + (service?.fee || 0);
+    // Remove price from selectedServicePrices
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    delete updatedPrices[serviceId];
+    setValue("selectedServicePrices", updatedPrices);
+
+    // Recalculate initial amount
+    recalculateInitialAmount(updatedServices, updatedPrices);
+  };
+
+  // New function to handle price changes
+  const handlePriceChange = (serviceId: string, price: number) => {
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    updatedPrices[serviceId] = price;
+    setValue("selectedServicePrices", updatedPrices);
+
+    // Recalculate initial amount
+    recalculateInitialAmount(watch("selectedServices"), updatedPrices);
+  };
+
+  // Helper function to recalculate the initial amount
+  const recalculateInitialAmount = (
+    serviceIds: string[],
+    prices: Record<string, number>
+  ) => {
+    const initialAmount = serviceIds.reduce((sum, id) => {
+      return sum + (prices[id] || 0);
     }, 0);
 
     setValue("initialAmount", initialAmount);
@@ -622,22 +646,37 @@ const createClientWithPassword = async (password: string | null) => {
                   {watch("selectedServices").length > 0 && (
                     <div className="bg-default-100 p-4 rounded-lg space-y-2">
                       <h4 className="text-sm font-medium">Selected Services</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-3">
                         {watch("selectedServices").map((serviceId) => {
                           const service = services.find(
                             (s) => s.id === parseInt(serviceId)
                           );
                           return (
                             service && (
-                              <Chip
-                                key={service.id}
-                                onClose={() => removeService(serviceId)}
-                                variant="flat"
-                                color="primary"
-                              >
-                                {service.service_name} - ₹
-                                {service.fee.toLocaleString()}
-                              </Chip>
+                              <div key={service.id} className="flex flex-col gap-2 pb-2 border-b border-default-200 last:border-0">
+                                <div className="flex justify-between items-center">
+                                  <div className="font-medium">{service.service_name}</div>
+                                  <Button 
+                                    size="sm" 
+                                    color="danger" 
+                                    variant="light"
+                                    onClick={() => removeService(serviceId)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-default-600">Price (₹):</span>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    size="sm"
+                                    className="max-w-[150px]"
+                                    value={watch("selectedServicePrices")[serviceId]?.toString()}
+                                    onChange={(e) => handlePriceChange(serviceId, Number(e.target.value))}
+                                  />
+                                </div>
+                              </div>
                             )
                           );
                         })}
