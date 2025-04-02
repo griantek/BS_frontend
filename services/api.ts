@@ -199,6 +199,7 @@ interface Registration {
   transaction_id: number;  // Added
   notes?: string;
   client_id:string;
+  service_and_prices?: Record<string, number>;
   prospectus: {
     id: number;
     date: string;
@@ -277,6 +278,7 @@ interface CreateRegistrationRequest {
   year: number;
   assigned_to?: string;  // Add this field
   registered_by: string;
+  service_and_prices?: Record<string, number>; // Add this new field
 }
 
 // Add new interface for database registration
@@ -1320,7 +1322,8 @@ const api = {
               status: data.status,
               month: data.month,
               year: data.year,
-              assigned_to: data.assigned_to
+              assigned_to: data.assigned_to,
+              service_and_prices: data.service_and_prices // Ensure service_and_prices is included
             };
             
             const response = await this.axiosInstance.post('/common/registration/create', requestData);

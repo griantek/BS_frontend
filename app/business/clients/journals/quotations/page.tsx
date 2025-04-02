@@ -187,9 +187,31 @@ const QuotationsPage = () => {
                       
                       <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <h4 className="font-bold text-sm mb-2 uppercase text-gray-800">{selectedQuotation.services}</h4>
+                          <h4 className="font-bold text-sm mb-2 uppercase text-gray-800">Services & Pricing</h4>
                           <div className="space-y-2">
-                            <p className="text-sm text-gray-800">Amount: <span className="font-medium">₹{(selectedQuotation.init_amount + selectedQuotation.accept_amount).toFixed(2)}/-INR</span></p>
+                            {/* Replace the existing services display with service_and_prices data */}
+                            {selectedQuotation.service_and_prices ? (
+                              <div className="border rounded-lg overflow-hidden mb-3">
+                                <table className="w-full">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="text-left p-2 text-sm font-medium text-gray-700">Service</th>
+                                      <th className="text-right p-2 text-sm font-medium text-gray-700">Price (₹)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {Object.entries(selectedQuotation.service_and_prices).map(([service, price], index) => (
+                                      <tr key={index} className="border-t border-gray-100">
+                                        <td className="p-2 text-sm text-gray-800">{service}</td>
+                                        <td className="p-2 text-sm text-gray-800 text-right">₹{price.toFixed(2)}/-INR</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-800 mb-3">{selectedQuotation.services}</p>
+                            )}
                             
                             <div className="pl-4 border-l-2 border-gray-200">
                               <p className="mb-1 text-sm text-gray-800">Initial Amount: <span className="font-medium">₹{selectedQuotation.init_amount.toFixed(2)}/-INR</span></p>

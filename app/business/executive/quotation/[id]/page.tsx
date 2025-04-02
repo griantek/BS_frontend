@@ -78,6 +78,21 @@ interface QuotationFormData {
   selectedServicePrices: Record<string, number>; // Add this field to track custom prices
 }
 
+// Add this helper function to format services and prices for backend
+const formatServicesAndPrices = (
+  selectedServices: string[],
+  selectedServicePrices: Record<string, number>,
+  servicesList: Service[]
+) => {
+  return selectedServices.reduce((result, serviceId) => {
+    const service = servicesList.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      result[service.service_name] = selectedServicePrices[serviceId] || service.fee;
+    }
+    return result;
+  }, {} as Record<string, number>);
+};
+
 function QuotationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -295,6 +310,13 @@ function QuotationContent({ regId }: { regId: string }) {
       
       setClientId(newClientId);
       
+      // Format services and their prices for the backend
+      const servicesAndPrices = formatServicesAndPrices(
+        formData.selectedServices,
+        formData.selectedServicePrices,
+        services
+      );
+      
       // Prepare registration data with updated fields
       const registrationData: CreateRegistrationRequest = {
         // Transaction details 
@@ -322,6 +344,8 @@ function QuotationContent({ regId }: { regId: string }) {
         status: "pending",
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
+        // Add the formatted services and prices
+        service_and_prices: servicesAndPrices
       };
 
       // Submit registration

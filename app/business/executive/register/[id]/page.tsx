@@ -77,6 +77,21 @@ const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
   crypto: "Crypto",
 } as const;
 
+// Add this helper function to format services and prices for backend
+const formatServicesAndPrices = (
+  selectedServices: string[],
+  selectedServicePrices: Record<string, number>,
+  servicesList: Service[]
+) => {
+  return selectedServices.reduce((result, serviceId) => {
+    const service = servicesList.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      result[service.service_name] = selectedServicePrices[serviceId] || service.fee;
+    }
+    return result;
+  }, {} as Record<string, number>);
+};
+
 function RegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -371,6 +386,13 @@ const createClientWithPassword = async (password: string | null) => {
 
     const formData = watch();
     const transactionInfo = getTransactionInfo();
+    
+    // Format services and their prices for the backend
+    const servicesAndPrices = formatServicesAndPrices(
+      formData.selectedServices,
+      formData.selectedServicePrices,
+      services
+    );
 
     const registrationData: CreateRegistrationRequest = {
       ...transactionInfo,
@@ -394,6 +416,8 @@ const createClientWithPassword = async (password: string | null) => {
       status: "waiting for approval" as const,
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
+      // Add the formatted services and prices
+      service_and_prices: servicesAndPrices
     };
 
     const response = await api.createRegistration(registrationData);

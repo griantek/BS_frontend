@@ -308,10 +308,21 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="border-t border-default-100">
-                          <td className="p-3">{quotation.services}</td>
-                          <td className="p-3 text-right">₹{quotation.init_amount.toFixed(2)}</td>
-                        </tr>
+                        {quotation.service_and_prices ? (
+                          // Render individual services with their prices if service_and_prices exists
+                          Object.entries(quotation.service_and_prices).map(([service, price], index) => (
+                            <tr key={index} className="border-t border-default-100">
+                              <td className="p-3">{service}</td>
+                              <td className="p-3 text-right">₹{price.toFixed(2)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          // Fallback to the old display method if service_and_prices doesn't exist
+                          <tr className="border-t border-default-100">
+                            <td className="p-3">{quotation.services}</td>
+                            <td className="p-3 text-right">₹{quotation.init_amount.toFixed(2)}</td>
+                          </tr>
+                        )}
                         {quotation.accept_amount > 0 && (
                           <tr className="border-t border-default-100">
                             <td className="p-3">Additional Services</td>
