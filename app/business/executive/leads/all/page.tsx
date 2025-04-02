@@ -280,7 +280,6 @@ const AllLeadsPage = () => {
                 placeholder="Name, phone, requirements..."
                 value={searchQuery}
                 onChange={handleSearchChange}
-                
               />
 
               <Select
@@ -529,14 +528,14 @@ const AllLeadsPage = () => {
                             <div
                               className={`px-2 py-1 rounded-full text-xs inline-block
                             ${
-                              lead.followup_status === "pending"
-                                ? "bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300"
-                                : lead.followup_status === "converted"
-                                  ? "bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300"
-                                  : "bg-default-100 text-default-800 dark:bg-default-900/30 dark:text-default-300"
+                              lead.followup_status === "converted"
+                                ? "bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300"
+                                : "bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300"
                             }`}
                             >
-                              {lead.followup_status || "none"}
+                              {lead.followup_status === "converted"
+                                ? "Converted"
+                                : "Pending"}
                             </div>
                           </TableCell>
                           <TableCell>
