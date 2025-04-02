@@ -194,8 +194,7 @@ function BusinessDashboard() {
       const newLeadsToday = leads.filter(lead => lead.date === today).length;
       
       // Find converted leads (where status is completed or converted)
-      const convertedLeads = leads.filter(lead => 
-        lead.followup_status === 'completed' || 
+      const convertedLeads = leads.filter(lead =>
         lead.followup_status === 'converted'
       ).length;
       
