@@ -151,7 +151,7 @@ const QuotationsPage = () => {
                       Greetings from G tek
                     </p>
                     <p className="mt-2 text-sm text-gray-700">
-                      It's our immense pleasure to introduce ourselves. We, G-Tek Technology are a Research & Development venture. By the year 1998, our journey started with limited technical experts; but our strive work and dedication has made us reach an impressive success and tech giant for past 18 years in our field. We have expanded ourselves with 8 branches in pan India and with clients worldwide.
+                      It&apos;s our immense pleasure to introduce ourselves. We, G-Tek Technology are a Research & Development venture. By the year 1998, our journey started with limited technical experts; but our strive work and dedication has made us reach an impressive success and tech giant for past 18 years in our field. We have expanded ourselves with 8 branches in pan India and with clients worldwide.
                     </p>
                   </div>
 
@@ -275,7 +275,7 @@ const QuotationsPage = () => {
                     
                     <div className="mt-4 text-xs border-t pt-4 text-gray-500 italic">
                       <p>Note: Do payment on G-TEK OFFICIAL account only.</p>
-                      <p className="mt-2">PRIVILEGED INFORMATION: This email and any attachments thereto may contain private, confidential, and privileged material for the sole use of the intended recipient. Any review, copying, or distribution of this email (or any attachments thereto) by others is strictly prohibited. If you are not the intended recipient, please contact the sender immediately and permanently delete the original and any copies of this email and any attachments thereto. The initial processing fee is non-refundable if the author's article is not at par with the journal's quality standards for publication.</p>
+                      <p className="mt-2">PRIVILEGED INFORMATION: This email and any attachments thereto may contain private, confidential, and privileged material for the sole use of the intended recipient. Any review, copying, or distribution of this email (or any attachments thereto) by others is strictly prohibited. If you are not the intended recipient, please contact the sender immediately and permanently delete the original and any copies of this email and any attachments thereto. The initial processing fee is non-refundable if the author&apos;s article is not at par with the journal&apos;s quality standards for publication.</p>
                       <p className="mt-2 font-semibold text-center">THANK YOU</p>
                     </div>
                   </div>
