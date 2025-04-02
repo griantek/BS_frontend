@@ -14,11 +14,13 @@ import {
   ModalBody,
   ModalFooter
 } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import { UserCircleIcon, KeyIcon, EnvelopeIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import api from "@/services/api";
 import { toast } from "react-toastify";
 
 export default function AccountsPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [user, setUser] = useState<{id: string; username: string; email: string; is_protected?: boolean} | null>(null);
@@ -40,7 +42,17 @@ export default function AccountsPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = api.getStoredUser();
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        const userString = localStorage.getItem('user');
+        
+        if (!token || !userString) {
+          // Not logged in, redirect to home page
+          router.replace('/');
+          return;
+        }
+        
+        const userData = JSON.parse(userString);
         if (userData) {
           setUser(userData);
           
@@ -53,17 +65,22 @@ export default function AccountsPage() {
               email: userData.email || "",
             });
           }
+        } else {
+          // Invalid user data, redirect to home page
+          router.replace('/');
+          return;
         }
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
         toast.error("Failed to load user data");
-        setIsLoading(false);
+        // On error, also redirect to home
+        router.replace('/');
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
