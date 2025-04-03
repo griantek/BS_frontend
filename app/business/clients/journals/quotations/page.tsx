@@ -327,7 +327,7 @@ const QuotationsPage = () => {
               </div>
               
               {/* Buttons - Keep layout the same but add shadow and improve spacing */}
-              <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 border-t bg-gray-50">
+              <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 border-t ">
                 <Button 
                   startContent={<CurrencyDollarIcon className="h-4 w-4" />}
                   variant="flat"
