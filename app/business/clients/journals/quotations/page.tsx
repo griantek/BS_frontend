@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Divider, Button, Spinner, Chip, Image } from "@nextui-org/react";
 import { withClientAuth } from '@/components/withClientAuth';
@@ -12,6 +12,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import api, { Registration } from '@/services/api';
+import html2pdf from 'html2pdf.js';
 
 // Interface for the quotation data (based on Registration)
 interface Quotation extends Registration {
@@ -24,6 +25,7 @@ const QuotationsPage = () => {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const quotationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchRegistrationData = async () => {
@@ -80,6 +82,22 @@ const QuotationsPage = () => {
     router.push(`/business/clients/journals/quotations/${id}`);
   };
 
+  const handleDownloadPDF = () => {
+    if (!quotationRef.current || !selectedQuotation) return;
+    
+    // Set options for PDF generation
+    const options = {
+      margin: 10,
+      filename: `Quotation-${selectedQuotation.id}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Generate and download PDF
+    html2pdf().from(quotationRef.current).set(options).save();
+  };
+
   return (
     <div className="flex ml-10">
       <Sidebar />
@@ -117,11 +135,11 @@ const QuotationsPage = () => {
             </CardHeader>
             <Divider />
             <CardBody className="p-0">
-              <div className="p-6 ">
+              <div className="p-6">
                 {/* Professional Quotation Format */}
-                <div className="max-w-4xl mx-auto bg-white shadow-sm border rounded-lg overflow-hidden print:shadow-none print:border-none">
-                  {/* Header */}
-                  <div className="bg-gray-800 text-white p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center">
+                <div ref={quotationRef} className="max-w-4xl mx-auto bg-white shadow-sm border rounded-lg overflow-hidden print:shadow-none print:border-none">
+                  {/* Header - Improved spacing and alignment */}
+                  <div className="bg-gray-800 text-white p-6 flex flex-col sm:flex-row justify-between items-center">
                     <div className="flex items-center mb-4 sm:mb-0">
                       <div className="mr-4">
                         <Image
@@ -144,148 +162,177 @@ const QuotationsPage = () => {
                     </div>
                   </div>
 
-                  {/* Introduction */}
-                  <div className="p-4 sm:p-6 text-sm sm:text-base">
+                  {/* Introduction - Improved padding and spacing */}
+                  <div className="p-6 text-sm sm:text-base">
                     <p className="font-semibold text-gray-800">DEAR, {selectedQuotation.prospectus?.client_name || selectedQuotation.prospectus.client_name || 'Client'},</p>
-                    <p className="mt-3 text-sm text-gray-700">
+                    <p className="mt-4 text-sm text-gray-700">
                       Greetings from G tek
                     </p>
-                    <p className="mt-2 text-sm text-gray-700">
+                    <p className="mt-3 text-sm text-gray-700">
                       It&apos;s our immense pleasure to introduce ourselves. We, G-Tek Technology are a Research & Development venture. By the year 1998, our journey started with limited technical experts; but our strive work and dedication has made us reach an impressive success and tech giant for past 18 years in our field. We have expanded ourselves with 8 branches in pan India and with clients worldwide.
                     </p>
                   </div>
 
-                  {/* Contact Details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 sm:p-6 bg-gray-50 text-sm">
-                    <div>
-                      <h3 className="font-bold text-gray-700 uppercase mb-2 text-xs sm:text-sm">SERVICE PROVIDER</h3>
-                      <p className="mb-1 text-gray-800">Company Name: Gtek Technology Pvt ltd</p>
-                      <p className="mb-1 text-gray-800">Contact: +91 876 00 000 44</p>
+                  {/* Contact Details - Improved grid layout and spacing */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gray-50 text-sm">
+                    <div className="border-r-0 sm:border-r border-gray-200 pr-0 sm:pr-4">
+                      <h3 className="font-bold text-gray-700 uppercase mb-3 text-xs sm:text-sm">SERVICE PROVIDER</h3>
+                      <p className="mb-2 text-gray-800">Company Name: Gtek Technology Pvt ltd</p>
+                      <p className="mb-2 text-gray-800">Contact: +91 876 00 000 44</p>
                       <p className='text-gray-800'>Email: info@gtekphd.com</p>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-gray-700 uppercase mb-2 text-xs sm:text-sm">CLIENT CONTACT DETAILS</h3>
-                      <p className="mb-1 text-gray-800">NAME: {selectedQuotation.prospectus?.client_name || 'Client'}</p>
-                      <p className="mb-1 text-gray-800">Phone: {selectedQuotation.prospectus?.phone || 'N/A'}</p>
+                    <div className="pl-0 sm:pl-4 mt-4 sm:mt-0">
+                      <h3 className="font-bold text-gray-700 uppercase mb-3 text-xs sm:text-sm">CLIENT CONTACT DETAILS</h3>
+                      <p className="mb-2 text-gray-800">NAME: {selectedQuotation.prospectus?.client_name || 'Client'}</p>
+                      <p className="mb-2 text-gray-800">Phone: {selectedQuotation.prospectus?.phone || 'N/A'}</p>
                       <p className='text-gray-800'>EMail: {selectedQuotation.prospectus?.email || selectedQuotation.prospectus.email || 'N/A'}</p>
                     </div>
                   </div>
 
-                  {/* PROFORMA INVOICE header */}
-                  <div className="text-center p-4 ">
+                  {/* PROFORMA INVOICE header - Added more prominence */}
+                  <div className="text-center p-5 bg-gray-100">
                     <h2 className="text-xl font-bold text-gray-800">PROFORMA INVOICE</h2>
                   </div>
 
-                  {/* Services */}
-                  <div className="p-4 sm:p-6">
-                    {/* <h2 className="text-center font-bold text-lg mb-4 text-gray-800 uppercase">{selectedQuotation.services}</h2> */}
-                    
-                    <div className="p-4 rounded-lg mb-4">
-                      {/* <div className="mb-2 pb-2 border-b">
-                        <p className="font-semibold">Domain: {selectedQuotation.prospectus?.domain || selectedQuotation.domain || 'Research'}</p>
-                      </div> */}
-                      
+                  {/* Services - Improved card layout and spacing */}
+                  <div className="p-6">
+                    <div className="rounded-lg mb-6">
                       <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <h4 className="font-bold text-sm mb-2 uppercase text-gray-800">Services & Pricing</h4>
-                          <div className="space-y-2">
-                            {/* Replace the existing services display with service_and_prices data */}
+                          <h4 className="font-bold text-sm mb-3 uppercase text-gray-800 border-b pb-2">Services & Pricing</h4>
+                          <div className="space-y-3 mt-4">
+                            {/* Service and prices table - Improved table styling */}
                             {selectedQuotation.service_and_prices ? (
-                              <div className="border rounded-lg overflow-hidden mb-3">
+                              <div className="border rounded-lg overflow-hidden mb-5 shadow-sm">
                                 <table className="w-full">
                                   <thead className="bg-gray-50">
                                     <tr>
-                                      <th className="text-left p-2 text-sm font-medium text-gray-700">Service</th>
-                                      <th className="text-right p-2 text-sm font-medium text-gray-700">Price (₹)</th>
+                                      <th className="text-left p-3 text-sm font-medium text-gray-700">Service</                                      th>
+                                      <th className="text-right p-3 text-sm font-medium text-gray-700">Price (₹)</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {Object.entries(selectedQuotation.service_and_prices).map(([service, price], index) => (
                                       <tr key={index} className="border-t border-gray-100">
-                                        <td className="p-2 text-sm text-gray-800">{service}</td>
-                                        <td className="p-2 text-sm text-gray-800 text-right">₹{price.toFixed(2)}/-INR</td>
+                                        <td className="p-3 text-sm text-gray-800">{service}</td>
+                                        <td className="p-3 text-sm text-gray-800 text-right">₹{price.toFixed(2)}/-INR</td>
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-800 mb-3">{selectedQuotation.services}</p>
+                              <p className="text-sm text-gray-800 mb-4">{selectedQuotation.services}</p>
                             )}
                             
-                            <div className="pl-4 border-l-2 border-gray-200">
-                              <p className="mb-1 text-sm text-gray-800">Initial Amount: <span className="font-medium">₹{selectedQuotation.init_amount.toFixed(2)}/-INR</span></p>
-                              <p className="mb-1 text-sm text-gray-800">After Write-up: <span className="font-medium">₹{selectedQuotation.accept_amount.toFixed(2)}/-INR</span></p>
+                            {/* Payment details - Improved visual hierarchy */}
+                            <div className="pl-4 border-l-4 border-gray-200 py-2 bg-gray-50 rounded-r-md mb-5">
+                              <p className="mb-2 text-sm text-gray-800">Initial Amount: <span className="font-medium">₹{selectedQuotation.init_amount.toFixed(2)}/-INR</span></p>
+                              <p className="mb-2 text-sm text-gray-800">After Write-up: <span className="font-medium">₹{selectedQuotation.accept_amount.toFixed(2)}/-INR</span></p>
                               {selectedQuotation.discount > 0 && (
-                                <p className="mb-1 text-sm text-green-600">Discount: <span className="font-medium">₹{selectedQuotation.discount.toFixed(2)}/-INR</span></p>
+                                <p className="mb-2 text-sm text-green-600">Discount: <span className="font-medium">₹{selectedQuotation.discount.toFixed(2)}/-INR</span></p>
                               )}
+                              <p className="font-medium text-sm mt-3 text-gray-800 border-t border-gray-200 pt-2">Total Amount: <span className="font-bold">₹{selectedQuotation.total_amount.toFixed(2)}/-INR</span></p>
                             </div>
                             
-                            <p className="font-medium text-sm mt-2 text-gray-800">Total Amount: <span className="font-bold">₹{selectedQuotation.total_amount.toFixed(2)}/-INR</span></p>
-                            <p className="mt-2 text-sm text-gray-800">DURATION - Writing: <span className="font-medium">{selectedQuotation.accept_period}</span></p>
-                            <p className="mt-2 text-sm text-gray-800">DURATION - Publication: <span className="font-medium">{selectedQuotation.pub_period}</span></p>
+                            {/* Duration info - Better visual hierarchy */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
+                              <div className="flex items-center">
+                                <ClockIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                <p className="text-sm text-gray-800">DURATION - Writing: <span className="font-medium">{selectedQuotation.accept_period}</span></p>
+                              </div>
+                              <div className="flex items-center">
+                                <ClockIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                <p className="text-sm text-gray-800">DURATION - Publication: <span className="font-medium">{selectedQuotation.pub_period}</span></p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Services List */}
-                    <div className="mb-6">
-                      <h3 className="font-bold mb-2 text-sm text-gray-800">Our Services</h3>
-                      <ul className="list-disc pl-5 text-xs sm:text-sm space-y-1 text-gray-700">
-                        <li>PhD Admission Support</li>
-                        <li>Research Proposal or Synopsis (PhD Research Assistance Guidance)</li>
-                        <li>Problem Identification - Novel Concept Finalization</li>
-                        <li>Research Methodology & Results Findings and Recommendations</li>
-                        <li>Research Literature Review Writing</li>
-                        <li>Implementation(coding)</li>
-                        <li>Journal Publication</li>
-                        <li>Research Dissertation & Thesis Writing</li>
-                        <li>Dissertation Writing (UG or PG)</li>
-                      </ul>
+                    {/* Services List - Two column layout for better spacing */}
+                    <div className="mb-8 bg-white border rounded-lg p-5">
+                      <h3 className="font-bold mb-4 text-sm text-gray-800 border-b pb-2">Our Services</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <ul className="list-disc pl-5 text-xs sm:text-sm space-y-2 text-gray-700">
+                            <li>PhD Admission Support</li>
+                            <li>Research Proposal or Synopsis (PhD Research Assistance Guidance)</li>
+                            <li>Problem Identification - Novel Concept Finalization</li>
+                            <li>Research Methodology & Results Findings and Recommendations</li>
+                            <li>Research Literature Review Writing</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <ul className="list-disc pl-5 text-xs sm:text-sm space-y-2 text-gray-700">
+                            <li>Implementation(coding)</li>
+                            <li>Journal Publication</li>
+                            <li>Research Dissertation & Thesis Writing</li>
+                            <li>Dissertation Writing (UG or PG)</li>
+                          </ul>
+                        </div>
+                      </div>
                       
-                      <h3 className="font-bold mt-4 mb-2 text-sm text-gray-800">Other Services</h3>
-                      <ul className="list-disc pl-5 text-xs sm:text-sm space-y-1 text-gray-700">
-                        <li className='text-gray-800'>Anonymous Peer Review Process</li>
-                        <li className='text-gray-800'>English Language Correction</li>
-                        <li className='text-gray-800'>Technical Language Correction</li>
-                        <li className='text-gray-800'>Formatting and Proofreading Services</li>
-                        <li className='text-gray-800'>Scientific or Mathematical Formula Editing Services</li>
-                      </ul>
+                      <h3 className="font-bold mt-6 mb-4 text-sm text-gray-800 border-b pb-2">Other Services</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <ul className="list-disc pl-5 text-xs sm:text-sm space-y-2 text-gray-700">
+                            <li className='text-gray-800'>Anonymous Peer Review Process</li>
+                            <li className='text-gray-800'>English Language Correction</li>
+                            <li className='text-gray-800'>Technical Language Correction</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <ul className="list-disc pl-5 text-xs sm:text-sm space-y-2 text-gray-700">
+                            <li className='text-gray-800'>Formatting and Proofreading Services</li>
+                            <li className='text-gray-800'>Scientific or Mathematical Formula Editing Services</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Payment Details */}
-                  <div className="p-4 sm:p-6 bg-gray-50">
-                    <h3 className="font-bold mb-3 uppercase text-sm text-gray-800">ACCOUNT DETAILS</h3>
-                    <div className="text-xs sm:text-sm">
-                      <p className="mb-1 text-gray-800">Account Number: {selectedQuotation.bank_accounts.account_number}</p>
-                      <p className="mb-1 text-gray-800">Account name:{selectedQuotation.bank_accounts.account_name}</p>
-                      <p className="mb-1 text-gray-800">Bank Name: {selectedQuotation.bank_accounts.bank},{selectedQuotation.bank_accounts.branch}</p>
-                      <p className="mb-1 text-gray-800">IFSC code: {selectedQuotation.bank_accounts.ifsc_code}</p>
-                      <p className='text-gray-800'>{selectedQuotation.bank_accounts.account_type}</p>
+                  {/* Payment Details - Improved layout */}
+                  <div className="p-6 bg-gray-50">
+                    <h3 className="font-bold mb-4 uppercase text-sm text-gray-800 border-b border-gray-200 pb-2">ACCOUNT DETAILS</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+                      <div>
+                        <p className="mb-2 text-gray-800">Account Number: <span className="font-medium">{selectedQuotation.bank_accounts.account_number}</span></p>
+                        <p className="mb-2 text-gray-800">Account name: <span className="font-medium">{selectedQuotation.bank_accounts.account_name}</span></p>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-gray-800">Bank Name: <span className="font-medium">{selectedQuotation.bank_accounts.bank}, {selectedQuotation.bank_accounts.branch}</span></p>
+                        <p className="mb-2 text-gray-800">IFSC code: <span className="font-medium">{selectedQuotation.bank_accounts.ifsc_code}</span></p>
+                        <p className='text-gray-800'>{selectedQuotation.bank_accounts.account_type}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="p-4 sm:p-6 text-xs sm:text-sm">
-                    <p className="mb-2 text-gray-800">Best Regards,</p>
-                    <p className="font-semibold text-gray-800">G-TEK Technology Private LTD</p>
-                    <p className='text-gray-800'>Email-Id: info@griantek.com</p>
+                  {/* Footer - Improved spacing and visual hierarchy */}
+                  <div className="p-6 text-xs sm:text-sm">
+                    <div className="mb-4">
+                      <p className="mb-2 text-gray-800">Best Regards,</p>
+                      <p className="font-semibold text-gray-800">G-TEK Technology Private LTD</p>
+                      <p className='text-gray-800'>Email-Id: info@griantek.com</p>
+                    </div>
                     
-                    <div className="mt-4 text-xs border-t pt-4 text-gray-500 italic">
-                      <p>Note: Do payment on G-TEK OFFICIAL account only.</p>
+                    <div className="mt-6 text-xs border-t pt-4 text-gray-500 italic bg-gray-50 p-4 rounded-md">
+                      <p className="font-semibold mb-2">Note: Do payment on G-TEK OFFICIAL account only.</p>
                       <p className="mt-2">PRIVILEGED INFORMATION: This email and any attachments thereto may contain private, confidential, and privileged material for the sole use of the intended recipient. Any review, copying, or distribution of this email (or any attachments thereto) by others is strictly prohibited. If you are not the intended recipient, please contact the sender immediately and permanently delete the original and any copies of this email and any attachments thereto. The initial processing fee is non-refundable if the author&apos;s article is not at par with the journal&apos;s quality standards for publication.</p>
-                      <p className="mt-2 font-semibold text-center">THANK YOU</p>
+                      <p className="mt-4 font-semibold text-center">THANK YOU</p>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row justify-between gap-3 p-6 border-t">
+              {/* Buttons - Keep layout the same but add shadow and improve spacing */}
+              <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 border-t bg-gray-50">
                 <Button 
                   startContent={<CurrencyDollarIcon className="h-4 w-4" />}
                   variant="flat"
+                  onClick={handleDownloadPDF}
+                  className="shadow-sm"
                 >
                   Download PDF
                 </Button>
@@ -296,6 +343,7 @@ const QuotationsPage = () => {
                       color="success" 
                       onClick={() => handleAccept(selectedQuotation.id)}
                       startContent={<CheckCircleIcon className="h-4 w-4" />}
+                      className="shadow-sm"
                     >
                       Accept & Pay
                     </Button>
