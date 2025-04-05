@@ -194,6 +194,7 @@ interface Registration {
   bank_id: string;  // Added
   status: string;
   month: number;
+  author_status:string;
   year: number;
   created_at: string;
   transaction_id: number;  // Added
@@ -974,9 +975,53 @@ interface ClientRegistrationWithQuotationResponse {
   data: {
     registrations: Registration[];
     quotations: ClientQuotation[];
+    prospectus: {
+      id: number;
+      client_name: string;
+      email: string;
+      phone: string;
+      requirement: string;
+      services: string;
+      notes: string;
+      leads_id: number;
+    };
+    leads?: {
+      id: number;
+      requirement: string;
+      detailed_requirement?: string;
+      client_name?: string;
+      phone_number?: string;
+    };
   };
   timestamp: string;
   message: string;
+}
+
+// Add new interface for combined data response
+interface CombinedRegistrationData {
+  registration: Registration;
+  quotations: ClientQuotation[];
+  journalData: JournalData[];
+  transaction: Transaction[];
+  prospectus?: {
+    id: number;
+    client_name: string;
+    email: string;
+    phone: string;
+    requirement: string;
+    leads_id?: number;
+  };
+  leads?: {
+    id: number;
+    requirement: string;
+    detailed_requirement?: string;
+  };
+}
+
+interface CombinedDataResponse {
+  success: boolean;
+  data: CombinedRegistrationData;
+  timestamp: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -2264,9 +2309,34 @@ const api = {
     async getClientRegistrationWithQuotation(registrationId: number): Promise<ClientRegistrationWithQuotationResponse> {
       try {
         const response = await this.axiosInstance.get(`/clients/prosReg/${registrationId}`);
+        
         return response.data;
       } catch (error: any) {
         console.error('Error fetching registration with quotation:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add new method to get combined data
+    async getCombinedData(regId: number): Promise<CombinedDataResponse> {
+      try {
+        const response = await this.axiosInstance.post('/clients/combined-data', {
+          reg_id: regId
+        });
+        
+        // Log the combined data structure for debugging
+        console.log('Combined data response structure:', {
+          hasRegistration: !!response.data?.data?.registration,
+          hasQuotations: response.data?.data?.quotations?.length || 0,
+          hasJournalData: response.data?.data?.journalData?.length || 0,
+          hasTransaction: response.data?.data?.transaction?.length || 0,
+          hasProspectus: !!response.data?.data?.prospectus,
+          hasLeads: !!response.data?.data?.leads
+        });
+        
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching combined registration data:', error);
         throw this.handleError(error);
       }
     },
@@ -2329,5 +2399,7 @@ export type {
     QuotationFile,
     ClientQuotation,
     ClientRegistrationWithQuotationResponse,
+    CombinedRegistrationData,
+    CombinedDataResponse,
 };
 export default api;

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, ChangeEvent } from "react";
 import {
   Card,
   CardBody,
@@ -28,9 +28,10 @@ import {
   ExclamationTriangleIcon,
   PaperClipIcon,
   DocumentArrowDownIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import api, { TransactionInfo } from "@/services/api";
+import api, { TransactionInfo, Editor } from "@/services/api";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { WithAdminAuth } from "@/components/withAdminAuth";
@@ -62,6 +63,7 @@ interface ClientQuotation {
   };
 }
 
+// Update RegistrationData interface to include prospectus with leads_id
 interface RegistrationData {
   id: number;
   prospectus_id: number;
@@ -89,6 +91,44 @@ interface RegistrationData {
   author_status: string;
   file_path: string | null;
   author_comments: string | null;
+  // Add the prospectus property
+  prospectus?: {
+    id: number;
+    reg_id?: string;
+    client_name: string;
+    email?: string;
+    phone?: string;
+    department?: string;
+    requirement?: string;
+    services?: string;
+    notes?: string;
+    leads_id?: number;
+    // Add other properties as needed
+  };
+}
+
+// Add interfaces for the new response structure
+interface Prospectus {
+  id: number;
+  client_name: string;
+  email: string;
+  phone: string;
+  requirement: string;
+  services: string;
+  notes: string;
+  leads_id: number;
+}
+
+interface Leads {
+  id: number;
+  requirement: string;
+}
+
+interface ClientRegistrationWithQuotationData {
+  registrations: RegistrationData[];
+  quotations: ClientQuotation[];
+  prospectus: Prospectus;
+  leads: Leads;
 }
 
 // Payment form data interface
@@ -138,8 +178,14 @@ function ApprovalDetailContent({ id }: { id: string }) {
   const [quotation, setQuotation] = useState<ClientQuotation | null>(null);
   const [selectedFile, setSelectedFile] = useState<QuotationFile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [assignableEntities, setAssignableEntities] = useState<Editor[]>([]);
+  const [selectedEntity, setSelectedEntity] = useState<string>("");
+  const [loadingEntities, setLoadingEntities] = useState(false);
   const { isOpen: isPdfModalOpen, onOpen: onPdfModalOpen, onClose: onPdfModalClose } = useDisclosure();
   const { isOpen: isSuccessModalOpen, onOpen: onSuccessModalOpen, onClose: onSuccessModalClose } = useDisclosure();
+  const { isOpen: isEntityModalOpen, onOpen: onEntityModalOpen, onClose: onEntityModalClose } = useDisclosure();
+  const [prospectus, setProspectus] = useState<Prospectus | null>(null);
+  const [leads, setLeads] = useState<Leads | null>(null);
 
   const {
     register,
@@ -165,11 +211,18 @@ function ApprovalDetailContent({ id }: { id: string }) {
     
     try {
       const response = await api.getClientRegistrationWithQuotation(parseInt(id));
-      console.log("Registration data:", response);
       
       if (response.data?.registrations && response.data.registrations.length > 0) {
         // Cast the registration data from the API to match our RegistrationData type
         const registrationData = response.data.registrations[0] as unknown as RegistrationData;
+        
+        // Check if registration is already registered, redirect if so
+        if (registrationData.status === "registered") {
+          toast.info("This registration has already been processed");
+          router.push("/admin/approval");
+          return; // Stop further processing
+        }
+        
         setRegistration(registrationData);
         
         // Set amount in the form
@@ -179,6 +232,22 @@ function ApprovalDetailContent({ id }: { id: string }) {
             amount: registrationData.total_amount,
           });
         }
+
+        // Store prospectus and leads from the new response structure
+        if (response.data.prospectus) {
+          setProspectus(response.data.prospectus);
+        }
+
+        if (response.data.leads) {
+          setLeads(response.data.leads);
+        }
+
+        // Load assignable entities based on requirements - prioritize leads.requirement if available
+        const requirement = response.data.leads?.requirement || 
+                           response.data.prospectus?.requirement || 
+                           registrationData.prospectus?.requirement || 
+                           "";
+        loadAssignableEntities(requirement);
       }
       
       if (response.data?.quotations && response.data.quotations.length > 0) {
@@ -193,6 +262,51 @@ function ApprovalDetailContent({ id }: { id: string }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadAssignableEntities = async (requirement: string) => {
+    setLoadingEntities(true);
+    setAssignableEntities([]);
+
+    try {
+      let entities: Editor[] = [];
+
+      if (
+        requirement.toLowerCase().includes("publication") &&
+        requirement.toLowerCase().includes("paper writing")
+      ) {
+        // Case 3: Both publication and paper writing - get editors and authors
+        const response = await api.getAllEditorsAndAuthors();
+        entities = response.data;
+      } else if (requirement.toLowerCase().includes("publication")) {
+        // Case 1: Publication - get editors
+        const response = await api.getAllEditors();
+        entities = response.data;
+      } else if (requirement.toLowerCase().includes("paper writing")) {
+        // Case 2: Paper writing - get authors
+        const response = await api.getAllAuthors();
+        entities = response.data;
+      } else {
+        // Case 4: Default - get all assignable entities
+        const response = await api.getAllEditorsAndAuthors();
+        entities = response.data;
+      }
+
+      setAssignableEntities(entities);
+    } catch (err) {
+      console.error("Error loading assignable entities:", err);
+      setError("Failed to load assignable entities.");
+    } finally {
+      setLoadingEntities(false);
+    }
+  };
+
+  const handleEntitySelect = () => {
+    onEntityModalOpen();
+  };
+
+  const handleEntityChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedEntity(event.target.value);
   };
 
   const formatDate = (dateString: string) => {
@@ -391,13 +505,25 @@ function ApprovalDetailContent({ id }: { id: string }) {
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
         entity_id: user.id,
+        // Remove assigned_to from here as we'll use assignRegistration instead
       };
 
-      // Send update request
+      // First: Approve the registration
       const response = await api.approveRegistration(
         registration.id,
         updateData
       );
+
+      // Second: If we have a selected entity, assign the registration
+      if (selectedEntity) {
+        try {
+          await api.assignRegistration(registration.id, selectedEntity);
+          console.log(`Registration ${registration.id} assigned to entity ${selectedEntity}`);
+        } catch (assignError) {
+          console.error("Error assigning registration:", assignError);
+          toast.warning("Registration approved but entity assignment failed");
+        }
+      }
 
       if (response.success) {
         toast.success("Registration approved successfully");
@@ -481,7 +607,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Quotation Details */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-3 dark:bg-content1">
           <CardHeader className="flex justify-between">
             <div>
               <h1 className="text-2xl font-bold">Quotation #{registration.id}</h1>
@@ -498,14 +624,14 @@ function ApprovalDetailContent({ id }: { id: string }) {
               <InfoField label="Date Created" value={formatDate(registration.created_at)} />
               <InfoField label="Quotation Date" value={formatDate(registration.date)} />
               <InfoField label="Services" value={registration.services} />
-              <InfoField label="Client Name" value={quotation.name} />
+              <InfoField label="Client Name" value={quotation.name || prospectus?.client_name} />
               <InfoField label="Total Amount" value={`₹${registration.total_amount.toLocaleString()}`} />
             </div>
           </CardBody>
         </Card>
 
         {/* Payment Files */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-3 dark:bg-content1">
           <CardHeader>
             <h2 className="text-xl font-bold">Payment Files</h2>
           </CardHeader>
@@ -514,7 +640,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
             {quotation.files && quotation.files.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {quotation.files.map((file, index) => (
-                  <Card key={index} className="bg-default-50">
+                  <Card key={index} className="bg-default-50 dark:bg-content2">
                     <CardBody className="space-y-3 p-4">
                       <div className="flex items-center space-x-2">
                         <DocumentIcon className="h-6 w-6 text-default-500" />
@@ -562,22 +688,22 @@ function ApprovalDetailContent({ id }: { id: string }) {
         </Card>
 
         {/* Cost Breakdown */}
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-1 dark:bg-content1">
           <CardHeader>
             <h2 className="text-xl font-bold">Cost Breakdown</h2>
           </CardHeader>
           <Divider />
           <CardBody className="space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
               <span className="text-default-500">Initial Amount</span>
               <span className="font-medium">₹{registration.init_amount.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
               <span className="text-default-500">Additional Services</span>
               <span className="font-medium">₹{registration.accept_amount.toLocaleString()}</span>
             </div>
             {registration.discount > 0 && (
-              <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
                 <span className="text-default-500">Discount</span>
                 <span className="font-medium text-danger">-₹{registration.discount.toLocaleString()}</span>
               </div>
@@ -590,7 +716,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
         </Card>
 
         {/* Client Notes */}
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 dark:bg-content1">
           <CardHeader>
             <h2 className="text-xl font-bold">Client Notes</h2>
           </CardHeader>
@@ -604,8 +730,65 @@ function ApprovalDetailContent({ id }: { id: string }) {
           </CardBody>
         </Card>
 
+        {/* Entity Assignment Section */}
+        <Card className="md:col-span-3 dark:bg-content1">
+          <CardHeader>
+            <h2 className="text-xl font-bold">Entity Assignment</h2>
+          </CardHeader>
+          <Divider />
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className="md:col-span-2">
+                <p className="text-default-600 mb-2">
+                  Assign this registration to an entity based on the requirement. This will determine who will handle the client's project.
+                </p>
+                {selectedEntity ? (
+                  <div className="flex items-center">
+                    <div className="bg-primary-100 dark:bg-primary-900/30 text-primary p-2 rounded-md flex items-center gap-2">
+                      <UserGroupIcon className="w-5 h-5" />
+                      <span className="font-medium">
+                        {assignableEntities.find(e => e.id === selectedEntity)?.username || "Selected Entity"}
+                      </span>
+                    </div>
+                    <Button 
+                      color="primary" 
+                      variant="light" 
+                      className="ml-4"
+                      onClick={handleEntitySelect}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    color="primary" 
+                    onClick={handleEntitySelect} 
+                    startContent={<UserGroupIcon className="h-4 w-4" />}
+                  >
+                    Select Entity
+                  </Button>
+                )}
+              </div>
+              <div className="bg-default-50 dark:bg-content2 p-4 rounded-md flex flex-col space-y-2 md:col-span-1">
+                <p className="text-sm text-default-500">Requirement:</p>
+                <p className="font-medium">
+                  {leads?.requirement || 
+                   prospectus?.requirement || 
+                   registration.prospectus?.requirement || 
+                   "No requirement specified"}
+                </p>
+                {leads && leads.id && (
+                  <div className="mt-2 text-xs text-default-400">
+                    <span>Lead ID: {leads.id}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
         {/* Payment Approval Form */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-3 dark:bg-content1">
           <CardHeader>
             <h2 className="text-xl font-bold">Process Payment</h2>
           </CardHeader>
@@ -667,6 +850,8 @@ function ApprovalDetailContent({ id }: { id: string }) {
                   color="success"
                   type="submit"
                   isLoading={isSubmitting}
+                  startContent={!isSubmitting && <CheckCircleIcon className="h-4 w-4" />}
+                  isDisabled={!selectedEntity}
                 >
                   Approve & Register
                 </Button>
@@ -682,6 +867,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
         onClose={onPdfModalClose}
         size="5xl"
         scrollBehavior="inside"
+        backdrop="blur"
       >
         <ModalContent>
           <ModalHeader>
@@ -715,9 +901,85 @@ function ApprovalDetailContent({ id }: { id: string }) {
         </ModalContent>
       </Modal>
 
+      {/* Entity Selection Modal */}
+      <Modal 
+        isOpen={isEntityModalOpen} 
+        onClose={onEntityModalClose}
+        backdrop="blur"
+      >
+        <ModalContent className="dark:bg-content1">
+          <ModalHeader className="flex flex-col gap-1">
+            Assign Registration
+          </ModalHeader>
+          <ModalBody>
+            {loadingEntities ? (
+              <div className="py-8 flex flex-col items-center">
+                <Spinner size="lg" color="primary" className="mb-4" />
+                <p>Loading assignable entities...</p>
+              </div>
+            ) : assignableEntities.length > 0 ? (
+              <>
+                <p className="text-default-600 mb-2">
+                  Requirement:{" "}
+                  <span className="font-medium">
+                    {leads?.requirement || 
+                     prospectus?.requirement || 
+                     registration.prospectus?.requirement || 
+                     "Not specified"}
+                  </span>
+                </p>
+                <p className="text-default-600 mb-4">
+                  Select an entity to assign this registration to:
+                </p>
+                <Select
+                  label="Assignee"
+                  placeholder="Select an assignee"
+                  value={selectedEntity}
+                  onChange={handleEntityChange}
+                  className="w-full"
+                >
+                  {assignableEntities.map((entity) => (
+                    <SelectItem key={entity.id} value={entity.id}>
+                      {entity.username}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </>
+            ) : (
+              <div className="py-4">
+                <div className="bg-warning-50 border border-warning-200 text-warning-700 dark:bg-warning-900/20 dark:border-warning-800 dark:text-warning-400 px-4 py-3 rounded mb-4">
+                  <h3 className="font-medium mb-1">
+                    No Entities Available
+                  </h3>
+                  <p>
+                    There are no available entities for assignment. Please add entities before proceeding.
+                  </p>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" variant="flat" onClick={onEntityModalClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onClick={() => {
+                if (selectedEntity) {
+                  onEntityModalClose();
+                }
+              }}
+              isDisabled={!selectedEntity}
+            >
+              Confirm Selection
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Success Modal */}
-      <Modal isOpen={isSuccessModalOpen} onClose={onSuccessModalClose}>
-        <ModalContent>
+      <Modal isOpen={isSuccessModalOpen} onClose={onSuccessModalClose} backdrop="blur">
+        <ModalContent className="dark:bg-content1">
           <ModalHeader>Registration Approved</ModalHeader>
           <ModalBody>
             <div className="flex flex-col items-center py-4">
@@ -726,6 +988,11 @@ function ApprovalDetailContent({ id }: { id: string }) {
               <p className="text-center text-default-600">
                 Registration #{registration.id} has been successfully approved and marked as registered.
               </p>
+              {selectedEntity && (
+                <div className="mt-4 p-3 bg-success-50 dark:bg-success-900/20 text-success-600 dark:text-success-400 rounded-md text-center">
+                  <p>Assigned to: <span className="font-medium">{assignableEntities.find(e => e.id === selectedEntity)?.username}</span></p>
+                </div>
+              )}
             </div>
           </ModalBody>
           <ModalFooter>
@@ -744,7 +1011,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
 
 // Helper component for displaying fields
 const InfoField = ({ label, value }: { label: string; value?: string }) => (
-  <div className="p-3 bg-default-50 rounded-lg">
+  <div className="p-3 bg-default-50 dark:bg-content2 rounded-lg">
     <p className="text-sm text-default-500 mb-1">{label}</p>
     <p className="font-medium">{value}</p>
   </div>

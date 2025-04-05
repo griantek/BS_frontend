@@ -86,8 +86,6 @@ export default function SAdminLayout({
               window.dispatchEvent(new CustomEvent('nav-permissions-change', {
                 detail: navPermissions
               }));
-              
-              console.log('Dispatching nav permissions:', navPermissions);
             } else {
               // For SuperAdmin, explicitly set all permissions to true
               window.dispatchEvent(new CustomEvent('nav-permissions-change', {

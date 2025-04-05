@@ -49,7 +49,6 @@ const QuotationsPage = () => {
         }
         
         const response = await api.getClientPendingRegistration(clientId);
-        console.log('Pending registration data:', response);
         setQuotations(response.data);
       } catch (error) {
         console.error('Error fetching registration data:', error);

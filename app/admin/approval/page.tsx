@@ -168,6 +168,7 @@ export default function PendingApprovalsPage() {
   const getStatusColor = (status: string) => {
     return status === "registered" ? "success" :
      status === "waiting for approval" ? "danger" :
+     status === "quotation accepted" ? "primary" :
       "warning";
   };
 
