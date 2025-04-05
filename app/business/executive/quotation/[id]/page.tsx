@@ -341,7 +341,7 @@ function QuotationContent({ regId }: { regId: string }) {
         accept_period: `${formData.acceptancePeriod} ${formData.acceptancePeriodUnit}`,
         pub_period: `${formData.publicationPeriod} ${formData.publicationPeriodUnit}`,
         bank_id: formData.selectedBank,
-        status: "pending",
+        status: "quotation review",
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         // Add the formatted services and prices

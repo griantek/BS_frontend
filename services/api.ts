@@ -242,6 +242,11 @@ interface Registration {
     transaction_date: string;
     transaction_type: string;
   };
+  registered_by:{
+    id: string;
+    username: string;
+    email: string;
+  };
 }
 
 // Add interface for registration creation
@@ -274,7 +279,7 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'registered' | 'pending'  | 'waiting for approval';  // Explicitly define literal types
+  status: 'registered' | 'pending'  | 'waiting for approval' | 'quotation review';  // Explicitly define literal types
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
@@ -975,6 +980,7 @@ interface ClientRegistrationWithQuotationResponse {
   data: {
     registrations: Registration[];
     quotations: ClientQuotation[];
+    transaction: Transaction[];
     prospectus: {
       id: number;
       client_name: string;
@@ -1404,6 +1410,17 @@ const api = {
         }
     },
 
+    // Add new method to approve quotation review
+    async approveQuotationReview(registrationId: number): Promise<ApiResponse<Registration>> {
+      try {
+        const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/pending`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error approving quotation review:', error);
+        throw this.handleError(error);
+      }
+    },
+
     // Delete registration by ID
     async deleteRegistration(id: number): Promise<ApiResponse<void>> {
         try {
@@ -1576,6 +1593,24 @@ const api = {
             console.error('Error updating journal:', error);
             throw this.handleError(error);
         }
+    },
+
+    // Add new method for updating registration invoice details
+    async updateRegistrationInvoice(id: number, data: {
+      init_amount: number;
+      accept_amount: number;
+      discount: number;
+      total_amount: number;
+      bank_id: string;
+      service_and_prices?: Record<string, number>;
+    }): Promise<ApiResponse<Registration>> {
+      try {
+        const response = await this.axiosInstance.put(`/common/registration/invoice/${id}`, data);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error updating registration invoice:', error);
+        throw this.handleError(error);
+      }
     },
 
     async deleteJournal(id: number): Promise<ApiResponse<void>> {
@@ -1857,6 +1892,17 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add new method to get client pending prospectus
+    async getClientQuotationReviewRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/quotationReview`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
     
     async getClientRegisteredRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
         try {
@@ -2026,9 +2072,9 @@ const api = {
       },
 
     // Add new method for fetching pending registrations
-    async getPendingRegistrations(): Promise<PendingRegistrationsResponse> {
+    async getRegistrationForApproval(): Promise<PendingRegistrationsResponse> {
         try {
-            const response = await this.axiosInstance.get('/admin/registrations/pending');
+            const response = await this.axiosInstance.get('/admin/registrations/forApproval');
             return response.data;
         } catch (error: any) {
             console.error('Error fetching pending registrations:', error);
@@ -2210,18 +2256,17 @@ const api = {
     async submitClientPayment(paymentData: FormData): Promise<ApiResponse<any>> {
         try {
             // Log for debugging purposes
-            console.log('Submitting client payment with FormData:');
             
             // Log files separately for better visibility
-            const entries = Array.from(paymentData.entries());
-            entries.forEach(pair => {
-                const [key, value] = pair;
-                if (value instanceof File) {
-                    console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-                } else {
-                    console.log(`${key}: ${value}`);
-                }
-            });
+            // const entries = Array.from(paymentData.entries());
+            // entries.forEach(pair => {
+            //     const [key, value] = pair;
+            //     if (value instanceof File) {
+            //         console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+            //     } else {
+            //         console.log(`${key}: ${value}`);
+            //     }
+            // });
             
             // Make sure to use the correct content type for multipart/form-data
             const response = await this.axiosInstance.post('/clients/payment/submit', paymentData, {

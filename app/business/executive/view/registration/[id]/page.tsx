@@ -524,7 +524,7 @@ function RegistrationContent({ regId }: { regId: string }) {
             </div>
             <div className="flex gap-3">
               {/* Check both registration status and permission */}
-              {registrationData.status === "pending" &&
+              {/* {registrationData.status === "pending" &&
                 permissions.canApproveRegistration && (
                   <Button
                     color="success"
@@ -533,7 +533,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                   >
                     Approve Registration
                   </Button>
-                )}
+                )} */}
               {permissions.canEditRegistration && (
                 <Button
                   color="primary"

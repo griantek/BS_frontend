@@ -65,7 +65,7 @@ export default function PendingApprovalsPage() {
     try {
       setLoading(true);
       setRefreshing(true);
-      const registrationsRes = await api.getPendingRegistrations();
+      const registrationsRes = await api.getRegistrationForApproval();
       setPendingRegistrations(registrationsRes.data);
       setError(null);
     } catch (err: any) {
@@ -166,10 +166,13 @@ export default function PendingApprovalsPage() {
   };
 
   const getStatusColor = (status: string) => {
-    return status === "registered" ? "success" :
-     status === "waiting for approval" ? "danger" :
-     status === "quotation accepted" ? "primary" :
-      "warning";
+    return status === "registered"
+      ? "success"
+      : status === "waiting for approval"
+        ? "danger"
+        : status === "quotation accepted"
+          ? "primary"
+          : "warning";
   };
 
   if (loading && !refreshing) {
@@ -255,8 +258,7 @@ export default function PendingApprovalsPage() {
               <TableBody>
                 {pendingRegistrations.map((item) => {
                   // Use leads.requirement if available, fall back to prospectus.requirement
-                  const requirement =
-                    item.leads?.requirement;
+                  const requirement = item.leads?.requirement;
 
                   return (
                     <TableRow key={item.registration.id}>
@@ -282,37 +284,61 @@ export default function PendingApprovalsPage() {
                             ) : (
                               <ClockIcon className="w-4 h-4" />
                             )} */}
-                            {item.registration.status === "waiting for approval" ? "Approval needed"
-                              : item.registration.status === "quotation accepted" ? "Quotation accepted":"Quotation send"}
+                            {item.registration.status === "waiting for approval"
+                              ? "Approval needed"
+                              : item.registration.status ===
+                                  "quotation accepted"
+                                ? "Quotation accepted"
+                                : item.registration.status ===
+                                    "quotation review"
+                                  ? "Waiting For Review"
+                                  : item.registration.status ===
+                                    "pending"
+                                  ? "Quotation send"
+                                  : ""}
                           </div>
                         </Chip>
                       </TableCell>
                       <TableCell>{item.registeredBy.username}</TableCell>
                       <TableCell>
                         {item.registration.status === "waiting for approval" ? (
-                            <Button
-                          color="primary"
-                          onPress={() =>
-                            handleAssignClick(item.registration.id, requirement)
-                          }
-                          size="sm"
-                          className="flex items-center gap-1"
-                        >
-                          <UserPlusIcon className="w-4 h-4" />
-                          Assign
-                        </Button>
-                        ) : item.registration.status === "quotation accepted" ? (
-                            <Button
-                              color="success"
-                              onPress={() => router.push(`/admin/approval/${item.registration.id}`)}
-                              size="sm"
-                              className="flex items-center gap-1"
-                            >
-                              <CheckCircleIcon className="w-4 h-4" />
-                              Process Payment
-                            </Button>
+                          <Button
+                            color="primary"
+                            onPress={() =>
+                              router.push(`/admin/approval/${item.registration.id}`)
+                            }
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <UserPlusIcon className="w-4 h-4" />
+                            Assign
+                          </Button>
+                        ) : item.registration.status ===
+                          "quotation accepted" ? (
+                          <Button
+                            color="success"
+                            onPress={() =>
+                              router.push(`/admin/approval/${item.registration.id}`)
+                            }
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            Process Payment
+                          </Button>
+                        ) : item.registration.status === "quotation review" ? (
+                          <Button
+                            color="warning"
+                            onPress={() =>
+                              router.push(`/admin/approval/${item.registration.id}`)
+                            }
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <ClockIcon className="w-4 h-4" />
+                            Review Quotation
+                          </Button>
                         ) : null}
-                        
                       </TableCell>
                     </TableRow>
                   );
@@ -378,9 +404,10 @@ export default function PendingApprovalsPage() {
                         Cannot Assign Registration
                       </h3>
                       <p>
-                        The requirement &quot;{currentRequirement}&quot; doesn&apos;t align
-                        with any available assignable entities. Please update
-                        the requirement or contact an administrator.
+                        The requirement &quot;{currentRequirement}&quot;
+                        doesn&apos;t align with any available assignable
+                        entities. Please update the requirement or contact an
+                        administrator.
                       </p>
                     </div>
                   </div>
