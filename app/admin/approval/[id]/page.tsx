@@ -1462,7 +1462,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-default-600 mb-2">
-                    Assign this registration to handle the client's project:
+                    Assign this registration to handle the client&apos;s project:
                   </p>
                   <div className="bg-default-50 dark:bg-content2 p-2 rounded text-sm">
                     <p className="font-medium">Requirement:</p>
