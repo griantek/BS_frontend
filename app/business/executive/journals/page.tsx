@@ -17,6 +17,9 @@ import {
   Pagination,
   Select,
   SelectItem,
+  Tabs,
+  Tab,
+  Spinner,
 } from "@heroui/react";
 import { SearchIcon } from "@/components/icons";
 import { withExecutiveAuth } from "@/components/withExecutiveAuth";
@@ -26,14 +29,30 @@ import {
   ArrowPathIcon,
   XMarkIcon,
   FunnelIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import clsx from "clsx";
+import dynamic from "next/dynamic";
+
+// Dynamically import the email view component
+const DynamicJournalsByEmail = dynamic(() => import("./byEmail/page"), {
+  loading: () => (
+    <div className="flex justify-center py-8">
+      <Spinner size="lg" />
+    </div>
+  ),
+  ssr: false,
+});
 
 const JournalsExecutivePage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("view") || "list";
+  const [selectedTab, setSelectedTab] = useState(initialTab);
+
   const [journals, setJournals] = useState<JournalDataWithExecutive[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -227,7 +246,8 @@ const JournalsExecutivePage = () => {
               <span className="font-medium line-clamp-1">
                 {journal.journal_name}
               </span>
-              {journal.status_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
+              {journal.status_link &&
+              journal.status_link != "https://dummyimage.com/16:9x1080/" ? (
                 <span className="text-xs text-success">
                   Screenshot available
                 </span>
@@ -282,10 +302,21 @@ const JournalsExecutivePage = () => {
     }
   };
 
+  // Handle tab change
+  const handleTabChange = (key: React.Key) => {
+    setSelectedTab(key as string);
+    // Update URL to preserve tab state
+    const params = new URLSearchParams(searchParams);
+    params.set("view", key as string);
+    router.push(`/business/executive/journals?${params.toString()}`, {
+      scroll: false,
+    });
+  };
+
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-col gap-6">
-        {/* Top section with title and filters - matches leads design */}
+        {/* Top section with title and filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white dark:bg-default-50 p-5 rounded-lg shadow-sm">
           <div>
             <h1 className="text-2xl font-bold">Journal Submissions</h1>
@@ -293,242 +324,295 @@ const JournalsExecutivePage = () => {
               View and track your journal publication progress
             </p>
           </div>
-          <Button
-            color="primary"
-            startContent={<ArrowPathIcon className="h-4 w-4" />}
-            onClick={handleRefresh}
-            isLoading={isRefreshing}
-            size="sm"
-          >
-            Refresh
-          </Button>
-        </div>
-
-        {/* Filters section - matches leads design */}
-        <Card className="p-0 shadow-md rounded-lg overflow-hidden mb-6">
-          <div className="bg-default-50 dark:bg-default-100/5 p-4 border-b border-divider">
-            <h2 className="text-lg font-semibold flex items-center text-foreground">
-              <FunnelIcon className="h-5 w-5 mr-2 text-primary" />
-              Search & Filters
-            </h2>
-          </div>
-
-          <div className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-              <Input
-                label="Search"
-                placeholder="Search client name, email or registration..."
-                labelPlacement="outside"
-                startContent={
-                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                }
-                value={filterValue}
-                onValueChange={setFilterValue}
-                isClearable
-                onClear={() => setFilterValue("")}
-              />
-
-              <Select
-                label="Assigned Editor"
-                placeholder="All Editors"
-                labelPlacement="outside"
-                selectedKeys={[editorFilter]}
-                onChange={(e) => setEditorFilter(e.target.value)}
-              >
-                <SelectItem key="all" value="all">
-                  All Editors
-                </SelectItem>
-                {
-                  editors.map((editor) => (
-                    <SelectItem key={editor} value={editor}>
-                      {editor}
-                    </SelectItem>
-                  )) as any
-                }
-              </Select>
-
-              <Select
-                label="Status"
-                placeholder="All Statuses"
-                labelPlacement="outside"
-                selectedKeys={[statusFilter]}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <SelectItem key="all" value="all">
-                  All Statuses
-                </SelectItem>
-                <SelectItem key="pending" value="pending">
-                  Pending
-                </SelectItem>
-                <SelectItem key="under review" value="under review">
-                  Under Review
-                </SelectItem>
-                <SelectItem key="approved" value="approved">
-                  Approved
-                </SelectItem>
-                <SelectItem key="rejected" value="rejected">
-                  Rejected
-                </SelectItem>
-                <SelectItem key="submitted" value="submitted">
-                  Submitted
-                </SelectItem>
-              </Select>
-            </div>
-          </div>
-        </Card>
-        {/* Active filters */}
-        {(filterValue || editorFilter !== "all" || statusFilter !== "all") && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-default-500">Active filters:</span>
-            <div className="flex flex-wrap gap-2">
-              {filterValue && (
-                <Chip
-                  onClose={() => setFilterValue("")}
-                  variant="flat"
-                  size="sm"
-                >
-                  Search: {filterValue}
-                </Chip>
-              )}
-              {editorFilter !== "all" && (
-                <Chip
-                  onClose={() => setEditorFilter("all")}
-                  variant="flat"
-                  size="sm"
-                >
-                  Editor: {editorFilter}
-                </Chip>
-              )}
-              {statusFilter !== "all" && (
-                <Chip
-                  onClose={() => setStatusFilter("all")}
-                  variant="flat"
-                  size="sm"
-                  color={
-                    statusFilter === "approved"
-                      ? "success"
-                      : statusFilter === "rejected"
-                        ? "danger"
-                        : statusFilter === "under review"
-                          ? "warning"
-                          : statusFilter === "submitted"
-                            ? "primary"
-                            : "default"
-                  }
-                >
-                  Status: {statusFilter}
-                </Chip>
-              )}
+          <div className="flex gap-2">
+            {selectedTab === "list" && (
               <Button
+                color="primary"
+                startContent={<ArrowPathIcon className="h-4 w-4" />}
+                onClick={handleRefresh}
+                isLoading={isRefreshing}
                 size="sm"
-                variant="flat"
-                color="default"
-                startContent={<XMarkIcon className="h-4 w-4" />}
-                onClick={clearFilters}
               >
-                Clear All
+                Refresh
               </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Results count */}
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-default-500">
-            {filteredItems.length} journals found
+            )}
           </div>
         </div>
 
-        {/* Table section - matches leads design */}
-        <Card className="shadow-sm">
-          {showLoading ? (
-            <div className="p-12">
-              <LoadingSpinner text="Loading journal submissions..." />
-            </div>
-          ) : (
-            <Table
-              aria-label="Journal submissions table"
-              bottomContent={
-                pages > 1 ? (
-                  <div className="flex w-full justify-center py-3">
-                    <Pagination
-                      isCompact
-                      showControls
-                      showShadow
-                      color="primary"
-                      page={page}
-                      total={pages}
-                      onChange={setPage}
-                    />
-                  </div>
-                ) : null
+        {/* Tabs for switching between views */}
+        <Card className="shadow-sm p-0">
+          <Tabs
+            selectedKey={selectedTab}
+            onSelectionChange={handleTabChange}
+            aria-label="Journal View Options"
+            color="primary"
+            variant="underlined"
+            classNames={{
+              tabList:
+                "px-4 pt-2 gap-6 w-full relative border-b border-divider",
+              cursor: "w-full bg-primary",
+              tab: "max-w-fit px-4 h-10",
+              tabContent: "group-data-[selected=true]:text-primary",
+            }}
+          >
+            <Tab
+              key="list"
+              title={
+                <div className="flex items-center gap-2">
+                  <MagnifyingGlassIcon className="h-4 w-4" />
+                  <span>Journal List</span>
+                </div>
               }
-              classNames={{
-                wrapper: "min-h-[400px]",
-                table: "min-w-[800px]",
-                tr: "border-b border-default-100",
-              }}
-            >
-              <TableHeader columns={columns}>
-                {(column) => (
-                  <TableColumn
-                    key={column.key}
-                    className={clsx(
-                      "bg-default-50 text-default-700 font-medium",
-                      column.key === "status" ? "text-center" : ""
-                    )}
+            />
+            <Tab
+              key="byEmail"
+              title={
+                <div className="flex items-center gap-2">
+                  <EnvelopeIcon className="h-4 w-4" />
+                  <span>By Email</span>
+                </div>
+              }
+            />
+          </Tabs>
+        </Card>
+
+        {selectedTab === "list" ? (
+          <>
+            {/* Filters section */}
+            <Card className="p-0 shadow-md rounded-lg overflow-hidden mb-6">
+              <div className="bg-default-50 dark:bg-default-100/5 p-4 border-b border-divider">
+                <h2 className="text-lg font-semibold flex items-center text-foreground">
+                  <FunnelIcon className="h-5 w-5 mr-2 text-primary" />
+                  Search & Filters
+                </h2>
+              </div>
+
+              <div className="p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                  <Input
+                    label="Search"
+                    placeholder="Search client name, email or registration..."
+                    labelPlacement="outside"
+                    startContent={
+                      <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                    }
+                    value={filterValue}
+                    onValueChange={setFilterValue}
+                    isClearable
+                    onClear={() => setFilterValue("")}
+                  />
+
+                  <Select
+                    label="Assigned Editor"
+                    placeholder="All Editors"
+                    labelPlacement="outside"
+                    selectedKeys={[editorFilter]}
+                    onChange={(e) => setEditorFilter(e.target.value)}
                   >
-                    {column.label}
-                  </TableColumn>
-                )}
-              </TableHeader>
-              <TableBody
-                items={items}
-                emptyContent={
-                  <div className="py-12 text-center">
-                    <div className="text-default-400 text-3xl mb-4">😕</div>
-                    <p className="text-default-500">
-                      No journals found matching your criteria
-                    </p>
-                    <Button
-                      className="mt-4"
-                      size="sm"
+                    <SelectItem key="all" value="all">
+                      All Editors
+                    </SelectItem>
+                    {
+                      editors.map((editor) => (
+                        <SelectItem key={editor} value={editor}>
+                          {editor}
+                        </SelectItem>
+                      )) as any
+                    }
+                  </Select>
+
+                  <Select
+                    label="Status"
+                    placeholder="All Statuses"
+                    labelPlacement="outside"
+                    selectedKeys={[statusFilter]}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <SelectItem key="all" value="all">
+                      All Statuses
+                    </SelectItem>
+                    <SelectItem key="pending" value="pending">
+                      Pending
+                    </SelectItem>
+                    <SelectItem key="under review" value="under review">
+                      Under Review
+                    </SelectItem>
+                    <SelectItem key="approved" value="approved">
+                      Approved
+                    </SelectItem>
+                    <SelectItem key="rejected" value="rejected">
+                      Rejected
+                    </SelectItem>
+                    <SelectItem key="submitted" value="submitted">
+                      Submitted
+                    </SelectItem>
+                  </Select>
+                </div>
+              </div>
+            </Card>
+
+            {/* Active filters */}
+            {(filterValue ||
+              editorFilter !== "all" ||
+              statusFilter !== "all") && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-default-500">
+                  Active filters:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {filterValue && (
+                    <Chip
+                      onClose={() => setFilterValue("")}
                       variant="flat"
-                      color="primary"
-                      onClick={clearFilters}
+                      size="sm"
                     >
-                      Clear Filters
-                    </Button>
-                  </div>
-                }
-              >
-                {(journal) => (
-                  <TableRow
-                    key={journal.id}
-                    className={clsx(
-                      canClickRows &&
-                        "cursor-pointer hover:bg-default-50 dark:hover:bg-default-50/20 transition-colors",
-                      !canClickRows && "cursor-default"
-                    )}
-                    onClick={() => handleRowClick(journal.id)}
+                      Search: {filterValue}
+                    </Chip>
+                  )}
+                  {editorFilter !== "all" && (
+                    <Chip
+                      onClose={() => setEditorFilter("all")}
+                      variant="flat"
+                      size="sm"
+                    >
+                      Editor: {editorFilter}
+                    </Chip>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Chip
+                      onClose={() => setStatusFilter("all")}
+                      variant="flat"
+                      size="sm"
+                      color={
+                        statusFilter === "approved"
+                          ? "success"
+                          : statusFilter === "rejected"
+                            ? "danger"
+                            : statusFilter === "under review"
+                              ? "warning"
+                              : statusFilter === "submitted"
+                                ? "primary"
+                                : "default"
+                      }
+                    >
+                      Status: {statusFilter}
+                    </Chip>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="default"
+                    startContent={<XMarkIcon className="h-4 w-4" />}
+                    onClick={clearFilters}
                   >
-                    {columns.map((column) => (
-                      <TableCell
-                        key={`${journal.id}-${column.key}`}
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Results count */}
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-default-500">
+                {filteredItems.length} journals found
+              </div>
+            </div>
+
+            {/* Table section */}
+            <Card className="shadow-sm">
+              {showLoading ? (
+                <div className="p-12">
+                  <LoadingSpinner text="Loading journal submissions..." />
+                </div>
+              ) : (
+                <Table
+                  aria-label="Journal submissions table"
+                  bottomContent={
+                    pages > 1 ? (
+                      <div className="flex w-full justify-center py-3">
+                        <Pagination
+                          isCompact
+                          showControls
+                          showShadow
+                          color="primary"
+                          page={page}
+                          total={pages}
+                          onChange={setPage}
+                        />
+                      </div>
+                    ) : null
+                  }
+                  classNames={{
+                    wrapper: "min-h-[400px]",
+                    table: "min-w-[800px]",
+                    tr: "border-b border-default-100",
+                  }}
+                >
+                  <TableHeader columns={columns}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.key}
                         className={clsx(
-                          "py-3",
+                          "bg-default-50 text-default-700 font-medium",
                           column.key === "status" ? "text-center" : ""
                         )}
                       >
-                        {renderCell(journal, column.key)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
+                        {column.label}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody
+                    items={items}
+                    emptyContent={
+                      <div className="py-12 text-center">
+                        <div className="text-default-400 text-3xl mb-4">😕</div>
+                        <p className="text-default-500">
+                          No journals found matching your criteria
+                        </p>
+                        <Button
+                          className="mt-4"
+                          size="sm"
+                          variant="flat"
+                          color="primary"
+                          onClick={clearFilters}
+                        >
+                          Clear Filters
+                        </Button>
+                      </div>
+                    }
+                  >
+                    {(journal) => (
+                      <TableRow
+                        key={journal.id}
+                        className={clsx(
+                          "transition-colors",
+                          canClickRows
+                            ? "cursor-pointer hover:bg-primary-50/30 dark:hover:bg-primary-900/20 border-l-2 hover:border-l-primary"
+                            : "cursor-default hover:bg-default-100/50 dark:hover:bg-default-50/10"
+                        )}
+                        onClick={() => handleRowClick(journal.id)}
+                      >
+                        {columns.map((column) => (
+                          <TableCell
+                            key={`${journal.id}-${column.key}`}
+                            className={clsx(
+                              "py-3",
+                              column.key === "status" ? "text-center" : ""
+                            )}
+                          >
+                            {renderCell(journal, column.key)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
+          </>
+        ) : (
+          <DynamicJournalsByEmail />
+        )}
       </div>
     </div>
   );
