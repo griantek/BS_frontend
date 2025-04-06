@@ -934,6 +934,12 @@ interface JournalDataByExecutiveResponse {
   count: number;
   timestamp: string;
 }
+interface JournalDataByPersonalEmail {
+  success: boolean;
+  data: JournalData[];
+  count: number;
+  timestamp: string;
+}
 
 // Add new interface for paginated journal response
 interface PaginatedJournalResponse {
@@ -2226,6 +2232,17 @@ const api = {
       }
     },
 
+    // Add this new function to the api object
+    async getJournalDataByEditorSimple(editorId: string): Promise<ApiResponse<JournalData[]>> {
+      try {
+        const response = await this.axiosInstance.get(`/editor/journal-data/assigned/${editorId}`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by editor:', error);
+        throw this.handleError(error);
+      }
+    },
+
     // Update this method to handle just the status and optional comments update
     async updateAuthorStatus(regId: number, data: {status: string, comments?: string}): Promise<ApiResponse<any>> {
         try {
@@ -2385,6 +2402,17 @@ const api = {
         throw this.handleError(error);
       }
     },
+
+    // Add this method to the api object
+    async getJournalDataByEmail(email: string): Promise<JournalDataByPersonalEmail> {
+      try {
+        const response = await this.axiosInstance.get(`/editor/journal-data/email/${encodeURIComponent(email)}`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by email:', error);
+        throw this.handleError(error);
+      }
+    },
 };
 
 // Initialize the interceptors
@@ -2446,5 +2474,6 @@ export type {
     ClientRegistrationWithQuotationResponse,
     CombinedRegistrationData,
     CombinedDataResponse,
+    JournalDataByPersonalEmail,
 };
 export default api;

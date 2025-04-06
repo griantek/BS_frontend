@@ -24,6 +24,7 @@ import {
   TrashIcon,
   PencilIcon,
   ArrowPathIcon,
+  ArrowDownTrayIcon
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { currentUserHasPermission, PERMISSIONS } from "@/utils/permissions";
@@ -127,6 +128,22 @@ function JournalContent({ id }: { id: string }) {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  // Add download screenshot function
+  const handleDownloadScreenshot = () => {
+    if (!journal?.status_link || journal.status_link === 'https://dummyimage.com/16:9x1080/') {
+      toast.error("No screenshot available to download");
+      return;
+    }
+    
+    // Create an anchor element to trigger download
+    const a = document.createElement('a');
+    a.href = journal.status_link;
+    a.download = `${journal.journal_name.replace(/\s+/g, '-').toLowerCase()}-screenshot.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   if (isLoading) {
@@ -284,19 +301,32 @@ function JournalContent({ id }: { id: string }) {
           <Card className="w-full">
             <CardHeader className="flex justify-between items-center">
               <p className="text-md font-semibold">Journal Status Screenshot</p>
-              {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
+              <div className="flex items-center gap-2">
+                {/* Download button */}
                 <Button
                   isIconOnly
                   size="sm"
                   variant="light"
-                  onPress={handleRefreshStatus}
-                  isLoading={isRefreshing}
+                  onPress={handleDownloadScreenshot}
+                  isDisabled={!journal.status_link || journal.status_link === 'https://dummyimage.com/16:9x1080/'}
                 >
-                  <ArrowPathIcon
-                    className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
-                  />
+                  <ArrowDownTrayIcon className="h-5 w-5" />
                 </Button>
-              )}
+                {/* Refresh button */}
+                {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={handleRefreshStatus}
+                    isLoading={isRefreshing}
+                  >
+                    <ArrowPathIcon
+                      className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <Divider />
             <CardBody>

@@ -18,6 +18,8 @@ import {
   Select,
   SelectItem,
   Spinner,
+  Tabs,
+  Tab
 } from "@heroui/react";
 import { SearchIcon } from '@/components/icons';
 import { withEditorAuth } from '@/components/withEditorAuth';
@@ -30,15 +32,34 @@ import {
   MagnifyingGlassIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  EnvelopeIcon
 } from "@heroicons/react/24/outline";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 import clsx from 'clsx';
 import { useDebounce } from '@/hooks/useDebounce';
+import dynamic from "next/dynamic";
+
+// Dynamically import the email view component
+const DynamicJournalsByEmail = dynamic(
+  () => import("../view/journal/byEmail/page"),
+  {
+    loading: () => (
+      <div className="flex justify-center py-8">
+        <Spinner size="lg" />
+      </div>
+    ),
+    ssr: false
+  }
+);
 
 const JournalsEditorPage = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialTab = searchParams.get("view") || "list";
+    const [selectedTab, setSelectedTab] = useState(initialTab);
+    
     // State for journals and pagination
     const [journals, setJournals] = useState<JournalData[]>([]);
     const [pagination, setPagination] = useState({
@@ -286,6 +307,15 @@ const JournalsEditorPage = () => {
             : <ArrowDownIcon className="h-3 w-3 inline ml-1" />;
     };
 
+    // Handle tab change
+    const handleTabChange = (key: React.Key) => {
+      setSelectedTab(key as string);
+      // Update URL to preserve tab state
+      const params = new URLSearchParams(searchParams);
+      params.set("view", key as string);
+      router.push(`/business/editor/journals?${params.toString()}`, { scroll: false });
+    };
+
     return (
         <div className="p-4 md:p-6">
             <div className="flex flex-col gap-6">
@@ -297,273 +327,319 @@ const JournalsEditorPage = () => {
                             View and manage all journal submissions
                         </p>
                     </div>
-                    <Button
-                        color="primary"
-                        startContent={<ArrowPathIcon className="h-4 w-4" />}
-                        onClick={handleRefresh}
-                        isLoading={isRefreshing}
-                        size="sm"
-                    >
-                        Refresh
-                    </Button>
+                    <div className="flex gap-2">
+                        {selectedTab === 'list' && (
+                            <Button
+                                color="primary"
+                                startContent={<ArrowPathIcon className="h-4 w-4" />}
+                                onClick={handleRefresh}
+                                isLoading={isRefreshing}
+                                size="sm"
+                            >
+                                Refresh
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
-                {/* Filters section */}
-                <Card className="p-0 shadow-md rounded-lg overflow-hidden mb-6">
-                    <div className="bg-default-50 dark:bg-default-100/5 p-4 border-b border-divider">
-                        <h2 className="text-lg font-semibold flex items-center text-foreground">
-                            <FunnelIcon className="h-5 w-5 mr-2 text-primary" />
-                            Search & Filters
-                        </h2>
-                    </div>
+                {/* Tabs for switching between views */}
+                <Card className="shadow-sm p-0">
+                    <Tabs 
+                        selectedKey={selectedTab} 
+                        onSelectionChange={handleTabChange}
+                        aria-label="Journal View Options"
+                        color="primary"
+                        variant="underlined"
+                        classNames={{
+                            tabList: "px-4 pt-2 gap-6 w-full relative border-b border-divider",
+                            cursor: "w-full bg-primary",
+                            tab: "max-w-fit px-4 h-10",
+                            tabContent: "group-data-[selected=true]:text-primary"
+                        }}
+                    >
+                        <Tab 
+                            key="list" 
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <MagnifyingGlassIcon className="h-4 w-4" />
+                                    <span>Journal List</span>
+                                </div>
+                            }
+                        />
+                        <Tab 
+                            key="byEmail" 
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <EnvelopeIcon className="h-4 w-4" />
+                                    <span>By Email</span>
+                                </div>
+                            }
+                        />
+                    </Tabs>
+                </Card>
 
-                    <div className="p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <Input
-                                label="Search"
-                                placeholder="Search by client, journal, or title..."
-                                labelPlacement="outside"
-                                startContent={
-                                    <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                                }
-                                value={filterValue}
-                                onValueChange={setFilterValue}
-                                isClearable
-                                onClear={() => setFilterValue("")}
-                            />
+                {selectedTab === 'list' ? (
+                    <>
+                        {/* Filters section */}
+                        <Card className="p-0 shadow-md rounded-lg overflow-hidden mb-6">
+                            <div className="bg-default-50 dark:bg-default-100/5 p-4 border-b border-divider">
+                                <h2 className="text-lg font-semibold flex items-center text-foreground">
+                                    <FunnelIcon className="h-5 w-5 mr-2 text-primary" />
+                                    Search & Filters
+                                </h2>
+                            </div>
 
-                            <Select
-                                label="Applied Executive"
-                                placeholder={isLoadingExecs ? "Loading..." : "All Executives"}
-                                labelPlacement="outside"
-                                selectedKeys={[executiveFilter]}
-                                onChange={(e) => setExecutiveFilter(e.target.value)}
-                                isDisabled={isLoadingExecs}
-                            >
-                                <SelectItem key="all" value="all">
-                                    All Executives
-                                </SelectItem>
-                                {executives.map((executive) => (
-                                    <SelectItem key={executive} value={executive}>
-                                        {executive}
-                                    </SelectItem>
-                                )) as any}
-                            </Select>
+                            <div className="p-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <Input
+                                        label="Search"
+                                        placeholder="Search by client, journal, or title..."
+                                        labelPlacement="outside"
+                                        startContent={
+                                            <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                                        }
+                                        value={filterValue}
+                                        onValueChange={setFilterValue}
+                                        isClearable
+                                        onClear={() => setFilterValue("")}
+                                    />
 
-                            <Select
-                                label="Status"
-                                placeholder="All Statuses"
-                                labelPlacement="outside"
-                                selectedKeys={[statusFilter]}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                            >
-                                <SelectItem key="all" value="all">
-                                    All Statuses
-                                </SelectItem>
-                                <SelectItem key="pending" value="pending">
-                                    Pending
-                                </SelectItem>
-                                <SelectItem key="under review" value="under review">
-                                    Under Review
-                                </SelectItem>
-                                <SelectItem key="approved" value="approved">
-                                    Approved
-                                </SelectItem>
-                                <SelectItem key="rejected" value="rejected">
-                                    Rejected
-                                </SelectItem>
-                                <SelectItem key="submitted" value="submitted">
-                                    Submitted
-                                </SelectItem>
-                            </Select>
+                                    <Select
+                                        label="Applied Executive"
+                                        placeholder={isLoadingExecs ? "Loading..." : "All Executives"}
+                                        labelPlacement="outside"
+                                        selectedKeys={[executiveFilter]}
+                                        onChange={(e) => setExecutiveFilter(e.target.value)}
+                                        isDisabled={isLoadingExecs}
+                                    >
+                                        <SelectItem key="all" value="all">
+                                            All Executives
+                                        </SelectItem>
+                                        {executives.map((executive) => (
+                                            <SelectItem key={executive} value={executive}>
+                                                {executive}
+                                            </SelectItem>
+                                        )) as any}
+                                    </Select>
 
-                            <div className="flex items-end">
-                                <Button
-                                    size="md"
-                                    color="default"
-                                    variant="flat"
-                                    startContent={<XMarkIcon className="h-4 w-4" />}
-                                    onClick={clearFilters}
-                                    className="w-full"
-                                >
-                                    Clear Filters
-                                </Button>
+                                    <Select
+                                        label="Status"
+                                        placeholder="All Statuses"
+                                        labelPlacement="outside"
+                                        selectedKeys={[statusFilter]}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                    >
+                                        <SelectItem key="all" value="all">
+                                            All Statuses
+                                        </SelectItem>
+                                        <SelectItem key="pending" value="pending">
+                                            Pending
+                                        </SelectItem>
+                                        <SelectItem key="under review" value="under review">
+                                            Under Review
+                                        </SelectItem>
+                                        <SelectItem key="approved" value="approved">
+                                            Approved
+                                        </SelectItem>
+                                        <SelectItem key="rejected" value="rejected">
+                                            Rejected
+                                        </SelectItem>
+                                        <SelectItem key="submitted" value="submitted">
+                                            Submitted
+                                        </SelectItem>
+                                    </Select>
+
+                                    <div className="flex items-end">
+                                        <Button
+                                            size="md"
+                                            color="default"
+                                            variant="flat"
+                                            startContent={<XMarkIcon className="h-4 w-4" />}
+                                            onClick={clearFilters}
+                                            className="w-full"
+                                        >
+                                            Clear Filters
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Active filters */}
+                        {(filterValue || statusFilter !== "all" || executiveFilter !== "all" || sortBy !== "created_at") && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-default-500">Active filters:</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {filterValue && (
+                                        <Chip
+                                            onClose={() => setFilterValue("")}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            Search: {filterValue}
+                                        </Chip>
+                                    )}
+                                    {executiveFilter !== "all" && (
+                                        <Chip
+                                            onClose={() => setExecutiveFilter("all")}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            Executive: {executiveFilter}
+                                        </Chip>
+                                    )}
+                                    {statusFilter !== "all" && (
+                                        <Chip
+                                            onClose={() => setStatusFilter("all")}
+                                            variant="flat"
+                                            size="sm"
+                                            color={
+                                                statusFilter === "approved"
+                                                    ? "success"
+                                                    : statusFilter === "rejected"
+                                                        ? "danger"
+                                                        : statusFilter === "under review"
+                                                            ? "warning"
+                                                            : statusFilter === "submitted"
+                                                                ? "primary"
+                                                                : "default"
+                                            }
+                                        >
+                                            Status: {statusFilter}
+                                        </Chip>
+                                    )}
+                                    {sortBy !== "created_at" && (
+                                        <Chip
+                                            onClose={() => {
+                                                setSortBy("created_at");
+                                                setSortOrder("desc");
+                                            }}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            Sort: {sortBy} ({sortOrder})
+                                        </Chip>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Results count */}
+                        <div className="flex justify-between items-center">
+                            <div className="text-sm text-default-500">
+                                {pagination.total} total journals | Page {pagination.page} of {pagination.totalPages}
                             </div>
                         </div>
-                    </div>
-                </Card>
 
-                {/* Active filters */}
-                {(filterValue || statusFilter !== "all" || executiveFilter !== "all" || sortBy !== "created_at") && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-default-500">Active filters:</span>
-                        <div className="flex flex-wrap gap-2">
-                            {filterValue && (
-                                <Chip
-                                    onClose={() => setFilterValue("")}
-                                    variant="flat"
-                                    size="sm"
-                                >
-                                    Search: {filterValue}
-                                </Chip>
-                            )}
-                            {executiveFilter !== "all" && (
-                                <Chip
-                                    onClose={() => setExecutiveFilter("all")}
-                                    variant="flat"
-                                    size="sm"
-                                >
-                                    Executive: {executiveFilter}
-                                </Chip>
-                            )}
-                            {statusFilter !== "all" && (
-                                <Chip
-                                    onClose={() => setStatusFilter("all")}
-                                    variant="flat"
-                                    size="sm"
-                                    color={
-                                        statusFilter === "approved"
-                                            ? "success"
-                                            : statusFilter === "rejected"
-                                                ? "danger"
-                                                : statusFilter === "under review"
-                                                    ? "warning"
-                                                    : statusFilter === "submitted"
-                                                        ? "primary"
-                                                        : "default"
+                        {/* Table section */}
+                        <Card className="shadow-sm">
+                            {isLoading ? (
+                                <div className="p-12">
+                                    <LoadingSpinner text="Loading journals..." />
+                                </div>
+                            ) : (
+                                <Table
+                                    aria-label="Journals table"
+                                    bottomContent={
+                                        pagination.totalPages > 1 ? (
+                                            <div className="flex w-full justify-center py-3">
+                                                <Pagination
+                                                    isCompact
+                                                    showControls
+                                                    showShadow
+                                                    color="primary"
+                                                    page={pagination.page}
+                                                    total={pagination.totalPages}
+                                                    onChange={handlePageChange}
+                                                />
+                                            </div>
+                                        ) : null
                                     }
-                                >
-                                    Status: {statusFilter}
-                                </Chip>
-                            )}
-                            {sortBy !== "created_at" && (
-                                <Chip
-                                    onClose={() => {
-                                        setSortBy("created_at");
-                                        setSortOrder("desc");
+                                    classNames={{
+                                        wrapper: "min-h-[400px]",
+                                        table: "min-w-[800px]",
+                                        tr: "border-b border-default-100",
                                     }}
-                                    variant="flat"
-                                    size="sm"
                                 >
-                                    Sort: {sortBy} ({sortOrder})
-                                </Chip>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Results count */}
-                <div className="flex justify-between items-center">
-                    <div className="text-sm text-default-500">
-                        {pagination.total} total journals | Page {pagination.page} of {pagination.totalPages}
-                    </div>
-                </div>
-
-                {/* Table section */}
-                <Card className="shadow-sm">
-                    {isLoading ? (
-                        <div className="p-12">
-                            <LoadingSpinner text="Loading journals..." />
-                        </div>
-                    ) : (
-                        <Table
-                            aria-label="Journals table"
-                            bottomContent={
-                                pagination.totalPages > 1 ? (
-                                    <div className="flex w-full justify-center py-3">
-                                        <Pagination
-                                            isCompact
-                                            showControls
-                                            showShadow
-                                            color="primary"
-                                            page={pagination.page}
-                                            total={pagination.totalPages}
-                                            onChange={handlePageChange}
-                                        />
-                                    </div>
-                                ) : null
-                            }
-                            classNames={{
-                                wrapper: "min-h-[400px]",
-                                table: "min-w-[800px]",
-                                tr: "border-b border-default-100",
-                            }}
-                        >
-                            <TableHeader columns={columns}>
-                                {(column) => (
-                                    <TableColumn
-                                        key={column.key}
-                                        className={clsx(
-                                            "bg-default-50 text-default-700 font-medium",
-                                            column.key === "status" ? "text-center" : "",
-                                            column.sortable && "cursor-pointer hover:bg-default-100"
-                                        )}
-                                        onClick={() => column.sortable && handleSortChange(column.key)}
-                                    >
-                                        {column.label}
-                                        {column.sortable && renderSortIcon(column.key)}
-                                    </TableColumn>
-                                )}
-                            </TableHeader>
-                            <TableBody
-                                items={journals}
-                                emptyContent={
-                                    isRefreshing ? (
-                                        <div className="py-12 text-center">
-                                            <Spinner size="sm" color="primary" />
-                                            <p className="text-default-500 mt-2">
-                                                Refreshing data...
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="py-12 text-center">
-                                            <div className="text-default-400 text-3xl mb-4">😕</div>
-                                            <p className="text-default-500">
-                                                No journals found matching your criteria
-                                            </p>
-                                            <Button
-                                                className="mt-4"
-                                                size="sm"
-                                                variant="flat"
-                                                color="primary"
-                                                onClick={clearFilters}
-                                            >
-                                                Clear Filters
-                                            </Button>
-                                        </div>
-                                    )
-                                }
-                                loadingContent={<LoadingSpinner />}
-                                loadingState={isRefreshing ? "loading" : "idle"}
-                            >
-                                {(journal) => (
-                                    <TableRow
-                                        key={journal.id}
-                                        className={clsx(
-                                            "transition-colors",
-                                            canClickRows 
-                                                ? "cursor-pointer hover:bg-primary-50/30 dark:hover:bg-primary-900/20 border-l-2 hover:border-l-primary" 
-                                                : "cursor-default hover:bg-default-100/50 dark:hover:bg-default-50/10",
-                                        )}
-                                        onClick={() => handleRowClick(journal.id)}
-                                    >
-                                        {columns.map((column) => (
-                                            <TableCell
-                                                key={`${journal.id}-${column.key}`}
+                                    <TableHeader columns={columns}>
+                                        {(column) => (
+                                            <TableColumn
+                                                key={column.key}
                                                 className={clsx(
-                                                    "py-3",
-                                                    column.key === "status" ? "text-center" : ""
+                                                    "bg-default-50 text-default-700 font-medium",
+                                                    column.key === "status" ? "text-center" : "",
+                                                    column.sortable && "cursor-pointer hover:bg-default-100"
                                                 )}
+                                                onClick={() => column.sortable && handleSortChange(column.key)}
                                             >
-                                                {renderCell(journal, column.key)}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    )}
-                </Card>
+                                                {column.label}
+                                                {column.sortable && renderSortIcon(column.key)}
+                                            </TableColumn>
+                                        )}
+                                    </TableHeader>
+                                    <TableBody
+                                        items={journals}
+                                        emptyContent={
+                                            isRefreshing ? (
+                                                <div className="py-12 text-center">
+                                                    <Spinner size="sm" color="primary" />
+                                                    <p className="text-default-500 mt-2">
+                                                        Refreshing data...
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="py-12 text-center">
+                                                    <div className="text-default-400 text-3xl mb-4">😕</div>
+                                                    <p className="text-default-500">
+                                                        No journals found matching your criteria
+                                                    </p>
+                                                    <Button
+                                                        className="mt-4"
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="primary"
+                                                        onClick={clearFilters}
+                                                    >
+                                                        Clear Filters
+                                                    </Button>
+                                                </div>
+                                            )
+                                        }
+                                        loadingContent={<LoadingSpinner />}
+                                        loadingState={isRefreshing ? "loading" : "idle"}
+                                    >
+                                        {(journal) => (
+                                            <TableRow
+                                                key={journal.id}
+                                                className={clsx(
+                                                    "transition-colors",
+                                                    canClickRows 
+                                                        ? "cursor-pointer hover:bg-primary-50/30 dark:hover:bg-primary-900/20 border-l-2 hover:border-l-primary" 
+                                                        : "cursor-default hover:bg-default-100/50 dark:hover:bg-default-50/10",
+                                                )}
+                                                onClick={() => handleRowClick(journal.id)}
+                                            >
+                                                {columns.map((column) => (
+                                                    <TableCell
+                                                        key={`${journal.id}-${column.key}`}
+                                                        className={clsx(
+                                                            "py-3",
+                                                            column.key === "status" ? "text-center" : ""
+                                                        )}
+                                                    >
+                                                        {renderCell(journal, column.key)}
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </Card>
+                    </>
+                ) : (
+                    <DynamicJournalsByEmail />
+                )}
             </div>
         </div>
     );

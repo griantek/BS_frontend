@@ -106,7 +106,7 @@ export const siteConfig = {
       label: "Journals",
       href: "/business/editor/journals",
       icon: NewspaperIcon,
-    }
+    },
   ],
 
   // Leads Navigation - Add navigation for the leads role

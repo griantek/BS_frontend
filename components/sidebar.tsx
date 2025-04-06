@@ -98,6 +98,9 @@ export const Sidebar = () => {
             items.push({ name: 'Journal Submissions', icon: NewspaperIcon, path: '/business/editor/journals' });
         }
         
+        // Add Journal Analysis item (this will show the tabbed interface)
+        // items.push({ name: 'Journal Analysis', icon: ChartBarIcon, path: '/business/editor/journals/analysis' });
+        
         return items;
     };
 
@@ -164,12 +167,12 @@ export const Sidebar = () => {
         if (path === '/business/editor/journals') {
             return pathname === path || 
                    pathname.startsWith('/business/editor/view/journal/') || 
-                   pathname.startsWith('/business/editor/edit/journal/');
+                   pathname.startsWith('/business/editor/edit/journal/') ||
+                   pathname.startsWith('/business/editor/view/journal/byEmail/');
         }
-        if (path === '/business/editor/assigned') {
-            return pathname === path || 
-                   pathname.startsWith('/business/editor/view/assigned/') ||
-                   pathname.startsWith('/business/editor/assigned/');
+        if (path === '/business/editor/journals/analysis') {
+            return pathname === '/business/editor/journals/analysis' ||
+                   pathname.startsWith('/business/editor/view/journal/byEmail');
         }
         
         // For leads paths (original conversion path)
