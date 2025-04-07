@@ -197,6 +197,7 @@ interface Registration {
   author_status:string;
   year: number;
   created_at: string;
+  updated_at: string;
   transaction_id: number;  // Added
   notes?: string;
   client_id:string;

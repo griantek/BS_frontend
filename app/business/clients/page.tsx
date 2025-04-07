@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Divider, Spinner, Progress, Button, Badge } from "@nextui-org/react";
 import { toast } from 'react-toastify';
 import { withClientAuth } from '@/components/withClientAuth';
-import api from '@/services/api';
+import api, { Registration } from '@/services/api';
 import { 
   NewspaperIcon,
   EnvelopeIcon, 
@@ -34,74 +34,65 @@ interface ClientUser {
     };
 }
 
-// Mock journal data for demonstration
-const mockJournals = [
-  {
-    id: 1,
-    title: "Advanced Machine Learning Techniques in Healthcare",
-    status: "In Review",
-    progress: 65,
-    lastUpdated: "2023-10-12T14:30:00Z",
-    type: "Paper Writing"
-  },
-  {
-    id: 2,
-    title: "Sustainable Energy Solutions for Urban Development",
-    status: "Submitted",
-    progress: 100,
-    lastUpdated: "2023-11-05T09:15:00Z",
-    type: "Paper Submission"
-  }
-];
-
-// Mock quotation data
-const mockQuotations = [
-  {
-    id: "Q-2023-001",
-    title: "Journal Submission to IEEE",
-    date: "2023-11-10T10:00:00Z",
-    amount: 450,
-    status: "Pending"
-  }
-];
-
 const JournalDashboard = () => {
     const router = useRouter();
     const [client, setClient] = useState<ClientUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [recentJournals, setRecentJournals] = useState(mockJournals);
-    const [recentQuotations, setRecentQuotations] = useState(mockQuotations);
+    const [registrations, setRegistrations] = useState<Registration[]>([]);
+    const [pendingQuotations, setPendingQuotations] = useState<Registration[]>([]);
 
     useEffect(() => {
-        // Get client data from localStorage (already validated by withClientAuth)
-        const userData = api.getStoredUser();
+        const fetchClientData = async () => {
+            try {
+                setIsLoading(true);
+                
+                // Get client data from localStorage
+                const userData = api.getStoredUser();
+                
+                if (!userData || !userData.id) {
+                    toast.error('Could not retrieve your profile');
+                    router.push('/business/clients/login');
+                    return;
+                }
+                
+                setClient(userData);
+                
+                // Fetch client registrations (journals)
+                const registrationsResponse = await api.getClientRegistration(userData.id);
+                if (registrationsResponse.success) {
+                    setRegistrations(registrationsResponse.data);
+                }
+                
+                // Fetch pending quotations
+                const quotationsResponse = await api.getClientPendingRegistration(userData.id);
+                if (quotationsResponse.success) {
+                    setPendingQuotations(quotationsResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching client data:', error);
+                toast.error('Failed to load your dashboard data');
+            } finally {
+                setIsLoading(false);
+            }
+        };
         
-        if (userData) {
-            setClient(userData);
-        } else {
-            // This should not happen because withClientAuth would redirect,
-            // but as a fallback:
-            toast.error('Could not retrieve your profile');
-            router.push('/business/clients/login');
-        }
-        
-        setIsLoading(false);
-        
-        // Here you would fetch the actual journal data from your API
-        // For example:
-        // api.getClientJournals(userData.id).then(data => setRecentJournals(data));
-        // api.getClientQuotations(userData.id).then(data => setRecentQuotations(data));
+        fetchClientData();
     }, [router]);
 
     const getStatusColor = (status: string) => {
         switch(status.toLowerCase()) {
-            case 'in review':
+            case 'in progress':
+            case 'drafting':
                 return 'warning';
+            case 'registered':
+            case 'completed':
             case 'submitted':
+            case 'published':
                 return 'success';
             case 'rejected':
                 return 'danger';
             case 'pending':
+            case 'waiting for approval':
                 return 'primary';
             default:
                 return 'default';
@@ -115,6 +106,48 @@ const JournalDashboard = () => {
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    // Calculate progress percentage based on status
+    const getProgressFromStatus = (status: string = "pending") => {
+        const statusMap: { [key: string]: number } = {
+            "pending": 10,
+            "waiting for approval": 25,
+            "registered": 50,
+            "in progress": 75,
+            "completed": 100,
+        };
+
+        return statusMap[status.toLowerCase()] || 0;
+    };
+
+    // Count journals by status
+    const countJournalsByStatus = (status: string) => {
+        return registrations.filter(reg => 
+            reg.status.toLowerCase() === status.toLowerCase()
+        ).length;
+    };
+
+    // Determine if a registration is "in progress"
+    const isInProgress = (status: string) => {
+        return ["in progress", "drafting"].includes(status.toLowerCase());
+    };
+
+    // Determine if a registration is "completed"
+    const isCompleted = (status: string) => {
+        return ["completed", "published", "registered"].includes(status.toLowerCase());
+    };
+    
+    // Determine if a registration is in quotation phase
+    const isQuotationPhase = (status: string) => {
+        return ["pending", "waiting for approval"].includes(status.toLowerCase());
+    };
+
+    // Get latest registrations, limited to 2 for display
+    const getLatestRegistrations = () => {
+        return [...registrations]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 2);
     };
 
     if (isLoading) {
@@ -190,7 +223,7 @@ const JournalDashboard = () => {
                     <CardBody className="py-3 px-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-default-500 text-xs sm:text-sm">Total Journals</p>
-                            <h3 className="text-xl sm:text-2xl font-bold">{recentJournals.length}</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold">{registrations.length}</h3>
                         </div>
                         <div className="bg-primary/10 p-2 sm:p-3 rounded-full">
                             <NewspaperIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
@@ -203,7 +236,7 @@ const JournalDashboard = () => {
                         <div>
                             <p className="text-default-500 text-xs sm:text-sm">In Progress</p>
                             <h3 className="text-xl sm:text-2xl font-bold">
-                                {recentJournals.filter(j => j.status === 'In Review').length}
+                                {registrations.filter(reg => isInProgress(reg.status)).length}
                             </h3>
                         </div>
                         <div className="bg-warning/10 p-2 sm:p-3 rounded-full">
@@ -217,7 +250,7 @@ const JournalDashboard = () => {
                         <div>
                             <p className="text-default-500 text-xs sm:text-sm">Completed</p>
                             <h3 className="text-xl sm:text-2xl font-bold">
-                                {recentJournals.filter(j => j.status === 'Submitted').length}
+                                {registrations.filter(reg => isCompleted(reg.status)).length}
                             </h3>
                         </div>
                         <div className="bg-success/10 p-2 sm:p-3 rounded-full">
@@ -248,7 +281,7 @@ const JournalDashboard = () => {
                     </CardHeader>
                     <Divider />
                     <CardBody className="py-3 px-4">
-                        {recentJournals.length === 0 ? (
+                        {registrations.length === 0 ? (
                             <div className="text-center py-6">
                                 <DocumentDuplicateIcon className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-default-300 mb-2" />
                                 <p className="text-default-500 text-sm">You don&apos;t have any journals yet</p>
@@ -256,51 +289,80 @@ const JournalDashboard = () => {
                             </div>
                         ) : (
                             <div className="space-y-3 sm:space-y-4">
-                                {recentJournals.map(journal => (
-                                    <div 
-                                        key={journal.id} 
-                                        className="p-3 sm:p-4 border border-divider rounded-lg hover:bg-default-50 transition-colors cursor-pointer active:bg-default-100"
-                                        onClick={() => router.push(`/business/clients/journals/${journal.id}`)}
-                                        role="button"
-                                        tabIndex={0}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                router.push(`/business/clients/journals/${journal.id}`);
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                                            <div>
-                                                <h4 className="font-medium text-sm sm:text-base text-foreground line-clamp-2">{journal.title}</h4>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                                        journal.status === 'In Review' 
-                                                        ? 'bg-warning-100 text-warning-700' 
-                                                        : 'bg-success-100 text-success-700'
-                                                    }`}>
-                                                        {journal.status}
-                                                    </span>
-                                                    <span className="text-xs text-default-500">{journal.type}</span>
+                                {getLatestRegistrations().map(journal => {
+                                    // Calculate progress based on status
+                                    const progress = getProgressFromStatus(journal.status);
+                                    const inQuotationPhase = isQuotationPhase(journal.status);
+                                    
+                                    return (
+                                        <div 
+                                            key={journal.id} 
+                                            className="p-3 sm:p-4 border border-divider rounded-lg hover:bg-default-50 transition-colors cursor-pointer active:bg-default-100"
+                                            onClick={() => router.push(inQuotationPhase 
+                                                ? `/business/clients/journals/quotations/${journal.id}` 
+                                                : `/business/clients/journals/details/${journal.id}`)}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    router.push(inQuotationPhase 
+                                                        ? `/business/clients/journals/quotations/${journal.id}` 
+                                                        : `/business/clients/journals/details/${journal.id}`);
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
+                                                <div>
+                                                    <h4 className="font-medium text-sm sm:text-base text-foreground line-clamp-2">
+                                                        {journal.prospectus?.requirement || journal.services}
+                                                    </h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded bg-${getStatusColor(journal.status)}-100 text-${getStatusColor(journal.status)}-700`}>
+                                                            {journal.status.charAt(0).toUpperCase() + journal.status.slice(1)}
+                                                        </span>
+                                                        <span className="text-xs text-default-500">{journal.services}</span>
+                                                    </div>
                                                 </div>
+                                                <span className="text-xs text-default-400 mt-1 sm:mt-0">
+                                                    Updated: {formatDate(journal.updated_at || journal.created_at)}
+                                                </span>
                                             </div>
-                                            <span className="text-xs text-default-400 mt-1 sm:mt-0">
-                                                Updated: {formatDate(journal.lastUpdated)}
-                                            </span>
+                                            
+                                            {inQuotationPhase ? (
+                                                <div className="mt-3 flex">
+                                                    <Button 
+                                                        color="primary" 
+                                                        variant="flat"
+                                                        className="ml-auto"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            router.push(`/business/clients/journals/quotations/${journal.id}`);
+                                                        }}
+                                                        endContent={<CurrencyDollarIcon className="h-3 w-3" />}
+                                                    >
+                                                        {journal.status.toLowerCase() === "pending" 
+                                                            ? "View Quotation" 
+                                                            : "View Payment Status"}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-3">
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span>Progress</span>
+                                                        <span>{progress}%</span>
+                                                    </div>
+                                                    <Progress 
+                                                        value={progress} 
+                                                        color={getStatusColor(journal.status)}
+                                                        className="h-2"
+                                                        aria-label="Journal progress"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="mt-3">
-                                            <div className="flex justify-between text-xs mb-1">
-                                                <span>Progress</span>
-                                                <span>{journal.progress}%</span>
-                                            </div>
-                                            <Progress 
-                                                value={journal.progress} 
-                                                color={getStatusColor(journal.status)}
-                                                className="h-2"
-                                                aria-label="Journal progress"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 
                                 <Button 
                                     color="primary" 
@@ -319,47 +381,43 @@ const JournalDashboard = () => {
                     <CardHeader className="py-3 px-4">
                         <h2 className="text-lg font-semibold flex items-center">
                             <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
-                            Quotations
+                            Pending Quotations
                         </h2>
                     </CardHeader>
                     <Divider />
                     <CardBody className="py-3 px-4">
-                        {recentQuotations.length === 0 ? (
+                        {pendingQuotations.length === 0 ? (
                             <div className="text-center py-6">
                                 <CurrencyDollarIcon className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-default-300 mb-2" />
-                                <p className="text-default-500 text-sm">No quotations available</p>
+                                <p className="text-default-500 text-sm">No pending quotations</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {recentQuotations.map(quote => (
+                                {pendingQuotations.slice(0, 2).map(quote => (
                                     <div 
                                         key={quote.id} 
                                         className="p-3 border border-divider rounded-lg hover:bg-default-50 transition-colors cursor-pointer active:bg-default-100"
-                                        onClick={() => router.push(`/business/clients/quotations/${quote.id}`)}
+                                        onClick={() => router.push(`/business/clients/journals/quotations/${quote.id}`)}
                                         role="button"
                                         tabIndex={0}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' || e.key === ' ') {
-                                                router.push(`/business/clients/quotations/${quote.id}`);
+                                                router.push(`/business/clients/journals/quotations/${quote.id}`);
                                             }
                                         }}
                                     >
                                         <div className="flex justify-between items-start mb-1">
-                                            <h4 className="font-medium text-sm line-clamp-1 mr-2">{quote.title}</h4>
-                                            <span className={`text-xs px-1.5 py-0.5 rounded whitespace-nowrap ${
-                                                quote.status === 'Pending' 
-                                                ? 'bg-warning-100 text-warning-700' 
-                                                : 'bg-success-100 text-success-700'
-                                            }`}>
-                                                {quote.status}
+                                            <h4 className="font-medium text-sm line-clamp-1 mr-2">{quote.services}</h4>
+                                            <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap bg-warning-100 text-warning-700">
+                                                {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between text-xs text-default-500 mb-1">
                                             <span className="truncate mr-2">ID: {quote.id}</span>
-                                            <span className="whitespace-nowrap">{formatDate(quote.date)}</span>
+                                            <span className="whitespace-nowrap">{formatDate(quote.created_at)}</span>
                                         </div>
                                         <div className="mt-2 text-sm font-semibold">
-                                            ${quote.amount.toFixed(2)}
+                                            ₹{quote.total_amount.toFixed(2)}
                                         </div>
                                     </div>
                                 ))}
@@ -368,7 +426,7 @@ const JournalDashboard = () => {
                                     color="primary" 
                                     variant="flat" 
                                     className="w-full py-2 mt-2"
-                                    onClick={() => router.push('/business/clients/quotations')}
+                                    onClick={() => router.push('/business/clients/journals/quotations')}
                                 >
                                     View All Quotations
                                 </Button>
@@ -396,23 +454,23 @@ const JournalDashboard = () => {
                         <div className="flex flex-col gap-1 text-xs sm:text-sm mb-3">
                             <p><span className="font-medium">Email:</span> journal-support@griantek.com</p>
                             <p><span className="font-medium">Phone:</span> +1 (800) 123-4567</p>
-                            <p><span className="font-medium">Hours:</span> Monday - Friday, 9am - 5pm EST</p>
+                            <p><span className="font-medium">Hours:</span> Monday - Friday, 9am - 5pm IST</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 mt-2">
                             <Button 
                                 color="primary"
                                 className="w-full py-2"
-                                onClick={() => router.push('/business/clients/support')}
+                                onClick={() => router.push('/business/clients/journals')}
                             >
-                                Contact Support
+                                View My Journals
                             </Button>
                             <Button 
                                 color="primary"
                                 variant="flat"
                                 className="w-full py-2"
-                                onClick={() => window.location.href = 'tel:+18001234567'}
+                                onClick={() => window.location.href = 'mailto:journal-support@griantek.com'}
                             >
-                                Call Now
+                                Email Support
                             </Button>
                         </div>
                     </div>
