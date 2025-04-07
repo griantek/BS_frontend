@@ -29,6 +29,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { currentUserHasPermission, PERMISSIONS } from "@/utils/permissions";
 import Image from "next/image";
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 function JournalByEmailContent({ id }: { id: string }) {
   const router = useRouter();
@@ -423,4 +424,4 @@ function JournalByEmailPage({ params }: PageProps) {
   );
 }
 
-export default withEditorAuth(JournalByEmailPage);
+export default withExecutiveAuth(JournalByEmailPage);

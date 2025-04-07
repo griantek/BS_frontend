@@ -22,6 +22,7 @@ import api, { JournalData } from "@/services/api";
 import { toast } from "react-toastify";
 import { EnvelopeIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useDebounce } from '@/hooks/useDebounce';
+import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
 function JournalsByEmailPage() {
   const router = useRouter();
@@ -192,4 +193,4 @@ function JournalsByEmailPage() {
   );
 }
 
-export default withEditorAuth(JournalsByEmailPage);
+export default withExecutiveAuth(JournalsByEmailPage);
