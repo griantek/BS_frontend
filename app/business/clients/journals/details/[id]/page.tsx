@@ -31,6 +31,7 @@ import {
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 import api, { CombinedRegistrationData } from '@/services/api';
+import RegistrationTimeline from '@/components/RegistrationTimeline';
 
 const RegistrationDetailsPage = ({ params }: { params: { id: string } | Promise<{ id: string }> }) => {
   const router = useRouter();
@@ -195,6 +196,14 @@ const RegistrationDetailsPage = ({ params }: { params: { id: string } | Promise<
             </div>
           </CardHeader>
           <Divider />
+
+          <div className="px-4 py-4 bg-default-50">
+            <RegistrationTimeline 
+              currentStatus={registration.status}
+              className="max-w-3xl mx-auto"
+            />
+          </div>
+
           <CardBody>
             <Tabs 
               aria-label="Registration Details" 

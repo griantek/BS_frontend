@@ -32,6 +32,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api, { Registration } from '@/services/api';
+import RegistrationTimeline from '@/components/RegistrationTimeline';
 
 // Interface for the quotation data (based on Registration)
 interface Quotation extends Registration {
@@ -268,6 +269,15 @@ const QuotationDetailPage = ({ params }: { params: { id: string } }) => {
             Back to Quotations
           </Button>
         </div>
+
+        {/* Add Registration Timeline */}
+        <Card className="mb-6">
+          <CardBody className="py-4">
+            <RegistrationTimeline 
+              currentStatus={quotation.status}
+            />
+          </CardBody>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Quotation Details Section */}
