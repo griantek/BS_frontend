@@ -448,7 +448,7 @@ interface JournalData {
   personal_email: string;
   assigned_to: string;
   journal_name: string;
-  status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+  status: string;
   journal_link: string;
   username: string;
   password: string;
@@ -488,7 +488,7 @@ interface CreateJournalRequest {
 
 // Update the UpdateJournalRequest interface to make all fields required
 interface UpdateJournalRequest {
-    status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+    status: string; // Change from literal union to string to allow any status value
     journal_name: string;
     journal_link: string;
     paper_title: string;
@@ -2424,6 +2424,17 @@ const api = {
         console.error('Error fetching journal data by email:', error);
         throw this.handleError(error);
       }
+    },
+
+    // Add new method for quick status update
+    async updateJournalStatus(id: number, status: string): Promise<ApiResponse<JournalData>> {
+        try {
+            const response = await this.axiosInstance.put(`/editor/journal-data/${id}/status`, { status });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating journal status:', error);
+            throw this.handleError(error);
+        }
     },
 };
 

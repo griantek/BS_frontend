@@ -119,8 +119,8 @@ export const Sidebar = () => {
                 name: 'Pending Submissions',
                 icon: ClipboardDocumentListIcon,
                 path: '/business/editor/assigned',
-                badge: true,
-                count: pendingSubmissionsCount
+                badge: pendingSubmissionsCount > 0, // Only show badge if count > 0
+                count: pendingSubmissionsCount > 0 ? pendingSubmissionsCount : undefined // Only include count if > 0
             });
         }
 

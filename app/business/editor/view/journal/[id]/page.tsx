@@ -15,6 +15,8 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { withEditorAuth } from "@/components/withEditorAuth";
 import api, { JournalData } from "@/services/api";
@@ -24,10 +26,13 @@ import {
   TrashIcon,
   PencilIcon,
   ArrowPathIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  CheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { currentUserHasPermission, PERMISSIONS } from "@/utils/permissions";
+import { JOURNAL_STATUS_OPTIONS } from "@/constants/constants";
 
 function JournalContent({ id }: { id: string }) {
   const router = useRouter();
@@ -35,24 +40,26 @@ function JournalContent({ id }: { id: string }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  const [editingStatus, setEditingStatus] = React.useState(false);
+  const [selectedStatus, setSelectedStatus] = React.useState<string>("");
   const { isOpen, onOpen, onClose } = useDisclosure();
-  
-  // Add permission state variables
+
   const [canEdit, setCanEdit] = React.useState(false);
   const [canDelete, setCanDelete] = React.useState(false);
   const [canUpdateScreenshot, setCanUpdateScreenshot] = React.useState(false);
 
   React.useEffect(() => {
-    // Check permissions
     setCanEdit(currentUserHasPermission(PERMISSIONS.SHOW_EDIT_BUTTON_EDITOR));
     setCanDelete(currentUserHasPermission(PERMISSIONS.SHOW_DELETE_BUTTON_EDITOR));
     setCanUpdateScreenshot(currentUserHasPermission(PERMISSIONS.SHOW_UPDATE_SCREENSHOT_BUTTON));
-    
+
     const fetchJournal = async () => {
       try {
         const response = await api.getJournalById(Number(id));
         if (response.success) {
           setJournal(response.data);
+          setSelectedStatus(response.data.status);
         }
       } catch (error) {
         const errorMessage = api.handleError(error);
@@ -82,6 +89,41 @@ function JournalContent({ id }: { id: string }) {
     }
   };
 
+  const handleStatusSelect = (newStatus: string) => {
+    setSelectedStatus(newStatus);
+  };
+
+  const toggleEditStatus = () => {
+    setEditingStatus(!editingStatus);
+    if (!editingStatus) {
+      setSelectedStatus(journal?.status || "");
+    }
+  };
+
+  const submitStatusUpdate = async () => {
+    if (!journal || journal.status === selectedStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const response = await api.updateJournalStatus(journal.id, selectedStatus);
+      if (response.success) {
+        // Manually update the journal state with the new status since
+        // the backend response doesn't include the updated journal data
+        setJournal({
+          ...journal,
+          status: selectedStatus
+        });
+        toast.success(`Status updated to "${selectedStatus}" successfully`);
+        setEditingStatus(false);
+      }
+    } catch (error) {
+      const errorMessage = api.handleError(error);
+      toast.error(errorMessage.error || "Failed to update status");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const handleRefreshStatus = async () => {
     if (!journal) return;
 
@@ -100,7 +142,6 @@ function JournalContent({ id }: { id: string }) {
 
       if (response.success && response.data.success) {
         toast.success("Status screenshot updated successfully");
-        // Add a delay before refetching
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const journalResponse = await api.getJournalById(Number(id));
@@ -130,17 +171,15 @@ function JournalContent({ id }: { id: string }) {
     }
   };
 
-  // Add download screenshot function
   const handleDownloadScreenshot = () => {
-    if (!journal?.status_link || journal.status_link === 'https://dummyimage.com/16:9x1080/') {
+    if (!journal?.status_link || journal.status_link === "https://dummyimage.com/16:9x1080/") {
       toast.error("No screenshot available to download");
       return;
     }
-    
-    // Create an anchor element to trigger download
-    const a = document.createElement('a');
+
+    const a = document.createElement("a");
     a.href = journal.status_link;
-    a.download = `${journal.journal_name.replace(/\s+/g, '-').toLowerCase()}-screenshot.jpg`;
+    a.download = `${journal.journal_name.replace(/\s+/g, "-").toLowerCase()}-screenshot.jpg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -158,9 +197,39 @@ function JournalContent({ id }: { id: string }) {
     return <div className="p-4">Journal not found</div>;
   }
 
+  const getStatusColor = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (
+      lowerStatus.includes("submit") ||
+      lowerStatus === "pending" ||
+      lowerStatus === "draft" ||
+      lowerStatus === "hold"
+    )
+      return "primary";
+    if (
+      lowerStatus.includes("review") ||
+      lowerStatus.includes("consider") ||
+      lowerStatus.includes("editor") ||
+      lowerStatus.includes("revision") ||
+      lowerStatus.includes("need")
+    )
+      return "warning";
+    if (lowerStatus.includes("approve") || lowerStatus.includes("success")) return "success";
+    if (
+      lowerStatus.includes("reject") ||
+      lowerStatus.includes("decline") ||
+      lowerStatus.includes("denied") ||
+      lowerStatus.includes("withdrawn") ||
+      lowerStatus.includes("removed")
+    )
+      return "danger";
+    return "default";
+  };
+
+  const hasStatusChanged = journal.status !== selectedStatus;
+
   return (
     <>
-      {/* Back button */}
       <Button
         isIconOnly
         variant="light"
@@ -171,7 +240,6 @@ function JournalContent({ id }: { id: string }) {
       </Button>
 
       <div className="w-full p-6 space-y-6">
-        {/* Header with actions */}
         <Card className="w-full">
           <CardHeader className="flex justify-between items-center px-6 py-4">
             <div className="flex flex-col">
@@ -209,8 +277,88 @@ function JournalContent({ id }: { id: string }) {
           </CardHeader>
         </Card>
 
+        <Card className="w-full">
+          <CardHeader>
+            <h2 className="text-lg font-bold">Status</h2>
+          </CardHeader>
+          <Divider />
+          <CardBody>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Current Status:</span>
+                <Chip color={getStatusColor(journal.status)} size="md">
+                  {journal.status}
+                </Chip>
+              </div>
+              
+              {!editingStatus ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  isIconOnly
+                  title="Edit Status"
+                  onPress={toggleEditStatus}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex flex-1 items-center gap-2">
+                  <div className="flex-1 max-w-md">
+                    <Select
+                      label="Update Status"
+                      placeholder="Select new status"
+                      selectedKeys={[selectedStatus]}
+                      isDisabled={isUpdatingStatus}
+                      onChange={(e) => handleStatusSelect(e.target.value)}
+                      className="max-w-md"
+                      classNames={{
+                        listboxWrapper: "max-h-[240px]"
+                      }}
+                      listboxProps={{
+                        emptyContent: "No status found"
+                      }}
+                    >
+                      {JOURNAL_STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status} value={status} textValue={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {hasStatusChanged && (
+                      <Button
+                        size="sm"
+                        color="primary"
+                        isDisabled={isUpdatingStatus}
+                        onPress={submitStatusUpdate}
+                        isLoading={isUpdatingStatus}
+                        startContent={<CheckIcon className="h-4 w-4" />}
+                      >
+                        Update
+                      </Button>
+                    )}
+                    
+                    <Button
+                      size="sm"
+                      color="default"
+                      variant="flat"
+                      isIconOnly
+                      title="Cancel"
+                      onPress={toggleEditStatus}
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Basic Information */}
           <Card className="w-full">
             <CardHeader>
               <p className="text-md font-semibold">Client Information</p>
@@ -236,23 +384,9 @@ function JournalContent({ id }: { id: string }) {
             </CardBody>
           </Card>
 
-          {/* Journal Information */}
           <Card className="w-full">
-            <CardHeader className="flex justify-between items-center">
+            <CardHeader>
               <p className="text-md font-semibold">Journal Information</p>
-              <Chip
-                color={
-                  journal.status === "approved"
-                    ? "success"
-                    : journal.status === "rejected"
-                      ? "danger"
-                      : journal.status === "under review"
-                        ? "warning"
-                        : "default"
-                }
-              >
-                {journal.status}
-              </Chip>
             </CardHeader>
             <Divider />
             <CardBody className="space-y-4">
@@ -275,15 +409,9 @@ function JournalContent({ id }: { id: string }) {
                   Visit Journal
                 </a>
               </div>
-              {/* <div>
-                <h3 className="text-sm text-gray-500">Login Credentials</h3>
-                <p className="font-medium">Username: {journal.username}</p>
-                <p className="font-medium">Password: {journal.password}</p>
-              </div> */}
             </CardBody>
           </Card>
 
-          {/* Requirements Section - Full Width */}
           <Card className="w-full md:col-span-2">
             <CardHeader>
               <p className="text-md font-semibold">Requirements & Details</p>
@@ -296,23 +424,20 @@ function JournalContent({ id }: { id: string }) {
           </Card>
         </div>
 
-        {/* Journal Screenshot Section */}
         {canUpdateScreenshot && journal.journal_link && journal.username && journal.password ? (
           <Card className="w-full">
             <CardHeader className="flex justify-between items-center">
               <p className="text-md font-semibold">Journal Status Screenshot</p>
               <div className="flex items-center gap-2">
-                {/* Download button */}
                 <Button
                   isIconOnly
                   size="sm"
                   variant="light"
                   onPress={handleDownloadScreenshot}
-                  isDisabled={!journal.status_link || journal.status_link === 'https://dummyimage.com/16:9x1080/'}
+                  isDisabled={!journal.status_link || journal.status_link === "https://dummyimage.com/16:9x1080/"}
                 >
                   <ArrowDownTrayIcon className="h-5 w-5" />
                 </Button>
-                {/* Refresh button */}
                 {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
                   <Button
                     isIconOnly
@@ -331,7 +456,7 @@ function JournalContent({ id }: { id: string }) {
             <Divider />
             <CardBody>
               <div className="flex justify-center">
-                {journal.status_link && journal.status_link != 'https://dummyimage.com/16:9x1080/' ? (
+                {journal.status_link && journal.status_link != "https://dummyimage.com/16:9x1080/" ? (
                   <div className="relative w-full h-[600px]">
                     <Image
                       src={`${journal.status_link}?t=${new Date().getTime()}`}
@@ -357,23 +482,18 @@ function JournalContent({ id }: { id: string }) {
             </CardBody>
           </Card>
         )}
-        {/* Delete Confirmation Modal */}
+
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalContent>
             <ModalHeader>Confirm Delete</ModalHeader>
             <ModalBody>
-              Are you sure you want to delete this journal? This action cannot
-              be undone.
+              Are you sure you want to delete this journal? This action cannot be undone.
             </ModalBody>
             <ModalFooter>
               <Button variant="light" onPress={onClose} isDisabled={isDeleting}>
                 Cancel
               </Button>
-              <Button
-                color="danger"
-                onPress={handleDelete}
-                isLoading={isDeleting}
-              >
+              <Button color="danger" onPress={handleDelete} isLoading={isDeleting}>
                 Delete
               </Button>
             </ModalFooter>
