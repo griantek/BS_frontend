@@ -125,32 +125,6 @@ function AssignedViewContent({ regId }: { regId: string }) {
             </CardBody>
           </Card>
 
-          {/* Financial Information */}
-          <Card className="w-full md:col-span-2">
-            <CardHeader>
-              <h2 className="text-xl font-bold">Financial Overview</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody className="space-y-8">
-              {/* Payment Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                  <p className="text-2xl font-bold">₹{registration.total_amount.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">Inclusive of all charges</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-1">Initial Amount</p>
-                  <p className="text-2xl font-bold">₹{registration.init_amount.toLocaleString()}</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-1">Acceptance Amount</p>
-                  <p className="text-2xl font-bold">₹{registration.accept_amount.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
           {/* Requirements Section */}
           <Card className="w-full md:col-span-2">
             <CardHeader>

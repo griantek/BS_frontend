@@ -76,7 +76,6 @@ function AssignedPage() {
     { key: "reg_id", label: "REG ID" },
     { key: "client", label: "CLIENT" },
     { key: "services", label: "SERVICES" },
-    { key: "amount", label: "AMOUNT" },
     { key: "executive", label: "EXECUTIVE" },
   ];
 
@@ -146,9 +145,6 @@ function AssignedPage() {
                           </Chip>
                         ))}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      ₹{registration.total_amount.toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
