@@ -51,6 +51,9 @@ const AllLeadsPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Add new state to track which lead is being viewed
+  const [viewingLeadId, setViewingLeadId] = useState<number | null>(null);
+
   useEffect(() => {
     fetchLeads();
   }, [router, page, rowsPerPage]);
@@ -203,6 +206,7 @@ const AllLeadsPage = () => {
 
   // Handle row click to navigate to lead details - use correct executive path
   const handleLeadRowClick = (leadId: number) => {
+    setViewingLeadId(leadId);
     router.push(`/business/executive/leads/${leadId}`);
   };
 
@@ -544,11 +548,17 @@ const AllLeadsPage = () => {
                               color="primary"
                               variant="light"
                               endContent={
-                                <ChevronRightIcon className="h-4 w-4" />
+                                viewingLeadId === lead.id ? (
+                                  <Spinner size="sm" color="primary" />
+                                ) : (
+                                  <ChevronRightIcon className="h-4 w-4" />
+                                )
                               }
+                              isLoading={viewingLeadId === lead.id}
+                              isDisabled={viewingLeadId === lead.id}
                               onClick={() => handleLeadRowClick(lead.id)}
                             >
-                              View
+                              {viewingLeadId === lead.id ? "Loading..." : "View"}
                             </Button>
                           </TableCell>
                         </TableRow>
