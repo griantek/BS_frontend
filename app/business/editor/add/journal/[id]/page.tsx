@@ -271,13 +271,11 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
                                         <Input
                                             label="ORCID Username"
                                             name="orcid_username1"
-                                            isRequired
                                         />
                                         <Input
                                             label="ORCID Password"
                                             name="password1"
                                             type="password"
-                                            isRequired
                                         />
                                     </div>
                                 </div>
