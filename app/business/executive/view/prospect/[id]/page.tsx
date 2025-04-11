@@ -264,6 +264,10 @@ function ProspectContent({ regId }: { regId: string }) {
                 <p className="text-small text-default-500">Period</p>
                 <p className="font-medium">{prospectData.period}</p>
               </div>
+              <div className="space-y-1">
+                <p className="text-small text-default-500">Tech person</p>
+                <p className="font-medium">{prospectData.tech_person}</p>
+              </div>
             </CardBody>
           </Card>
 
@@ -288,7 +292,7 @@ function ProspectContent({ regId }: { regId: string }) {
               </div>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <p className="text-small text-default-500">Last Contact</p>
+                  <p className="text-small text-default-500">Created At</p>
                   <p className="font-medium">{prospectData.lastContact ? format(new Date(prospectData.lastContact), 'dd/MM/yyyy') : 'N/A'}</p>
                 </div>
                 <div className="space-y-1">

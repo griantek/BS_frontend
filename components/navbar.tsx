@@ -419,7 +419,7 @@ export const Navbar = () => {
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2 items-center">
-          {isEditorPath && hasNotificationsPermission && <NotificationButton />}
+          {/* {isEditorPath && hasNotificationsPermission && <NotificationButton />} */}
           <ThemeSwitch />
           {isLoggedIn && username && (
             <ProfileMenu username={username} userRole={userRole} />
