@@ -2102,6 +2102,17 @@ const api = {
         }
     },
 
+    // Add this new method for deleting an entity
+    async deleteEntity(id: string): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/entity/${id}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error deleting entity:', error);
+            throw this.handleError(error);
+        }
+    },
+
     getStoredToken() {
         return localStorage.getItem(TOKEN_KEY);
     },

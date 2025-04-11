@@ -41,6 +41,7 @@ interface EditExecutiveForm {
 const ExecutivesPage: React.FC = () => {
     const router = useRouter();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
     const [executives, setExecutives] = React.useState<ExecutiveWithRoleName[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [selectedExecutive, setSelectedExecutive] = React.useState<ExecutiveWithRoleName | null>(null);
@@ -58,6 +59,7 @@ const ExecutivesPage: React.FC = () => {
     const [canAddExecutive, setCanAddExecutive] = React.useState(true);
     const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
     const [selectedRolePermissions, setSelectedRolePermissions] = React.useState<any[]>([]);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     const formatDate = (dateString: string) => {
         try {
@@ -201,6 +203,33 @@ const ExecutivesPage: React.FC = () => {
 
     const handleAddExecutive = () => {
         router.push('/admin/users/executives/create_exec');
+    };
+
+    const handleDeleteExecutive = async () => {
+        if (!selectedExecutive) return;
+        
+        try {
+            setIsDeleting(true);
+            
+            // Use the API service method instead of directly calling axios
+            await api.deleteEntity(selectedExecutive.id);
+            
+            // Refresh the executives list
+            const response = await api.getAllEntities();
+            setExecutives(response.data);
+            
+            toast.success(`${selectedExecutive.username} has been deleted successfully`);
+            
+            // Close both modals
+            onDeleteModalClose();
+            onClose();
+        } catch (error: any) {
+            const errorMsg = error?.response?.data?.message || 'Failed to delete executive';
+            toast.error(errorMsg);
+            console.error('Error deleting executive:', error);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const renderSelectValue = (role: Role) => {
@@ -397,14 +426,77 @@ const ExecutivesPage: React.FC = () => {
                                     Close
                                 </Button>
                                 {(isSuperAdmin || canUpdateUsers) && (
-                                    <Button 
-                                        color="primary" 
-                                        onPress={handleSubmit}
-                                        isLoading={isSubmitting}
-                                    >
-                                        Save Changes
-                                    </Button>
+                                    <>
+                                        <Button 
+                                            color="danger" 
+                                            variant="flat"
+                                            onPress={onDeleteModalOpen}
+                                        >
+                                            Delete Executive
+                                        </Button>
+                                        <Button 
+                                            color="primary" 
+                                            onPress={handleSubmit}
+                                            isLoading={isSubmitting}
+                                        >
+                                            Save Changes
+                                        </Button>
+                                    </>
                                 )}
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={onDeleteModalClose}
+                size="md"
+            >
+                <ModalContent>
+                    {(closeDeleteModal) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1 text-danger">
+                                <span className="text-2xl">⚠️ Confirm Account Removal</span>
+                            </ModalHeader>
+                            <ModalBody>
+                                <p className="mb-4">
+                                    You're about to remove <strong>{selectedExecutive?.username}</strong> ({selectedExecutive?.role_details?.entity_type}) from the system.
+                                </p>
+                                
+                                <p className="font-medium mb-2">Please note:</p>
+                                
+                                <ul className="list-disc pl-6 space-y-2 mb-4">
+                                    <li>This account will no longer be able to access the platform or its features.</li>
+                                    <li>Any tasks, messages, or responsibilities linked to this account will be unassigned or paused.</li>
+                                    <li>The account will no longer appear in user lists or assignment options.</li>
+                                </ul>
+                                
+                                <p className="text-danger-600 italic">
+                                    We recommend proceeding only if you're certain this account is no longer needed.
+                                </p>
+                                
+                                <p className="font-medium mt-4">
+                                    Would you like to continue?
+                                </p>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button 
+                                    variant="light" 
+                                    onPress={onDeleteModalClose}
+                                    isDisabled={isDeleting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    color="danger" 
+                                    onPress={handleDeleteExecutive}
+                                    isLoading={isDeleting}
+                                >
+                                    Delete
+                                </Button>
                             </ModalFooter>
                         </>
                     )}

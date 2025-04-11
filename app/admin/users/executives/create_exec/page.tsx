@@ -62,8 +62,7 @@ export default function CreateExecutive() {
         email: data.email.trim().toLowerCase(),
         role: data.role?.trim() || 'executive'
       };
-
-      console.log('Creating executive with data:', executiveData);
+      
       await api.createExecutive(executiveData);
       
       toast.success('Executive created successfully!');
