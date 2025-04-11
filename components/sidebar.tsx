@@ -241,8 +241,11 @@ export const Sidebar = () => {
     };
 
     const handleNavigation = (path: string) => {
-        setIsNavigating(true);
-        router.push(path);
+        // Only set navigating state and push to router if we're not already on this path
+        if (pathname !== path) {
+            setIsNavigating(true);
+            router.push(path);
+        }
     };
 
     React.useEffect(() => {
