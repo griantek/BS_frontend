@@ -1227,13 +1227,24 @@ const api = {
         }
     },
 
-    async deleteProspectus(regIds: string[]): Promise<{ success: boolean }> {
+    async deleteProspectus(regId: string[]): Promise<{ success: boolean }> {
         try {
             const response = await this.axiosInstance.delete('/prospectus/delete', {
-                data: { reg_ids: regIds }
+                data: { reg_id: regId }
             });
             return response.data;
         } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for soft deleting a prospectus
+    async softDeleteProspectus(prospectusId: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.put(`entity/prospectus/${prospectusId}/soft-delete`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error soft-deleting prospectus:', error);
             throw this.handleError(error);
         }
     },

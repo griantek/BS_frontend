@@ -69,6 +69,9 @@ function ProspectContent({ regId }: { regId: string }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = React.useState(false);
   
+  // Add a new disclosure hook for the confirmation modal
+  const { isOpen: isDeleteConfirmOpen, onOpen: onDeleteConfirmOpen, onClose: onDeleteConfirmClose } = useDisclosure();
+  
   // Add permission states
   const [permissions, setPermissions] = React.useState({
     canSendQuotation: false,
@@ -128,10 +131,19 @@ function ProspectContent({ regId }: { regId: string }) {
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await api.deleteProspectus([regId]);
-      toast.success('Prospect deleted successfully');
+      
+      // Use the soft delete endpoint if prospectus has an ID
+      if (prospectData?.id) {
+        await api.softDeleteProspectus(prospectData.id);
+        toast.success('Prospectus deleted successfully');
+      }
+      
+      // Close both modals
+      onDeleteConfirmClose();
+      onClose();
+      
       setTimeout(() => {
-        window.location.href = '/business/executive';
+        window.location.href = '/business/executive/records/prospectus';
       }, 1500);
     } catch (error) {
       console.error('Delete error:', error);
@@ -139,7 +151,6 @@ function ProspectContent({ regId }: { regId: string }) {
       toast.error(errorMessage.error || 'Failed to delete prospect');
     } finally {
       setIsDeleting(false);
-      onClose();
     }
   };
 
@@ -234,12 +245,6 @@ function ProspectContent({ regId }: { regId: string }) {
                 <p className="text-small text-default-500">Department</p>
                 <p className="font-medium">{prospectData.department}</p>
               </div>
-              {/* <div className="space-y-1">
-                <p className="text-small text-default-500">Status</p>
-                <Chip color="success" variant="flat" size="sm">
-                  {prospectData.status}
-                </Chip>
-              </div> */}
               <div className="space-y-1">
                 <p className="text-small text-default-500">Location</p>
                 <p className="font-medium">{prospectData.state}</p>
@@ -315,7 +320,54 @@ function ProspectContent({ regId }: { regId: string }) {
               <Button variant="light" onPress={onClose} isDisabled={isDeleting}>
                 Cancel
               </Button>
-              <Button color="danger" onPress={handleDelete} isLoading={isDeleting}>
+              <Button color="danger" onPress={onDeleteConfirmOpen} isDisabled={isDeleting}>
+                Delete
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        
+        {/* Add the new confirmation modal with detailed warning */}
+        <Modal isOpen={isDeleteConfirmOpen} onClose={onDeleteConfirmClose} size="lg">
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1 text-danger">
+              <span className="text-2xl">⚠️ Confirm Prospectus Removal</span>
+            </ModalHeader>
+            <ModalBody>
+              <p className="mb-4">
+                You are about to remove this prospectus from the system.
+              </p>
+              
+              <p className="font-medium mb-2">Please note:</p>
+              
+              <ul className="list-disc pl-6 space-y-2 mb-4">
+                <li>All journal entries linked to this prospectus will be permanently removed.</li>
+                <li>Any associated service registrations and financial quotations will also be removed.</li>
+                <li>This prospectus will no longer appear in client records or system reports.</li>
+                <li>This action may affect historical records and client tracking.</li>
+              </ul>
+              
+              <p className="text-danger-600 italic">
+                We recommend proceeding only if you are certain this prospectus is no longer needed.
+              </p>
+              
+              <p className="font-medium mt-4">
+                Do you want to continue?
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button 
+                variant="light" 
+                onPress={onDeleteConfirmClose}
+                isDisabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                color="danger" 
+                onPress={handleDelete}
+                isLoading={isDeleting}
+              >
                 Delete
               </Button>
             </ModalFooter>
