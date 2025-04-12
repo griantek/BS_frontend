@@ -138,8 +138,8 @@ const PaymentStatusDisplay = ({
             status === "registered"
               ? "success"
               : status === "waiting for approval"
-                ? "danger"
-                : "warning"
+              ? "danger"
+              : "warning"
           }
           variant="flat"
           size="sm"
@@ -503,13 +503,14 @@ function RegistrationContent({ regId }: { regId: string }) {
 
   return (
     <>
+      {/* Back button - improved positioning and visibility */}
       <Button
-        isIconOnly
         variant="light"
-        className="fixed top-4 left-4 z-50"
-        onClick={() => router.push("/business/executive/records")} // Changed from '/business/executive' to '/business/executive/records'
+        className=" left-4 z-[1000] shadow-md flex items-center gap-2"
+        onClick={() => router.push('/business/executive/records/registration')}
+        startContent={<ArrowLeftIcon className="h-5 w-5" />}
       >
-        <ArrowLeftIcon className="h-5 w-5" />
+        Back
       </Button>
 
       <div className="w-full p-6 space-y-6">
@@ -605,8 +606,8 @@ function RegistrationContent({ regId }: { regId: string }) {
                       registrationData.status === "registered"
                         ? "success"
                         : registrationData.status === "waiting for approval"
-                          ? "danger"
-                          : "warning"
+                        ? "danger"
+                        : "warning"
                     }
                     variant="flat"
                   >

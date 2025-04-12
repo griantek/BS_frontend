@@ -144,7 +144,6 @@ interface ExtendedRegistration {
   transaction_id: number;
   notes: string | null;
   updated_at: string;
-  // assigned_to: string | null;
   registered_by: string;
   client_id: string;
   admin_assigned: boolean;
@@ -164,7 +163,6 @@ interface RegistrationFormData {
   initialAmount: number;
   acceptanceAmount: number;
   discountPercentage: number;
-  // assigned_to: string;
   discountAmount: number;
   subTotal: number;
   totalAmount: number;
@@ -176,7 +174,6 @@ interface RegistrationFormData {
   paymentMode: keyof typeof PAYMENT_MODE_MAP;
   amount: number;
   transactionDate: string;
-  // Add these payment-related fields
   transactionId?: string;
   upiId?: string;
   accountNumber?: string;
@@ -188,7 +185,7 @@ interface RegistrationFormData {
   gatewayProvider?: 'razorpay' | 'stripe' | 'other';
   transactionHash?: string;
   cryptoCurrency?: string;
-  selectedServicePrices: Record<string, number>; // Add this field to track custom prices
+  selectedServicePrices: Record<string, number>;
 }
 
 function EditRegistrationContent({ regId }: { regId: string }) {
@@ -207,7 +204,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     reset,
     formState: { errors },
   } = useForm<RegistrationFormData>({
-    // Add default values to prevent undefined errors
     defaultValues: {
       selectedServices: [],
       initialAmount: 0,
@@ -228,11 +224,9 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     }
   });
 
-  // Add a safe watch helper function to prevent undefined errors
   const safeWatch = <T extends keyof RegistrationFormData>(field: T): RegistrationFormData[T] => {
     const value = watch(field);
     if (value === undefined) {
-      // Return appropriate default value based on field type
       if (field === 'selectedServices') return [] as any;
       if (field === 'initialAmount' || field === 'acceptanceAmount' || 
           field === 'discountPercentage' || field === 'discountAmount' || 
@@ -248,7 +242,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     return value;
   };
 
-  // Calculate totals effect - use safeWatch instead of watch
   React.useEffect(() => {
     const initialAmount = getNumericValue(safeWatch("initialAmount"));
     const acceptanceAmount = getNumericValue(safeWatch("acceptanceAmount"));
@@ -261,9 +254,8 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     setValue("subTotal", subTotal);
     setValue("discountAmount", discountAmount);
     setValue("totalAmount", total);
-  }, [watch("initialAmount"), watch("acceptanceAmount"), watch("discountPercentage"), setValue]);
+  }, [setValue, watch]);
 
-  // Fetch data effect
   React.useEffect(() => {
     if (!checkAuth(router)) return;
     const fetchData = async () => {
@@ -277,7 +269,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         ]);
         console.log('Fetched data:',regResponse);
         if (regResponse.success) {
-          // First cast to unknown, then to ExtendedRegistration to avoid type error
           const reg = regResponse.data as unknown as ExtendedRegistration;
           
           setRegistrationData(reg);
@@ -285,17 +276,14 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           setBankAccounts(bankResponse.data);
           setEditors(editorsResponse.data);
           
-          // Parse periods
           const [acceptPeriodValue, acceptPeriodUnit] = reg.accept_period.split(' ');
           const [pubPeriodValue, pubPeriodUnit] = reg.pub_period.split(' ');
           
-          // Get service IDs and setup the prices
           const serviceNames = reg.services.split(', ');
           const serviceIds = servicesResponse.data
             .filter(service => serviceNames.includes(service.service_name))
             .map(service => service.id.toString());
             
-          // Extract service prices
           const servicePrices: Record<string, number> = {};
           serviceIds.forEach(id => {
             const service = servicesResponse.data.find(s => s.id.toString() === id);
@@ -303,36 +291,47 @@ function EditRegistrationContent({ regId }: { regId: string }) {
               servicePrices[id] = service.fee;
             }
           });
+          
+          const initAmount = Number(reg.init_amount);
+          const acceptAmount = Number(reg.accept_amount);
+          const calculatedSubTotal = initAmount + acceptAmount;
 
-          // Pre-fill form with correct data mapping
           reset({
             selectedServices: serviceIds,
-            initialAmount: reg.init_amount,
-            acceptanceAmount: reg.accept_amount,
+            initialAmount: initAmount,
+            acceptanceAmount: acceptAmount,
             discountAmount: reg.discount,
             totalAmount: reg.total_amount,
-            discountPercentage: (reg.discount / (reg.init_amount + reg.accept_amount)) * 100,
+            subTotal: calculatedSubTotal,
+            discountPercentage: (reg.discount / calculatedSubTotal) * 100,
             acceptancePeriod: parseInt(acceptPeriodValue),
             acceptancePeriodUnit: acceptPeriodUnit as PeriodUnit,
             publicationPeriod: parseInt(pubPeriodValue),
             publicationPeriodUnit: pubPeriodUnit as PeriodUnit,
             selectedBank: reg.bank_id,
-            // Fix payment mode mapping
             paymentMode: Object.entries(PAYMENT_MODE_MAP).find(
               ([_, value]) => value === reg.transactions.transaction_type
             )?.[0] as keyof typeof PAYMENT_MODE_MAP || 'cash',
             amount: reg.transactions.amount,
             transactionDate: reg.transactions.transaction_date,
             transactionId: reg.transactions.transaction_id,
-            // Map additional payment info
             ...(reg.transactions.additional_info || {}),
-            // If it's a bank transfer, map these fields
             ...(reg.transactions.transaction_type === 'Bank Transfer' && {
               accountNumber: reg.transactions.additional_info.account_number,
               ifscCode: reg.transactions.additional_info.ifsc_code,
             }),
             selectedServicePrices: servicePrices,
           });
+          
+          setTimeout(() => {
+            const initialAmount = getNumericValue(initAmount);
+            const acceptanceAmount = getNumericValue(acceptAmount);
+            const discountPercentage = getNumericValue((reg.discount / calculatedSubTotal) * 100);
+            
+            setValue("subTotal", initialAmount + acceptanceAmount);
+            setValue("discountAmount", ((initialAmount + acceptanceAmount) * discountPercentage) / 100);
+            setValue("totalAmount", (initialAmount + acceptanceAmount) - (((initialAmount + acceptanceAmount) * discountPercentage) / 100));
+          }, 0);
         }
       } catch (error) {
         toast.error("Failed to load registration");
@@ -341,7 +340,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
       }
     };
     fetchData();
-  }, [regId, router, reset]);
+  }, [regId, router, reset, setValue]);
 
   const handleServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const service = services.find((s) => s.id === parseInt(event.target.value));
@@ -352,12 +351,10 @@ function EditRegistrationContent({ regId }: { regId: string }) {
       ];
       setValue("selectedServices", updatedServices);
 
-      // Set the initial price in the selectedServicePrices
       const updatedPrices = { ...safeWatch("selectedServicePrices") };
       updatedPrices[service.id.toString()] = service.fee;
       setValue("selectedServicePrices", updatedPrices);
 
-      // Calculate initial amount based on custom prices
       recalculateInitialAmount(updatedServices, updatedPrices);
     }
   };
@@ -368,26 +365,21 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     );
     setValue("selectedServices", updatedServices);
 
-    // Remove price from selectedServicePrices
     const updatedPrices = { ...safeWatch("selectedServicePrices") };
     delete updatedPrices[serviceId];
     setValue("selectedServicePrices", updatedPrices);
 
-    // Recalculate initial amount
     recalculateInitialAmount(updatedServices, updatedPrices);
   };
 
-  // New function to handle price changes
   const handlePriceChange = (serviceId: string, price: number) => {
     const updatedPrices = { ...safeWatch("selectedServicePrices") };
     updatedPrices[serviceId] = price;
     setValue("selectedServicePrices", updatedPrices);
 
-    // Recalculate initial amount
     recalculateInitialAmount(safeWatch("selectedServices"), updatedPrices);
   };
 
-  // Helper function to recalculate the initial amount
   const recalculateInitialAmount = (
     serviceIds: string[],
     prices: Record<string, number>
@@ -405,53 +397,59 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     switch (paymentMode) {
       case "upi":
         return (
-          <>
+          <div className="w-full space-y-4">
             <Input
               type="text"
               label="UPI ID"
               placeholder="example@upi"
               {...register("upiId")}
+              className="w-full"
             />
             <Input
               type="text"
               label="Transaction ID"
               {...register("transactionId")}
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       case "netbanking":
         return (
-          <>
+          <div className="w-full space-y-4">
             <Input
               type="text"
               label="Account Number"
               {...register("accountNumber")}
+              className="w-full"
             />
             <Input 
               type="text" 
               label="IFSC Code" 
               {...register("ifscCode")} 
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       case "card":
         return (
-          <>
+          <div className="w-full space-y-4">
             <Input
               type="text"
               label="Last 4 Digits of Card"
               maxLength={4}
               pattern="[0-9]{4}"
               {...register("cardLastFourDigits")}
+              className="w-full"
             />
             <Input
               type="text"
               label="Transaction ID"
               {...register("transactionId")}
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       case "cash":
@@ -460,6 +458,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
             type="text"
             label="Receipt Number"
             {...register("receiptNumber")}
+            className="w-full"
           />
         );
 
@@ -469,63 +468,74 @@ function EditRegistrationContent({ regId }: { regId: string }) {
             type="text"
             label="Cheque Number"
             {...register("chequeNumber")}
+            className="w-full"
           />
         );
 
       case "wallet":
         return (
-          <>
-            <select
-              className="w-full p-2 rounded-lg border border-gray-300"
-              {...register("walletProvider")}
-            >
-              <option value="">Select Wallet Provider</option>
-              <option value="paytm">Paytm</option>
-              <option value="phonepe">PhonePe</option>
-              <option value="other">Other</option>
-            </select>
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label className="block text-sm font-medium mb-1">Wallet Provider</label>
+              <select
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("walletProvider")}
+              >
+                <option value="">Select Wallet Provider</option>
+                <option value="paytm">Paytm</option>
+                <option value="phonepe">PhonePe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
             <Input
               type="text"
               label="Transaction ID"
               {...register("transactionId")}
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       case "gateway":
         return (
-          <>
-            <select
-              className="w-full p-2 rounded-lg border border-gray-300"
-              {...register("gatewayProvider")}
-            >
-              <option value="">Select Payment Gateway</option>
-              <option value="razorpay">Razorpay</option>
-              <option value="stripe">Stripe</option>
-              <option value="other">Other</option>
-            </select>
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label className="block text-sm font-medium mb-1">Payment Gateway</label>
+              <select
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("gatewayProvider")}
+              >
+                <option value="">Select Payment Gateway</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="stripe">Stripe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
             <Input
               type="text"
               label="Transaction ID"
               {...register("transactionId")}
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       case "crypto":
         return (
-          <>
+          <div className="w-full space-y-4">
             <Input
               type="text"
               label="Transaction Hash"
               {...register("transactionHash")}
+              className="w-full"
             />
             <Input
               type="text"
               label="Cryptocurrency"
               {...register("cryptoCurrency")}
+              className="w-full"
             />
-          </>
+          </div>
         );
 
       default:
@@ -537,19 +547,16 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     try {
       if (!registrationData) return;
 
-      // Get user data for entity_id
       const user = api.getStoredUser();
       if (!user?.id) {
         toast.error("User data not found");
         return;
       }
 
-      // Get selected services names with custom prices
       const selectedServiceNames = data.selectedServices
         .map((id) => {
           const service = services.find((s) => s.id === parseInt(id));
           if (service) {
-            // Include the custom price in the service name
             const customPrice = data.selectedServicePrices[id] || service.fee;
             return service.service_name;
           }
@@ -558,7 +565,37 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         .filter(Boolean)
         .join(", ");
 
-      // Convert the form data to match API expectations
+      const additionalInfo: Record<string, any> = {};
+      
+      switch (data.paymentMode) {
+        case 'upi':
+          if (data.upiId) additionalInfo.upi_id = data.upiId;
+          break;
+        case 'netbanking':
+          if (data.accountNumber) additionalInfo.account_number = data.accountNumber;
+          if (data.ifscCode) additionalInfo.ifsc_code = data.ifscCode;
+          break;
+        case 'card':
+          if (data.cardLastFourDigits) additionalInfo.card_last_four = data.cardLastFourDigits;
+          break;
+        case 'cash':
+          if (data.receiptNumber) additionalInfo.receipt_number = data.receiptNumber;
+          break;
+        case 'cheque':
+          if (data.chequeNumber) additionalInfo.cheque_number = data.chequeNumber;
+          break;
+        case 'wallet':
+          if (data.walletProvider) additionalInfo.wallet_provider = data.walletProvider;
+          break;
+        case 'gateway':
+          if (data.gatewayProvider) additionalInfo.gateway_provider = data.gatewayProvider;
+          break;
+        case 'crypto':
+          if (data.transactionHash) additionalInfo.transaction_hash = data.transactionHash;
+          if (data.cryptoCurrency) additionalInfo.crypto_currency = data.cryptoCurrency;
+          break;
+      }
+
       const updateData = {
         services: selectedServiceNames,
         init_amount: Number(data.initialAmount),
@@ -568,11 +605,16 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
-        // Cast status to a valid RegistrationStatus type to avoid compilation errors
         status: registrationData.status as RegistrationStatus,
         month: registrationData.month,
         year: registrationData.year,
         entity_id: user.id,
+        transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
+        transaction_id: data.transactionId || '',
+        amount: Number(data.amount),
+        transaction_date: data.transactionDate,
+        additional_info: additionalInfo,
+        service_and_prices: data.selectedServicePrices
       };
 
       console.log('Sending update request:', {
@@ -594,7 +636,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     }
   };
 
-  // Replace simple loading text with LoadingSpinner component
   if (isLoading) return <LoadingSpinner text="Loading registration data..." />;
   if (!registrationData) return <LoadingSpinner text="No registration data found" />;
 
@@ -621,7 +662,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           
           <form onSubmit={handleSubmit(onSubmit)}>
             <CardBody className="p-0">
-              {/* Client Information Section */}
               <div className="p-6 bg-default-50 border-b border-default-100">
                 <h2 className="text-lg font-semibold mb-4">Client Information</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -658,7 +698,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                 </div>
               </div>
 
-              {/* Services Section */}
               <div className="p-6 border-b border-default-100">
                 <h2 className="text-lg font-semibold mb-4">Services</h2>
                 <div className="space-y-4">
@@ -680,7 +719,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                     ))}
                   </select>
 
-                  {/* Selected Services Display */}
                   {safeWatch("selectedServices").length > 0 && (
                     <div className="bg-default-100 p-4 rounded-lg space-y-2">
                       <h4 className="text-sm font-medium">Selected Services</h4>
@@ -724,10 +762,8 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                 </div>
               </div>
 
-              {/* Amount & Period Section */}
               <div className="p-6 border-b border-default-100">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Column - Amounts */}
                   <div className="space-y-4">
                     <h2 className="text-lg font-semibold mb-2">Amount Details</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -751,7 +787,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                       />
                     </div>
 
-                    {/* Total Amount Summary */}
                     <Card
                       className="relative overflow-hidden"
                       classNames={{
@@ -760,7 +795,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                     >
                       <CardBody className="p-4">
                         <div className="space-y-3">
-                          {/* Sub Total Row */}
                           <div className="flex justify-between items-center">
                             <span className="text-default-600">Sub Total</span>
                             <Chip
@@ -775,7 +809,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                             </Chip>
                           </div>
 
-                          {/* Discount Row */}
                           {getNumericValue(safeWatch("discountPercentage")) > 0 && (
                             <div className="flex justify-between items-center">
                               <div className="flex items-center gap-2">
@@ -801,7 +834,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
 
                           <Divider className="my-3 bg-default-200/50" />
 
-                          {/* Total Amount Row */}
                           <div className="flex justify-between items-center">
                             <span className="text-lg font-semibold text-default-900">
                               Total Amount
@@ -828,7 +860,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                     </Card>
                   </div>
 
-                  {/* Right Column - Periods */}
                   <div className="space-y-4">
                     <h2 className="text-lg font-semibold mb-2">Period Settings</h2>
                     <div className="space-y-4">
@@ -867,7 +898,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                         </select>
                       </div>
 
-                      {/* Bank Account */}
                       <div className="space-y-2 mt-4">
                         <label htmlFor="bank-select" className="text-sm font-medium">
                           Select Bank Account
@@ -890,83 +920,55 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                 </div>
               </div>
 
-              {/* Payment Details - Conditionally shown */}
               {registrationData?.status === 'registered' && (
                 <div className="p-6 border-b border-default-100">
                   <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="w-full space-y-2">
-                        <label htmlFor="payment-mode" className="text-sm font-medium">
-                          Payment Method
-                        </label>
-                        <select
-                          id="payment-mode"
-                          className="w-full p-2 rounded-lg border border-gray-300"
-                          {...register("paymentMode")}
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="upi">UPI</option>
-                          <option value="netbanking">Net Banking</option>
-                          <option value="card">Credit/Debit Card</option>
-                          <option value="cheque">Cheque</option>
-                          <option value="wallet">Wallet</option>
-                          <option value="gateway">Payment Gateway</option>
-                          <option value="crypto">Cryptocurrency</option>
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          type="date"
-                          label="Transaction Date"
-                          {...register('transactionDate')}
-                        />
-                        <Input
-                          type="number"
-                          label="Amount Paid (₹)"
-                          {...register('amount')}
-                        />
-                      </div>
+                  <div className="space-y-4">
+                    {/* Row 1: Payment Method (full width) */}
+                    <div className="w-full">
+                      <label htmlFor="payment-mode" className="block text-sm font-medium mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        id="payment-mode"
+                        className="w-full p-2 rounded-lg border border-gray-300"
+                        {...register("paymentMode")}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="netbanking">Net Banking</option>
+                        <option value="card">Credit/Debit Card</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="wallet">Wallet</option>
+                        <option value="gateway">Payment Gateway</option>
+                        <option value="crypto">Cryptocurrency</option>
+                      </select>
                     </div>
 
+                    {/* Row 2: Transaction Date and Amount Paid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        type="date"
+                        label="Transaction Date"
+                        {...register('transactionDate')}
+                        className="w-full"
+                      />
+                      <Input
+                        type="number"
+                        label="Amount Paid (₹)"
+                        {...register('amount')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Row 3: Payment specific fields (full width) */}
+                    <div className="w-full">
                       {renderPaymentFields()}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Editor Assignment Section */}
-              {/* <div className="p-6 border-b border-default-100">
-                <h2 className="text-lg font-semibold mb-4">Editor Assignment</h2>
-                <div className="w-full max-w-md">
-                  <div className="space-y-2">
-                    <label htmlFor="editor-select" className="text-sm font-medium">
-                      Assign to Editor
-                    </label>
-                    <select
-                      id="editor-select"
-                      className="w-full p-2 rounded-lg border border-gray-300"
-                      {...register("assigned_to")}
-                    >
-                      <option value="">Select Editor to Assign</option>
-                      {editors.map((editor) => (
-                        <option key={editor.id} value={editor.id}>
-                          {editor.username}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.assigned_to && (
-                      <p className="text-danger-500 text-sm mt-1">
-                        {errors.assigned_to.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div> */}
-
-              {/* Action Buttons */}
               <div className="p-6 flex justify-end gap-3">
                 <Button
                   color="danger"
