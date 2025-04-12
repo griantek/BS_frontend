@@ -16,7 +16,7 @@ import { withEditorAuth } from '@/components/withEditorAuth';
 import api, { AssignedRegistration, CreateJournalRequest } from '@/services/api';
 import { toast } from 'react-toastify';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner, PageLoadingSpinner } from "@/components/LoadingSpinner";
 
 const statusOptions = [
     'pending',
@@ -32,6 +32,7 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
     const [registration, setRegistration] = React.useState<AssignedRegistration | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isPageNavigating, setIsPageNavigating] = React.useState(false);
     const [selectedStatus, setSelectedStatus] = React.useState('pending');
     const [customStatus, setCustomStatus] = React.useState('');
     const [prospectusData, setProspectusData] = React.useState({
@@ -105,14 +106,22 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
             const response = await api.createJournalData(createData);
             if (response.success) {
                 toast.success('Journal details added successfully');
+                
+                // Show full page loading spinner before navigation
+                setIsPageNavigating(true);
                 router.push('/business/editor/journals');
             }
         } catch (error) {
             const errorMessage = api.handleError(error);
             toast.error(errorMessage.error || 'Failed to create journal');
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Only reset if there was an error
         }
+        // Note: We don't set setIsSubmitting(false) here on success because we're navigating away
+    };
+
+    const handleCancel = () => {
+        setIsPageNavigating(true);
+        router.push(`/business/editor/view/assigned/${registration?.id}`);
     };
 
     if (isLoading) {
@@ -125,11 +134,16 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
 
     return (
         <>
+            {isPageNavigating && <PageLoadingSpinner text="Redirecting..." />}
+            
             <Button
                 isIconOnly
                 variant="light"
                 className="fixed top-4 left-4 z-50"
-                onClick={() => router.push(`/business/editor/view/assigned/${registration.id}`)}
+                onClick={() => {
+                    setIsPageNavigating(true);
+                    router.push(`/business/editor/view/assigned/${registration?.id}`);
+                }}
             >
                 <ArrowLeftIcon className="h-5 w-5" />
             </Button>
@@ -285,7 +299,8 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
                                     <Button
                                         variant="flat"
                                         color="danger"
-                                        onClick={() => router.push(`/business/editor/view/assigned/${registration.id}`)}
+                                        onClick={handleCancel}
+                                        isDisabled={isSubmitting || isPageNavigating}
                                     >
                                         Cancel
                                     </Button>
@@ -293,8 +308,9 @@ function JournalAddContent({ registrationId }: { registrationId: string }) {
                                         color="primary"
                                         type="submit"
                                         isLoading={isSubmitting}
+                                        disabled={isSubmitting || isPageNavigating}
                                     >
-                                        Add Journal Details
+                                        {isSubmitting ? "Adding Journal..." : "Add Journal Details"}
                                     </Button>
                                 </div>
                             </form>

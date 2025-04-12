@@ -46,8 +46,8 @@ function BusinessLoginContent() {
     try {
       document.body.style.cursor = 'wait';
       const response = await api.loginExecutive({
-        username: data.username,
-        password: data.password
+        username: data.username.trim(),
+        password: data.password.trim()
       });
 
       if (!response.success) {

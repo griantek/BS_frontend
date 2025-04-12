@@ -34,6 +34,7 @@ import { toast } from 'react-toastify';
 import api from '@/services/api';
 import type { Prospectus } from '@/services/api';
 import { Spinner } from "@nextui-org/react";
+import { PageLoadingSpinner } from '@/components/LoadingSpinner';
 import { 
   PERMISSIONS, 
   hasPermission,
@@ -49,6 +50,7 @@ function ProspectusPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [userData, setUserData] = React.useState<UserWithPermissions | null>(null);
   const [clickedRowId, setClickedRowId] = React.useState<string | null>(null);
+  const [isPageLoading, setIsPageLoading] = React.useState(false);
   
   // Filter states
   const [filterDepartment, setFilterDepartment] = React.useState<string>("");
@@ -209,7 +211,10 @@ function ProspectusPage() {
     if (!canClickProspectRows) return;
     
     setClickedRowId(regId);
+    setIsPageLoading(true); // Show full-page loading spinner
+    
     await router.push(`/business/executive/view/prospect/${regId}`);
+    // Note: We don't need to setIsPageLoading(false) as we're navigating away
   };
 
   const refreshData = () => {
@@ -234,6 +239,8 @@ function ProspectusPage() {
 
   return (
     <div className="p-6 w-full">
+      {isPageLoading && <PageLoadingSpinner text="Loading prospect details..." />}
+      
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Prospectus Management</h1>
         {/* Add your other content */}

@@ -48,8 +48,8 @@ function ClientLoginContent() {
     try {
       document.body.style.cursor = 'wait';
       
-      // Call the client login API endpoint
-      const response = await api.clientLogin(data.email, data.password);
+      // Call the client login API endpoint with trimmed values
+      const response = await api.clientLogin(data.email.trim(), data.password.trim());
       
       if (response.success && response.token) {
         toast.success('Login successful');

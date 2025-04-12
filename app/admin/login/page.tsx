@@ -56,7 +56,10 @@ export default function AdminLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await api.loginAdmin(data);
+      const response = await api.loginAdmin({
+        username: data.username.trim(),
+        password: data.password.trim()
+      });
       if (response.success && response.token && response.admin) {
         api.setStoredAuth(response.token, response.admin, "admin");
         updateAuthState();
