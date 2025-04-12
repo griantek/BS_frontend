@@ -463,7 +463,7 @@ const ExecutivesPage: React.FC = () => {
                             </ModalHeader>
                             <ModalBody>
                                 <p className="mb-4">
-                                    You're about to remove <strong>{selectedExecutive?.username}</strong> ({selectedExecutive?.role_details?.entity_type}) from the system.
+                                    You&apos;re about to remove <strong>{selectedExecutive?.username}</strong> ({selectedExecutive?.role_details?.entity_type}) from the system.
                                 </p>
                                 
                                 <p className="font-medium mb-2">Please note:</p>
@@ -475,7 +475,7 @@ const ExecutivesPage: React.FC = () => {
                                 </ul>
                                 
                                 <p className="text-danger-600 italic">
-                                    We recommend proceeding only if you're certain this account is no longer needed.
+                                    We recommend proceeding only if you&apos;re certain this account is no longer needed.
                                 </p>
                                 
                                 <p className="font-medium mt-4">

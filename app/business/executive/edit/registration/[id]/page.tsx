@@ -476,8 +476,9 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         return (
           <div className="w-full space-y-4">
             <div className="w-full">
-              <label className="block text-sm font-medium mb-1">Wallet Provider</label>
+              <label htmlFor="walletProvider" className="block text-sm font-medium mb-1">Wallet Provider</label>
               <select
+                id="walletProvider"
                 className="w-full p-2 rounded-lg border border-gray-300"
                 {...register("walletProvider")}
               >
@@ -500,8 +501,9 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         return (
           <div className="w-full space-y-4">
             <div className="w-full">
-              <label className="block text-sm font-medium mb-1">Payment Gateway</label>
+              <label htmlFor="gatewayProvider" className="block text-sm font-medium mb-1">Payment Gateway</label>
               <select
+                id="gatewayProvider"
                 className="w-full p-2 rounded-lg border border-gray-300"
                 {...register("gatewayProvider")}
               >
