@@ -28,6 +28,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  Pagination,
 } from "@heroui/react";
 import {
   ArrowLeftIcon,
@@ -120,6 +121,13 @@ const ExecutiveDetailPage = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [journals, setJournals] = useState<JournalData[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("overview");
+  
+  // Add pagination states for each table
+  const [prospectsPage, setProspectsPage] = useState(1);
+  const [registrationsPage, setRegistrationsPage] = useState(1);
+  const [leadsPage, setLeadsPage] = useState(1);
+  const [journalsPage, setJournalsPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   
   // Add edit form state
   const [editForm, setEditForm] = useState<EditExecutiveForm>({
@@ -548,6 +556,56 @@ const ExecutiveDetailPage = () => {
     return role.name; // Only show role name when selected
   };
 
+  // Calculate paginated data for prospects
+  const paginatedProspects = useMemo(() => {
+    const start = (prospectsPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return prospects.slice(start, end);
+  }, [prospects, prospectsPage, rowsPerPage]);
+  
+  // Calculate total pages for prospects
+  const prospectsPages = useMemo(() => {
+    return Math.ceil(prospects.length / rowsPerPage);
+  }, [prospects, rowsPerPage]);
+
+  // Calculate paginated data for registrations
+  const paginatedRegistrations = useMemo(() => {
+    const start = (registrationsPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return registrations.slice(start, end);
+  }, [registrations, registrationsPage, rowsPerPage]);
+  
+  // Calculate total pages for registrations
+  const registrationsPages = useMemo(() => {
+    return Math.ceil(registrations.length / rowsPerPage);
+  }, [registrations, rowsPerPage]);
+
+  // Calculate paginated data for leads
+  const paginatedLeads = useMemo(() => {
+    const start = (leadsPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return leads.slice(start, end);
+  }, [leads, leadsPage, rowsPerPage]);
+  
+  // Calculate total pages for leads
+  const leadsPages = useMemo(() => {
+    return Math.ceil(leads.length / rowsPerPage);
+  }, [leads, rowsPerPage]);
+  
+  // Calculate paginated data for journals with is_private=true
+  const paginatedJournals = useMemo(() => {
+    const privateJournals = journals.filter(j => j.is_private === true);
+    const start = (journalsPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return privateJournals.slice(start, end);
+  }, [journals, journalsPage, rowsPerPage]);
+  
+  // Calculate total pages for journals
+  const journalsPages = useMemo(() => {
+    const privateJournalsCount = journals.filter(j => j.is_private === true).length;
+    return Math.ceil(privateJournalsCount / rowsPerPage);
+  }, [journals, rowsPerPage]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -943,7 +1001,6 @@ const ExecutiveDetailPage = () => {
         )}
 
         {selectedTab === "prospectus" && (
-          // ...existing code...
           <div className="space-y-6">
             {/* Prospectus Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1038,7 +1095,25 @@ const ExecutiveDetailPage = () => {
                 />
               </CardHeader>
               <CardBody className="p-0">
-                <Table aria-label="Prospects table" isStriped>
+                <Table 
+                  aria-label="Prospects table" 
+                  isStriped
+                  bottomContent={
+                    prospectsPages > 0 ? (
+                      <div className="flex w-full justify-center my-2">
+                        <Pagination
+                          isCompact
+                          showControls
+                          showShadow
+                          color="primary"
+                          page={prospectsPage}
+                          total={prospectsPages}
+                          onChange={setProspectsPage}
+                        />
+                      </div>
+                    ) : null
+                  }
+                >
                   <TableHeader>
                     <TableColumn>Reg ID</TableColumn>
                     <TableColumn>Client Name</TableColumn>
@@ -1048,7 +1123,7 @@ const ExecutiveDetailPage = () => {
                     <TableColumn>Status</TableColumn>
                     <TableColumn>Date</TableColumn>
                   </TableHeader>
-                  <TableBody emptyContent="No prospects found" items={prospects.slice(0, 10)}>
+                  <TableBody emptyContent="No prospects found" items={paginatedProspects}>
                     {(item) => (
                       <TableRow key={item.id}>
                         <TableCell>{item.reg_id}</TableCell>
@@ -1070,18 +1145,6 @@ const ExecutiveDetailPage = () => {
                     )}
                   </TableBody>
                 </Table>
-                {prospects.length > 10 && (
-                  <div className="flex justify-center p-4">
-                    <Button
-                      onClick={() => router.push(`/admin/prospects/executive/${executiveId}`)}
-                      variant="flat"
-                      color="primary"
-                      size="sm"
-                    >
-                      View All Prospects
-                    </Button>
-                  </div>
-                )}
               </CardBody>
             </Card>
           </div>
@@ -1181,7 +1244,7 @@ const ExecutiveDetailPage = () => {
             {/* Registrations Table */}
             <Card className="shadow-sm">
               <CardHeader className="flex justify-between items-center">
-                <h4 className="font-bold text-large">Recent Registrations</h4>
+                <h4 className="font-bold text-large">Registrations</h4>
                 <Input 
                   placeholder="Search registrations..." 
                   size="sm" 
@@ -1190,7 +1253,25 @@ const ExecutiveDetailPage = () => {
                 />
               </CardHeader>
               <CardBody className="p-0">
-                <Table aria-label="Registrations table" isStriped>
+                <Table 
+                  aria-label="Registrations table" 
+                  isStriped
+                  bottomContent={
+                    registrationsPages > 0 ? (
+                      <div className="flex w-full justify-center my-2">
+                        <Pagination
+                          isCompact
+                          showControls
+                          showShadow
+                          color="primary"
+                          page={registrationsPage}
+                          total={registrationsPages}
+                          onChange={setRegistrationsPage}
+                        />
+                      </div>
+                    ) : null
+                  }
+                >
                   <TableHeader>
                     <TableColumn>ID</TableColumn>
                     <TableColumn>Client Name</TableColumn>
@@ -1201,7 +1282,7 @@ const ExecutiveDetailPage = () => {
                   </TableHeader>
                   <TableBody 
                     emptyContent="No registrations found" 
-                    items={registrations.slice(0, 10)}
+                    items={paginatedRegistrations}
                   >
                     {(reg) => (
                       <TableRow key={reg.id}>
@@ -1237,18 +1318,6 @@ const ExecutiveDetailPage = () => {
                     )}
                   </TableBody>
                 </Table>
-                {registrations.length > 10 && (
-                  <div className="flex justify-center p-4">
-                    <Button
-                      onClick={() => router.push(`/admin/registrations/executive/${executiveId}`)}
-                      variant="flat"
-                      color="primary"
-                      size="sm"
-                    >
-                      View All Registrations
-                    </Button>
-                  </div>
-                )}
               </CardBody>
             </Card>
           </div>
@@ -1374,7 +1443,7 @@ const ExecutiveDetailPage = () => {
             {/* Leads Table */}
             <Card className="shadow-sm">
               <CardHeader className="flex justify-between items-center">
-                <h4 className="font-bold text-large">Recent Leads</h4>
+                <h4 className="font-bold text-large">Leads</h4>
                 <Input 
                   placeholder="Search leads..." 
                   size="sm" 
@@ -1383,7 +1452,25 @@ const ExecutiveDetailPage = () => {
                 />
               </CardHeader>
               <CardBody className="p-0">
-                <Table aria-label="Leads table" isStriped>
+                <Table 
+                  aria-label="Leads table" 
+                  isStriped
+                  bottomContent={
+                    leadsPages > 0 ? (
+                      <div className="flex w-full justify-center my-2">
+                        <Pagination
+                          isCompact
+                          showControls
+                          showShadow
+                          color="primary"
+                          page={leadsPage}
+                          total={leadsPages}
+                          onChange={setLeadsPage}
+                        />
+                      </div>
+                    ) : null
+                  }
+                >
                   <TableHeader>
                     <TableColumn>ID</TableColumn>
                     <TableColumn>Client Name</TableColumn>
@@ -1393,7 +1480,7 @@ const ExecutiveDetailPage = () => {
                     <TableColumn>Type</TableColumn>
                     <TableColumn>Followup</TableColumn>
                   </TableHeader>
-                  <TableBody emptyContent="No leads found" items={leads.slice(0, 10)}>
+                  <TableBody emptyContent="No leads found" items={paginatedLeads}>
                     {(lead) => (
                       <TableRow key={lead.id}>
                         <TableCell>{lead.id}</TableCell>
@@ -1437,18 +1524,6 @@ const ExecutiveDetailPage = () => {
                     )}
                   </TableBody>
                 </Table>
-                {leads.length > 10 && (
-                  <div className="flex justify-center p-4">
-                    <Button
-                      onClick={() => router.push(`/admin/leads/executive/${executiveId}`)}
-                      variant="flat"
-                      color="primary"
-                      size="sm"
-                    >
-                      View All Leads
-                    </Button>
-                  </div>
-                )}
               </CardBody>
             </Card>
           </div>
@@ -1541,7 +1616,7 @@ const ExecutiveDetailPage = () => {
             {/* Journals Table */}
             <Card className="shadow-sm">
               <CardHeader className="flex justify-between items-center">
-                <h4 className="font-bold text-large">Recent Journals</h4>
+                <h4 className="font-bold text-large">Journals</h4>
                 <Input 
                   placeholder="Search journals..." 
                   size="sm" 
@@ -1550,7 +1625,25 @@ const ExecutiveDetailPage = () => {
                 />
               </CardHeader>
               <CardBody className="p-0">
-                <Table aria-label="Journals table" isStriped>
+                <Table 
+                  aria-label="Journals table" 
+                  isStriped
+                  bottomContent={
+                    journalsPages > 0 ? (
+                      <div className="flex w-full justify-center my-2">
+                        <Pagination
+                          isCompact
+                          showControls
+                          showShadow
+                          color="primary"
+                          page={journalsPage}
+                          total={journalsPages}
+                          onChange={setJournalsPage}
+                        />
+                      </div>
+                    ) : null
+                  }
+                >
                   <TableHeader>
                     <TableColumn>ID</TableColumn>
                     <TableColumn>Client Name</TableColumn>
@@ -1559,7 +1652,10 @@ const ExecutiveDetailPage = () => {
                     <TableColumn>Status</TableColumn>
                     <TableColumn>Date</TableColumn>
                   </TableHeader>
-                  <TableBody emptyContent="No journals found" items={journals.filter(j => j.is_private === true).slice(0, 10)}>
+                  <TableBody 
+                    emptyContent="No journals found" 
+                    items={paginatedJournals}
+                  >
                     {(journal) => (
                       <TableRow key={journal.id}>
                         <TableCell>{journal.id}</TableCell>
@@ -1598,18 +1694,6 @@ const ExecutiveDetailPage = () => {
                     )}
                   </TableBody>
                 </Table>
-                {journals.filter(j => j.is_private === true).length > 10 && (
-                  <div className="flex justify-center p-4">
-                    <Button
-                      onClick={() => router.push(`/admin/journals/executive/${executiveId}`)}
-                      variant="flat"
-                      color="primary"
-                      size="sm"
-                    >
-                      View All Journals
-                    </Button>
-                  </div>
-                )}
               </CardBody>
             </Card>
           </div>
