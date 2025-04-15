@@ -26,6 +26,7 @@ import {
     Select,
     SelectItem
 } from "@heroui/react";
+import { Search } from "lucide-react"; // Add this import for the search icon
 import { toast } from 'react-toastify';
 import api, { Executive,ExecutiveWithRoleName, Role } from '@/services/api';
 import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
@@ -60,6 +61,7 @@ const ExecutivesPage: React.FC = () => {
     const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
     const [selectedRolePermissions, setSelectedRolePermissions] = React.useState<any[]>([]);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [searchQuery, setSearchQuery] = React.useState('');
 
     const formatDate = (dateString: string) => {
         try {
@@ -236,6 +238,22 @@ const ExecutivesPage: React.FC = () => {
         return role.name; // Only show role name when selected
     };
 
+    // Add filtered executives based on search query
+    const filteredExecutives = React.useMemo(() => {
+        if (!searchQuery.trim()) return executives;
+        
+        return executives.filter(exec => 
+            exec.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            exec.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            exec.role_details.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            exec.role_details.entity_type.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [executives, searchQuery]);
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+    };
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-[50vh]">
@@ -259,6 +277,25 @@ const ExecutivesPage: React.FC = () => {
                     )}
                 </CardHeader>
                 <CardBody>
+                    {/* Add search input */}
+                    <div className="mb-4 w-2/3 lg:w-1/2 xl:w-1/4">
+                        <Input
+                            type="text"
+                            placeholder="Search by username, email, or role..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            startContent={<Search className="text-default-300" size={18} />}
+                            onClear={() => setSearchQuery('')}
+                        />
+                    </div>
+                    
+                    {/* Show search results count when filtering */}
+                    {searchQuery.trim() && (
+                        <div className="mb-2 text-sm text-default-500">
+                            Found {filteredExecutives.length} {filteredExecutives.length === 1 ? 'result' : 'results'}
+                        </div>
+                    )}
+                    
                     <Table 
                         aria-label="Executives table"
                         selectionMode="none"
@@ -276,7 +313,7 @@ const ExecutivesPage: React.FC = () => {
                             <TableColumn>JOINED</TableColumn>
                         </TableHeader>
                         <TableBody emptyContent="No executives found">
-                            {executives.map((executive) => (
+                            {filteredExecutives.map((executive) => (
                                 <TableRow 
                                     key={executive.id} 
                                     onClick={() => handleRowClick(executive)}

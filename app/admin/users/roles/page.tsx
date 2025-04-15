@@ -22,15 +22,16 @@ import {
   Textarea,
   useDisclosure,
   Select,
-  SelectItem,  // Add this import
+  SelectItem,
   Checkbox
 } from "@heroui/react";
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Search } from "lucide-react";
 import { toast } from 'react-toastify';
 import { WithAdminAuth } from '@/components/withAdminAuth';
 import api, { Role, CreateRoleRequest, Permission } from '@/services/api';
-import {PERMISSIONS } from '@/utils/permissions';
-// Update the RoleFormData interface
+import { PERMISSIONS } from '@/utils/permissions';
+
 interface RoleFormData {
   name: string;
   description: string;
@@ -56,6 +57,7 @@ function RolesPage() {
     const [selectedPermissions, setSelectedPermissions] = React.useState<number[]>([]);
     const [previousEntityType, setPreviousEntityType] = React.useState<string>('');
     const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+    const [searchQuery, setSearchQuery] = React.useState('');
     
     React.useEffect(() => {
         const checkUserRole = () => {
@@ -300,15 +302,26 @@ function RolesPage() {
         }
     };
 
-    // Fix the canModifyRole function to correctly handle SuperAdmin permissions
     const canModifyRole = (role: Role) => {
-        // SuperAdmin can modify any role except other SupAdmin roles
         if (isSuperAdmin) {
             return role.entity_type !== 'SupAdmin';
         }
         
-        // Regular admins can't modify SupAdmin or Admin roles
         return role.entity_type !== 'SupAdmin' && role.entity_type !== 'Admin';
+    };
+
+    const filteredRoles = React.useMemo(() => {
+        if (!searchQuery.trim()) return roles;
+        
+        return roles.filter(role => 
+            role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            role.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            role.entity_type.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [roles, searchQuery]);
+    
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
     };
 
     const renderCreateRoleModal = () => (
@@ -484,7 +497,7 @@ function RolesPage() {
                     <Button
                         color="primary"
                         endContent={<PlusIcon className="w-4 h-4" />}
-                        onClick={handleCreateClick}  // Changed from onOpen to handleCreateClick
+                        onClick={handleCreateClick}
                     >
                         Add Role
                     </Button>
@@ -495,91 +508,110 @@ function RolesPage() {
                             <Spinner size="lg" />
                         </div>
                     ) : (
-                        <Table aria-label="Roles table">
-                            <TableHeader>
-                                <TableColumn>ROLE NAME</TableColumn>
-                                <TableColumn>ENTITY TYPE</TableColumn>
-                                <TableColumn>PERMISSIONS</TableColumn>
-                                <TableColumn>CREATED</TableColumn>
-                                <TableColumn>ACTIONS</TableColumn>
-                            </TableHeader>
-                            <TableBody>
-                                {roles.map((role) => (
-                                    <TableRow 
-                                        key={role.id} 
-                                        className={
-                                            role.entity_type === 'SupAdmin' ? "bg-rose-50 dark:bg-rose-900/20" :
-                                            role.entity_type === 'Admin' ? "bg-blue-50 dark:bg-blue-900/20" : 
-                                            ""
-                                        }
-                                    >
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className={`text-bold ${
-                                                    role.entity_type === 'SupAdmin' ? "font-bold text-danger" : 
-                                                    role.entity_type === 'Admin' ? "font-semibold text-primary" : 
-                                                    ""
-                                                }`}>
-                                                    {role.name}
-                                                </span>
-                                                <span className="text-xs text-gray-500">{role.description}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                variant={
-                                                    role.entity_type === 'SupAdmin' || role.entity_type === 'Admin' ? "solid" : "flat"
-                                                }
-                                                color={
-                                                    role.entity_type === 'Admin' ? 'primary' :
-                                                    role.entity_type === 'Editor' ? 'warning' : 
-                                                    role.entity_type === 'Executive' ? 'success' :
-                                                    role.entity_type === 'Author' ? 'secondary' :
-                                                    role.entity_type === 'SupAdmin' ? 'danger' : 
-                                                    'default'
-                                                }
-                                                size="sm"
-                                            >
-                                                {role.entity_type === 'SupAdmin' ? "Super Admin" : role.entity_type}
-                                            </Chip>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {renderRolePermissions(role)}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDateTime(role.created_at)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    isIconOnly
+                        <>
+                            <div className="mb-4 w-2/3 lg:w-1/2 xl:w-1/4">
+                                <Input
+                                    type="text"
+                                    placeholder="Search by name, description, or entity type..."
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    startContent={<Search className="text-default-300" size={18} />}
+                                    onClear={() => setSearchQuery('')}
+                                />
+                            </div>
+                            
+                            {searchQuery.trim() && (
+                                <div className="mb-2 text-sm text-default-500">
+                                    Found {filteredRoles.length} {filteredRoles.length === 1 ? 'result' : 'results'}
+                                </div>
+                            )}
+                            
+                            <Table aria-label="Roles table">
+                                <TableHeader>
+                                    <TableColumn>ROLE NAME</TableColumn>
+                                    <TableColumn>ENTITY TYPE</TableColumn>
+                                    <TableColumn>PERMISSIONS</TableColumn>
+                                    <TableColumn>CREATED</TableColumn>
+                                    <TableColumn>ACTIONS</TableColumn>
+                                </TableHeader>
+                                <TableBody emptyContent="No roles found">
+                                    {filteredRoles.map((role) => (
+                                        <TableRow 
+                                            key={role.id} 
+                                            className={
+                                                role.entity_type === 'SupAdmin' ? "bg-rose-50 dark:bg-rose-900/20" :
+                                                role.entity_type === 'Admin' ? "bg-blue-50 dark:bg-blue-900/20" : 
+                                                ""
+                                            }
+                                        >
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className={`text-bold ${
+                                                        role.entity_type === 'SupAdmin' ? "font-bold text-danger" : 
+                                                        role.entity_type === 'Admin' ? "font-semibold text-primary" : 
+                                                        ""
+                                                    }`}>
+                                                        {role.name}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">{role.description}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    variant={
+                                                        role.entity_type === 'SupAdmin' || role.entity_type === 'Admin' ? "solid" : "flat"
+                                                    }
+                                                    color={
+                                                        role.entity_type === 'Admin' ? 'primary' :
+                                                        role.entity_type === 'Editor' ? 'warning' : 
+                                                        role.entity_type === 'Executive' ? 'success' :
+                                                        role.entity_type === 'Author' ? 'secondary' :
+                                                        role.entity_type === 'SupAdmin' ? 'danger' : 
+                                                        'default'
+                                                    }
                                                     size="sm"
-                                                    variant="light"
-                                                    onClick={() => handleEditClick(role)}
-                                                    isDisabled={!canModifyRole(role)}
-                                                    className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
-                                                    <PencilIcon className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    isIconOnly
-                                                    size="sm"
-                                                    color="danger"
-                                                    variant="light"
-                                                    onClick={() => handleDeleteClick(role)}
-                                                    isDisabled={!canModifyRole(role)}
-                                                    className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
-                                                >
-                                                    <TrashIcon className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                                    {role.entity_type === 'SupAdmin' ? "Super Admin" : role.entity_type}
+                                                </Chip>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {renderRolePermissions(role)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatDateTime(role.created_at)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        isIconOnly
+                                                        size="sm"
+                                                        variant="light"
+                                                        onClick={() => handleEditClick(role)}
+                                                        isDisabled={!canModifyRole(role)}
+                                                        className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
+                                                    >
+                                                        <PencilIcon className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        isIconOnly
+                                                        size="sm"
+                                                        color="danger"
+                                                        variant="light"
+                                                        onClick={() => handleDeleteClick(role)}
+                                                        isDisabled={!canModifyRole(role)}
+                                                        className={!canModifyRole(role) ? "opacity-50 cursor-not-allowed" : ""}
+                                                    >
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </>
                     )}
                 </CardBody>
             </Card>
@@ -616,5 +648,4 @@ function RolesPage() {
     );
 }
 
-// Update the export to use the SHOW_ROLES permission
 export default WithAdminAuth(RolesPage, PERMISSIONS.SHOW_ROLES);
