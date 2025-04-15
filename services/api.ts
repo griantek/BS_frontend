@@ -1135,6 +1135,79 @@ interface SystemEfficiency {
     optimizationRecommendations: any[];
 }
 
+// Add new interface for dashboard data response
+interface DashboardData {
+  entityCounts: {
+    total: number;
+    executive: number;
+    editor: number;
+    author: number;
+    admin: number;
+    other: number;
+  };
+  contentMetrics: {
+    prospectus: number;
+    registrations: number;
+    journals: number;
+    leads: number;
+  };
+  financialMetrics: {
+    totalRevenue: number;
+    averageTransactionValue: number;
+    pendingAmount: number;
+    recentTransactions: Array<{
+      id: number; 
+      transaction_type: string; 
+      amount: number; 
+      transaction_date: string; 
+      entities: {
+        id: string;
+        username: string;
+      };
+    }>;
+  };
+  recentActivities: {
+    recentExecutives: Array<{
+      id: string; 
+      username: string; 
+      role_details: {
+        name: string; 
+        entity_type: string;
+      }; 
+      created_at: string;
+    }>;
+    recentServices: Array<{
+      id: number; 
+      service_name: string; 
+      fee: number;
+    }>;
+  };
+  journalMetrics: {
+    total: number;
+    statusDistribution: {
+      pending: number;
+      under_review: number;
+      approved: number;
+      rejected: number;
+      submitted: number;
+    };
+  };
+  serviceMetrics: {
+    total: number;
+    topServices: Array<{
+      service_name: string; 
+      count: number;
+    }>;
+  };
+}
+
+// Add new interface for dashboard data response
+interface DashboardDataResponse {
+  success: boolean;
+  data: DashboardData;
+  timestamp: string;
+}
+
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
@@ -2622,6 +2695,23 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add new method to get dashboard data
+    async getDashboardData(): Promise<DashboardDataResponse> {
+        try {
+            const response = await this.axiosInstance.get('/admin/dashboard');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching dashboard data:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
@@ -2689,5 +2779,7 @@ export type {
     EntityWorkload,
     ClientAcquisition,
     SystemEfficiency,
+    DashboardData,
+    DashboardDataResponse,
 };
 export default api;
