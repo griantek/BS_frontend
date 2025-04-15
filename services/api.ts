@@ -457,6 +457,7 @@ interface JournalData {
   paper_title: string;
   created_at: string;
   updated_at: string;
+  is_private: boolean;
   entities: {
     id: string;
     email: string;
@@ -1035,6 +1036,103 @@ interface CombinedDataResponse {
   success: boolean;
   data: CombinedRegistrationData;
   timestamp: string;
+}
+
+// Add new interfaces for analytics endpoints
+interface EntityPerformance {
+    entity: {
+        id: string;
+        username: string;
+        email: string;
+        role: string;
+        entityType: string;
+    };
+    performanceMetrics: {
+        productivity: any;
+        quality: any;
+        efficiency: any;
+        financialContribution: any;
+    };
+    historicalTrends?: any[];
+    teamComparison?: any;
+    summary: {
+        overallPerformanceScore: number;
+        performanceRating: string;
+        keyStrengths: string[];
+        improvementAreas: string[];
+        trendDirection: string;
+    };
+    improvementSuggestions: Array<{
+        area: string;
+        suggestion: string;
+        expectedImpact: string;
+    }>;
+}
+
+interface EntityRevenue {
+    revenueByPeriod: {
+        period: string;
+        revenue: number;
+    }[];
+    metrics: {
+        totalRevenue: number;
+        averageRevenue: number;
+        growthTrend: number;
+    };
+    serviceRevenue: {
+        service_id: number;
+        service_name: string;
+        revenue: number;
+        count: number;
+        percentageOfTotal: number;
+    }[];
+    entities: any[];
+}
+
+interface EntityWorkload {
+    currentAssignments: {
+        type: string;
+        id: number;
+        client_name: string;
+        status: string;
+        deadline: string;
+        priority: string;
+    }[];
+    workloadMetrics: {
+        activeAssignmentsCount: number;
+        completedLast30Days: number;
+        upcomingDeadlines: number;
+        workloadStatus: string;
+        capacityUtilization: number;
+    };
+    timeManagement: {
+        avgCompletionTime: number;
+        onTimeCompletionRate: number;
+        avgResponseTime: number;
+    };
+}
+
+interface ClientAcquisition {
+    totalClients: number;
+    activeClients: number;
+    repeatClients: number;
+    clientSatisfaction: number;
+    topClients: {
+        client_name: string;
+        revenue: number;
+        services_count: number;
+    }[];
+    clientRetentionRate: number;
+    avgClientLifetimeValue: number;
+}
+
+interface SystemEfficiency {
+    overallSystemMetrics: any;
+    efficiencyTrends: any[];
+    bottleneckAnalysis: any;
+    resourceAllocationAnalysis: any;
+    summary: any;
+    optimizationRecommendations: any[];
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1852,6 +1950,17 @@ const api = {
         }
     },
 
+    // Add this new method under the leads endpoints section
+    async getLeadsByCreator(creatorId: string): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/creator/${creatorId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching leads by creator:', error);
+            throw this.handleError(error);
+        }
+    },
+
     // Update the createClient method to handle null passwords
     async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
@@ -2447,6 +2556,72 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add these new methods for analytics
+    
+    async getEntityPerformance(entityId: string): Promise<ApiResponse<EntityPerformance>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-scorecard/${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity performance:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getEntityRevenue(entityId: string, period?: string): Promise<ApiResponse<EntityRevenue>> {
+        try {
+            const queryParams = new URLSearchParams();
+            queryParams.append('entityId', entityId);
+            if (period) queryParams.append('period', period);
+            
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-revenue?${queryParams.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity revenue:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getEntityWorkload(entityId: string): Promise<ApiResponse<EntityWorkload>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-workload?entityId=${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity workload:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientAcquisitionMetrics(entityId: string): Promise<ApiResponse<ClientAcquisition>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/client-acquisition?entityId=${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client acquisition metrics:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getSystemEfficiency(): Promise<ApiResponse<SystemEfficiency>> {
+        try {
+            const response = await this.axiosInstance.get('/admin/analytics/system-efficiency');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching system efficiency:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getResourceAllocationSuggestions(taskType: string, taskId: string): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/resource-allocation?taskType=${taskType}&taskId=${taskId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching resource allocation suggestions:', error);
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
@@ -2509,5 +2684,10 @@ export type {
     CombinedRegistrationData,
     CombinedDataResponse,
     JournalDataByPersonalEmail,
+    EntityPerformance,
+    EntityRevenue,
+    EntityWorkload,
+    ClientAcquisition,
+    SystemEfficiency,
 };
 export default api;
