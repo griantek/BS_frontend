@@ -252,16 +252,17 @@ const ExecutivesPage: React.FC = () => {
                     >
                         <TableHeader>
                             <TableColumn>
-                                <div
-                                    className="flex items-center cursor-pointer"
+                                <button
+                                    className="flex items-center bg-transparent border-none p-0 text-inherit cursor-pointer"
                                     onClick={toggleSortDirection}
+                                    aria-label={`Sort by username ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
                                 >
                                     USERNAME
                                     {sortDirection === 'asc' ?
                                         <ChevronDown className="ml-1 h-4 w-4" /> :
                                         <ChevronUp className="ml-1 h-4 w-4" />
                                     }
-                                </div>
+                                </button>
                             </TableColumn>
                             <TableColumn>EMAIL</TableColumn>
                             <TableColumn>ROLE</TableColumn>
