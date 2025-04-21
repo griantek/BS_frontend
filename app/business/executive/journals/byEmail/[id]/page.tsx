@@ -13,7 +13,6 @@ import {
   Accordion,
   AccordionItem
 } from "@heroui/react";
-import { withEditorAuth } from "@/components/withEditorAuth";
 import api, { JournalData } from "@/services/api";
 import { toast } from "react-toastify";
 import {
@@ -22,12 +21,9 @@ import {
   DocumentTextIcon,
   ClockIcon,
   ArrowPathIcon,
-  PencilIcon,
-  TrashIcon,
   ArrowDownTrayIcon
 } from "@heroicons/react/24/outline";
 import { formatDistanceToNow } from "date-fns";
-import { currentUserHasPermission, PERMISSIONS } from "@/utils/permissions";
 import Image from "next/image";
 import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 
@@ -36,18 +32,12 @@ function JournalByEmailContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const [journals, setJournals] = useState<JournalData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [canEdit, setCanEdit] = useState(false);
-  const [canUpdateScreenshot, setCanUpdateScreenshot] = useState(false);
   const [refreshingJournals, setRefreshingJournals] = useState<Record<number, boolean>>({});
   
   // Decode the email from URL parameter
   const email = decodeURIComponent(id);
 
   useEffect(() => {
-    // Check permissions
-    setCanEdit(currentUserHasPermission(PERMISSIONS.SHOW_EDIT_BUTTON_EDITOR));
-    setCanUpdateScreenshot(currentUserHasPermission(PERMISSIONS.SHOW_UPDATE_SCREENSHOT_BUTTON));
-    
     const fetchJournalsByEmail = async () => {
       try {
         setIsLoading(true);
@@ -85,17 +75,12 @@ function JournalByEmailContent({ id }: { id: string }) {
 
   // Handle back navigation - go back to journals with the email tab selected
   const handleBack = () => {
-    router.push("/business/executive/journals/byEmail");
+    router.push("/business/executive/journals?view=byEmail");
   };
 
   // Navigate to the full journal view
   const handleViewJournal = (journalId: number) => {
-    router.push(`/business/executive/view/journal/${journalId}`);
-  };
-
-  // Edit a journal
-  const handleEditJournal = (journalId: number) => {
-    router.push(`/business/executive/edit/journal/${journalId}`);
+    router.push(`/business/executive/journals/${journalId}`);
   };
 
   // Refresh status screenshot for a journal
@@ -244,16 +229,6 @@ function JournalByEmailContent({ id }: { id: string }) {
                       >
                         <EyeIcon className="h-4 w-4" />
                       </Button>
-                      {canEdit && (
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onClick={() => handleEditJournal(journal.id)}
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -309,17 +284,6 @@ function JournalByEmailContent({ id }: { id: string }) {
                           <h3 className="text-sm text-gray-500">Paper Title</h3>
                           <p className="font-medium">{journal.paper_title}</p>
                         </div>
-                        <div>
-                          <h3 className="text-sm text-gray-500">Journal Link</h3>
-                          <a
-                            href={journal.journal_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            Visit Journal
-                          </a>
-                        </div>
                       </CardBody>
                     </Card>
                   </div>
@@ -335,8 +299,8 @@ function JournalByEmailContent({ id }: { id: string }) {
                     </CardBody>
                   </Card>
 
-                  {/* Journal Screenshot Section */}
-                  {canUpdateScreenshot && journal.journal_link && journal.username && journal.password && (
+                  {/* Journal Screenshot Section - Always show with refresh functionality */}
+                  {journal.journal_link && journal.username && journal.password && (
                     <Card className="w-full mt-6">
                       <CardHeader className="flex justify-between items-center">
                         <p className="text-md font-semibold">Journal Status Screenshot</p>
@@ -354,18 +318,20 @@ function JournalByEmailContent({ id }: { id: string }) {
                           >
                             <ArrowDownTrayIcon className="h-5 w-5" />
                           </Button>
-                          {/* Refresh button */}
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            onClick={() => handleRefreshStatus(journal)}
-                            isLoading={refreshingJournals[journal.id]}
-                          >
-                            <ArrowPathIcon
-                              className={`h-5 w-5 ${refreshingJournals[journal.id] ? "animate-spin" : ""}`}
-                            />
-                          </Button>
+                          {/* Refresh button - Always available for executives */}
+                          <Tooltip content="Refresh screenshot">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onClick={() => handleRefreshStatus(journal)}
+                              isLoading={refreshingJournals[journal.id]}
+                            >
+                              <ArrowPathIcon
+                                className={`h-5 w-5 ${refreshingJournals[journal.id] ? "animate-spin" : ""}`}
+                              />
+                            </Button>
+                          </Tooltip>
                         </div>
                       </CardHeader>
                       <Divider />
@@ -382,7 +348,19 @@ function JournalByEmailContent({ id }: { id: string }) {
                               />
                             </div>
                           ) : (
-                            <div className="text-gray-500 p-4">No screenshot available. Click refresh to generate one.</div>
+                            <div className="text-center">
+                              <div className="text-gray-500 mb-4">No screenshot available</div>
+                              {/* Added Generate Screenshot button when no screenshot is present */}
+                              {/* <Button
+                                color="primary"
+                                variant="flat"
+                                startContent={<ArrowPathIcon className="h-5 w-5" />}
+                                onClick={() => handleRefreshStatus(journal)}
+                                isLoading={refreshingJournals[journal.id]}
+                              >
+                                Generate Screenshot
+                              </Button> */}
+                            </div>
                           )}
                         </div>
                       </CardBody>
