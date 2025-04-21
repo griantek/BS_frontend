@@ -398,7 +398,7 @@ function JournalContent({ id }: { id: string }) {
                 <h3 className="text-sm text-gray-500">Paper Title</h3>
                 <p className="font-medium">{journal.paper_title}</p>
               </div>
-              <div>
+              {/* <div>
                 <h3 className="text-sm text-gray-500">Journal Link</h3>
                 <a
                   href={journal.journal_link}
@@ -408,7 +408,7 @@ function JournalContent({ id }: { id: string }) {
                 >
                   Visit Journal
                 </a>
-              </div>
+              </div> */}
             </CardBody>
           </Card>
 
