@@ -212,6 +212,7 @@ function RegistrationPage() {
     { key: "reg_id", label: "REG ID" },
     { key: "client", label: "CLIENT" },
     { key: "services", label: "SERVICES" },
+    { key: "requirement", label: "REQUIREMENT" }, // Add new column for requirement
     { key: "amounts", label: "AMOUNT" },
     { key: "payment", label: "PAYMENT" },
     { key: "status", label: "STATUS" },
@@ -509,6 +510,11 @@ function RegistrationPage() {
                       </div>
                     </TableCell>
                     <TableCell>{registration.services}</TableCell>
+                    <TableCell>
+                      <div className="line-clamp-2 text-sm">
+                        {registration.leads?.requirement || registration.prospectus?.requirement || "-"}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <AmountTooltip
                         initial={registration.init_amount}

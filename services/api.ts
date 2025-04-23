@@ -249,6 +249,28 @@ interface Registration {
     username: string;
     email: string;
   };
+  leads: {
+    id: number;
+    date: string;
+    leadSource: string;
+    clientName: string;
+    phoneNumber: string;
+    domain: string;
+    researchArea: string | null;
+    title: string | null;
+    degree: string | null;
+    university: string | null;
+    state: string;
+    country: string;
+    requirement: string;
+    detailedRequirement: string;
+    prospectusType: string;
+    followupDate: string;
+    remarks: string;
+    followupStatus: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 // Add interface for registration creation
