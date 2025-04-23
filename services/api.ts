@@ -201,6 +201,7 @@ interface Registration {
   transaction_id: number;  // Added
   notes?: string;
   client_id:string;
+  registration_date:string;
   service_and_prices?: Record<string, number>;
   prospectus: {
     id: number;
