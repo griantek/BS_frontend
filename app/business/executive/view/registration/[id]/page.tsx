@@ -25,28 +25,101 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import api from "@/services/api";
 import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import { useForm } from "react-hook-form";
-import type {
-  Registration,
-  BankAccount,
-  TransactionInfo,
-  Editor,
-} from "@/services/api";
+import type { BankAccount, TransactionInfo, Editor } from "@/services/api";
 import {
   hasPermission,
   PERMISSIONS,
   UserWithPermissions,
 } from "@/utils/permissions";
 
-interface ExtendedRegistration extends Registration {
+// Replace the ExtendedRegistration interface to make it standalone instead of extending Registration
+interface ExtendedRegistration {
+  id: number;
+  prospectus_id: number;
   date: string;
+  services: string;
+  init_amount: number;
+  accept_amount: number;
+  discount: number;
+  total_amount: number;
+  accept_period: string;
+  pub_period: string;
+  bank_id: string;
+  status: string;
+  month: number;
+  year: number;
+  created_at: string;
+  transaction_id: number;
   notes?: string;
+  updated_at: string;
+  assigned_to: string;
+  registered_by: string;
+  client_id: string;
+  admin_assigned: boolean;
+  journal_added: boolean;
+  author_status: string;
+  file_path: string | null;
+  author_comments: string | null;
+  service_and_prices?: Record<string, number>;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  registration_date: string;
+  final_payment: string | null;
+  prospectus: {
+    id: number;
+    date: string;
+    email: string;
+    notes: string;
+    phone: string;
+    state: string;
+    reg_id: string;
+    leads_id: number;
+    services: string;
+    entity_id: string; // This is the actual property in the API response (not executive_id)
+    created_at: string;
+    deleted_at: null;
+    department: string;
+    is_deleted: boolean;
+    updated_at: string;
+    client_name: string;
+    requirement: string;
+    tech_person: string;
+    isregistered: boolean;
+    next_follow_up: string;
+    proposed_service_period: string;
+    leads?: {
+      id: number;
+      date: string;
+      state: string;
+      title: string | null;
+      degree: string | null;
+      domain: string;
+      country: string;
+      remarks: string;
+      attended: boolean;
+      created_at: string;
+      created_by: string;
+      university: string | null;
+      updated_at: string;
+      assigned_to: string;
+      client_name: string;
+      lead_source: string;
+      requirement: string;
+      phone_number: string;
+      followup_date: string;
+      research_area: string | null;
+      followup_status: string;
+      prospectus_type: string;
+      detailed_requirement: string;
+    };
+  };
   bank_accounts: {
     id: string;
     bank: string;
     branch: string;
     upi_id: string;
     ifsc_code: string;
-    created_at: string; // Add this property
+    created_at: string;
     account_name: string;
     account_type: string;
     account_number: string;
@@ -56,7 +129,7 @@ interface ExtendedRegistration extends Registration {
     id: number;
     amount: number;
     entity_id: string;
-    executive: object; // Add this property
+    executive: object;
     transaction_id: string;
     transaction_date: string;
     transaction_type: string;
@@ -246,13 +319,15 @@ function RegistrationContent({ regId }: { regId: string }) {
             api.getAllBankAccounts(),
             api.getAllEditors(),
           ]);
-        setRegistrationData(registrationResponse.data as ExtendedRegistration);
+        
+        // Use a type assertion with unknown as an intermediate step
+        setRegistrationData(registrationResponse.data as unknown as ExtendedRegistration);
         setBankAccounts(bankResponse.data);
         setEditors(editorsResponse.data);
       } catch (error) {
         console.error("Error fetching registration:", error);
         toast.error("Failed to load registration data");
-        router.push("/busines/executives");
+        // router.push("/business/executives");
       } finally {
         setIsLoading(false);
       }
@@ -514,6 +589,7 @@ function RegistrationContent({ regId }: { regId: string }) {
       </Button>
 
       <div className="w-full p-6 space-y-6">
+
         {/* Header with status and actions */}
         <Card className="w-full">
           <CardHeader className="flex justify-between items-center px-6 py-4">
@@ -525,16 +601,6 @@ function RegistrationContent({ regId }: { regId: string }) {
             </div>
             <div className="flex gap-3">
               {/* Check both registration status and permission */}
-              {/* {registrationData.status === "pending" &&
-                permissions.canApproveRegistration && (
-                  <Button
-                    color="success"
-                    variant="flat"
-                    onPress={onPaymentModalOpen}
-                  >
-                    Approve Registration
-                  </Button>
-                )} */}
               {permissions.canEditRegistration && (
                 <Button
                   color="primary"
@@ -548,15 +614,6 @@ function RegistrationContent({ regId }: { regId: string }) {
                   Edit Registration
                 </Button>
               )}
-              {/* {permissions.canDeleteRegistration && (
-                <Button
-                  color="danger"
-                  variant="flat"
-                  onPress={onDeleteModalOpen}
-                >
-                  Delete Registration
-                </Button>
-              )} */}
             </div>
           </CardHeader>
         </Card>
@@ -643,9 +700,18 @@ function RegistrationContent({ regId }: { regId: string }) {
                   label="Month/Year"
                   value={`${registrationData.month}/${registrationData.year}`}
                 />
+                
+              {/* Lead Requirement (if available) */}
+              {registrationData.prospectus.leads?.requirement && (
+                <InfoField
+                  label="Requirement"
+                  value={registrationData.prospectus.leads.requirement}
+                />
+              )}
               </div>
             </CardBody>
           </Card>
+
 
           {/* Enhanced Combined Financial Information */}
           <Card className="w-full md:col-span-2">
