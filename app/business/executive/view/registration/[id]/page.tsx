@@ -32,7 +32,7 @@ import {
   UserWithPermissions,
 } from "@/utils/permissions";
 
-// Replace the ExtendedRegistration interface to make it standalone instead of extending Registration
+// Replace the ExtendedRegistration interface to include the new payment fields
 interface ExtendedRegistration {
   id: number;
   prospectus_id: number;
@@ -64,7 +64,10 @@ interface ExtendedRegistration {
   is_deleted: boolean;
   deleted_at: string | null;
   registration_date: string;
-  final_payment: string | null;
+  is_secondary_payment_done: boolean;
+  is_final_payment_done: boolean;
+  secondary_payment: number | null;
+  final_payment: number | null;
   prospectus: {
     id: number;
     date: string;
@@ -186,6 +189,40 @@ const calculateBalanceAmount = (
   return Math.max(0, totalAmount - paidAmount);
 };
 
+// Add a helper function to determine the payment status based on the requirement type
+const getPaymentStatus = (registration: ExtendedRegistration) => {
+  const requirement =
+    registration.prospectus?.leads?.requirement?.toLowerCase() || "";
+
+  // Paper writing requirement
+  if (requirement.includes("paper writing")) {
+    if (
+      registration.journal_added &&
+      registration.author_status === "completed"
+    ) {
+      return registration.is_secondary_payment_done
+        ? { stage: "complete", label: "Manuscript Payment Complete" }
+        : { stage: "pending", label: "Manuscript Payment Pending" };
+    } else if (registration.journal_added) {
+      return { stage: "in-progress", label: "Manuscript In Progress" };
+    }
+    return { stage: "not-started", label: "Manuscript Not Started" };
+  }
+
+  // Publication requirement
+  if (requirement.includes("publication")) {
+    if (registration.journal_added) {
+      return registration.is_final_payment_done
+        ? { stage: "complete", label: "Publication Payment Complete" }
+        : { stage: "pending", label: "Publication Payment Pending" };
+    }
+    return { stage: "not-started", label: "Publication Not Started" };
+  }
+
+  // Default case
+  return { stage: "unknown", label: "Status Unknown" };
+};
+
 // Add a helper component to display payment status with balance
 const PaymentStatusDisplay = ({
   status,
@@ -239,6 +276,114 @@ const PaymentStatusDisplay = ({
           <div className="text-xs">
             Paid: ₹{paidAmount.toLocaleString()} of ₹
             {totalAmount.toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Add a component to display project status
+const ProjectStatusDisplay = ({
+  registration,
+}: {
+  registration: ExtendedRegistration;
+}) => {
+  const requirement =
+    registration.prospectus?.leads?.requirement?.toLowerCase() || "";
+  const hasManuscriptRequirement = requirement.includes("paper writing");
+  const hasPublicationRequirement = requirement.includes("publication");
+
+  return (
+    <div className="space-y-4">
+      {hasManuscriptRequirement && (
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <h3 className="text-md font-semibold mb-2">Manuscript Status</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <Chip
+                color={
+                  registration.author_status === "completed"
+                    ? "success"
+                    : registration.author_status === "in progress"
+                    ? "warning"
+                    : "default"
+                }
+                variant="flat"
+              >
+                {registration.author_status === "completed"
+                  ? "Completed"
+                  : registration.author_status === "in progress"
+                  ? "In Progress"
+                  : "Not Started"}
+              </Chip>
+              {registration.author_status === "completed" && (
+                <Chip
+                  className="ml-2"
+                  color={
+                    registration.is_secondary_payment_done ? "success" : "danger"
+                  }
+                  variant="flat"
+                >
+                  {registration.is_secondary_payment_done
+                    ? "Paid"
+                    : "Payment Due"}
+                </Chip>
+              )}
+            </div>
+            {registration.author_status === "completed" &&
+              !registration.is_secondary_payment_done && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => {
+                    /* Handle manuscript payment */
+                  }}
+                >
+                  Process Manuscript Payment
+                </Button>
+              )}
+          </div>
+        </div>
+      )}
+
+      {hasPublicationRequirement && (
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <h3 className="text-md font-semibold mb-2">Publication Status</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <Chip
+                color={registration.journal_added ? "success" : "default"}
+                variant="flat"
+              >
+                {registration.journal_added ? "Published" : "Not Published"}
+              </Chip>
+              {registration.journal_added && (
+                <Chip
+                  className="ml-2"
+                  color={
+                    registration.is_final_payment_done ? "success" : "danger"
+                  }
+                  variant="flat"
+                >
+                  {registration.is_final_payment_done
+                    ? "Paid"
+                    : "Payment Due"}
+                </Chip>
+              )}
+            </div>
+            {registration.journal_added &&
+              !registration.is_final_payment_done && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => {
+                    /* Handle publication payment */
+                  }}
+                >
+                  Process Publication Payment
+                </Button>
+              )}
           </div>
         </div>
       )}
@@ -319,9 +464,11 @@ function RegistrationContent({ regId }: { regId: string }) {
             api.getAllBankAccounts(),
             api.getAllEditors(),
           ]);
-        
+
         // Use a type assertion with unknown as an intermediate step
-        setRegistrationData(registrationResponse.data as unknown as ExtendedRegistration);
+        setRegistrationData(
+          registrationResponse.data as unknown as ExtendedRegistration
+        );
         setBankAccounts(bankResponse.data);
         setEditors(editorsResponse.data);
       } catch (error) {
@@ -582,14 +729,15 @@ function RegistrationContent({ regId }: { regId: string }) {
       <Button
         variant="light"
         className=" left-4 z-[1000] shadow-md flex items-center gap-2"
-        onClick={() => router.push('/business/executive/records/registration')}
+        onClick={() =>
+          router.push("/business/executive/records/registration")
+        }
         startContent={<ArrowLeftIcon className="h-5 w-5" />}
       >
         Back
       </Button>
 
       <div className="w-full p-6 space-y-6">
-
         {/* Header with status and actions */}
         <Card className="w-full">
           <CardHeader className="flex justify-between items-center px-6 py-4">
@@ -700,18 +848,28 @@ function RegistrationContent({ regId }: { regId: string }) {
                   label="Month/Year"
                   value={`${registrationData.month}/${registrationData.year}`}
                 />
-                
-              {/* Lead Requirement (if available) */}
-              {registrationData.prospectus.leads?.requirement && (
-                <InfoField
-                  label="Requirement"
-                  value={registrationData.prospectus.leads.requirement}
-                />
-              )}
+
+                {/* Lead Requirement (if available) */}
+                {registrationData.prospectus.leads?.requirement && (
+                  <InfoField
+                    label="Requirement"
+                    value={registrationData.prospectus.leads.requirement}
+                  />
+                )}
               </div>
             </CardBody>
           </Card>
 
+          {/* Project Status Card */}
+          <Card className="w-full md:col-span-2">
+            <CardHeader>
+              <h2 className="text-xl font-bold">Project Status</h2>
+            </CardHeader>
+            <Divider />
+            <CardBody>
+              <ProjectStatusDisplay registration={registrationData} />
+            </CardBody>
+          </Card>
 
           {/* Enhanced Combined Financial Information */}
           <Card className="w-full md:col-span-2">
@@ -793,7 +951,8 @@ function RegistrationContent({ regId }: { regId: string }) {
               </div>
 
               {/* Transaction Details - Only show if registered */}
-              {registrationData.status === "registered" || registrationData.status === "waiting for approval" && (
+              {(registrationData.status === "registered" ||
+                registrationData.status === "waiting for approval") && (
                 <div className="bg-default-50 dark:bg-default-900/20 p-6 rounded-xl">
                   <h3 className="text-md font-semibold mb-4">
                     Transaction Information
@@ -837,7 +996,10 @@ function RegistrationContent({ regId }: { regId: string }) {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">UPI ID</p>
                         <p className="font-medium">
-                          {registrationData.transactions.additional_info.upi_id}
+                          {
+                            registrationData.transactions.additional_info
+                              .upi_id
+                          }
                         </p>
                       </div>
                     )}
@@ -848,7 +1010,8 @@ function RegistrationContent({ regId }: { regId: string }) {
           </Card>
 
           {/* Bank Details - Show after financial details */}
-          {registrationData.status === "registered" || registrationData.status === "waiting for approval" && (
+          {(registrationData.status === "registered" ||
+            registrationData.status === "waiting for approval") && (
             <Card className="w-full md:col-span-2">
               <CardHeader>
                 <h2 className="text-xl font-bold">Bank Information</h2>
@@ -870,7 +1033,9 @@ function RegistrationContent({ regId }: { regId: string }) {
                   />
                   <InfoField
                     label="Account Holder"
-                    value={registrationData.bank_accounts.account_holder_name}
+                    value={
+                      registrationData.bank_accounts.account_holder_name
+                    }
                   />
                   <InfoField
                     label="Account Number"

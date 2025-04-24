@@ -195,6 +195,9 @@ interface Registration {
   status: string;
   month: number;
   author_status:string;
+  journal_added:boolean
+  is_secondary_payment_done:boolean;
+  is_final_payment_done:boolean;
   year: number;
   created_at: string;
   updated_at: string;

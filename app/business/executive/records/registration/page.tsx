@@ -273,38 +273,190 @@ function RegistrationPage() {
     </div>
   );
 
-  const PaymentTooltip = ({ 
-    type, 
-    amount, 
-    status 
-  }: { 
-    type: string, 
-    amount: number,
-    status: string 
-  }) => (
-    <div className="group relative">
-      <div className="text-sm">
-        {status === 'pending' ? (
-          '-'
-        ) : (
-          <Chip
-            color={type === 'Cash' ? 'warning' : 'primary'}
-            variant="flat"
-            size="sm"
-          >
-            {type}
-          </Chip>
-        )}
-      </div>
-      {status !== 'pending' && amount > 0 && (
-        <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
-          <div className="text-xs">
-            Amount Paid: ₹{amount.toLocaleString()}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  // Enhanced PaymentStatusBadge to show detailed payment status including dues
+  const PaymentStatusBadge = ({ registration }: { registration: Registration }) => {
+    const requirement = registration.leads?.requirement?.toLowerCase() || registration.prospectus?.requirement?.toLowerCase() || '';
+    
+    // Calculate if initial payment is fully paid or has balance due
+    const hasInitialPaymentDue = () => {
+      if (registration.status === 'registered' && registration.transactions) {
+        const amountPaid = registration.transactions.amount || 0;
+        const totalAmountDue = registration.total_amount || 0;
+        return amountPaid < totalAmountDue;
+      }
+      return false;
+    };
+    
+    // Check if this is a completed paper writing with secondary payment due
+    const hasPaperWritingPaymentDue = () => {
+      return requirement.includes('paper writing') && 
+             registration.journal_added && 
+             registration.author_status === 'completed' && 
+             !registration.is_secondary_payment_done;
+    };
+    
+    // Check if this is a completed publication with final payment due
+    const hasPublicationPaymentDue = () => {
+      return requirement.includes('publication') && 
+             registration.journal_added && 
+             !registration.is_final_payment_done;
+    };
+    
+    // Initial payment status display
+    if (hasInitialPaymentDue()) {
+      return (
+        <Chip
+          size="sm"
+          color="warning"
+          variant="flat"
+          className="font-medium"
+        >
+          Initial Payment Due
+        </Chip>
+      );
+    } else if (registration.status === 'waiting for approval') {
+      return (
+        <Chip
+          size="sm"
+          color="warning"
+          variant="flat"
+          className="font-medium"
+        >
+          Initial Payment Pending Approval
+        </Chip>
+      );
+    } else if (registration.status !== 'registered') {
+      return (
+        <Chip
+          size="sm"
+          color="danger"
+          variant="flat"
+          className="font-medium"
+        >
+          Initial Payment Pending
+        </Chip>
+      );
+    }
+    
+    // Secondary payments based on requirement type
+    if (hasPaperWritingPaymentDue()) {
+      return (
+        <Chip
+          size="sm"
+          color="danger"
+          variant="flat"
+          className="font-medium"
+        >
+          Manuscript Payment Due
+        </Chip>
+      );
+    }
+    
+    if (hasPublicationPaymentDue()) {
+      return (
+        <Chip
+          size="sm"
+          color="danger"
+          variant="flat"
+          className="font-medium"
+        >
+          Publication Payment Due
+        </Chip>
+      );
+    }
+    
+    // All payments are complete
+    return (
+      <Chip
+        size="sm"
+        color="success"
+        variant="flat"
+        className="font-medium"
+      >
+        All Payments Complete
+      </Chip>
+    );
+  };
+
+  // Also update the ProjectStatusBadge to better reflect the statuses
+  const ProjectStatusBadge = ({ registration }: { registration: Registration }) => {
+    const requirement = registration.leads?.requirement?.toLowerCase() || registration.prospectus?.requirement?.toLowerCase() || '';
+    
+    // Show secondary payment status if requirement includes paper writing
+    if (requirement.includes('paper writing')) {
+      if (registration.journal_added && registration.author_status === 'completed') {
+        if (registration.is_secondary_payment_done) {
+          return (
+            <Chip
+              size="sm"
+              color="success"
+              variant="flat"
+            >
+              Manuscript Complete & Paid
+            </Chip>
+          );
+        } else {
+          return (
+            <Chip
+              size="sm"
+              color="warning" // Changed from danger to warning to distinguish from payment status
+              variant="flat"
+            >
+              Manuscript Complete (Payment Due)
+            </Chip>
+          );
+        }
+      } else if (registration.journal_added) {
+        return <Chip size="sm" color="primary" variant="flat">Manuscript In Progress</Chip>;
+      } else {
+        return <Chip size="sm" color="default" variant="flat">Manuscript Not Started</Chip>;
+      }
+    }
+    
+    // Show final payment status if requirement includes publication
+    if (requirement.includes('publication')) {
+      if (registration.journal_added) {
+        if (registration.is_final_payment_done) {
+          return (
+            <Chip
+              size="sm"
+              color="success"
+              variant="flat"
+            >
+              Publication Complete & Paid
+            </Chip>
+          );
+        } else {
+          return (
+            <Chip
+              size="sm"
+              color="warning"
+              variant="flat"
+            >
+              Publication Complete (Payment Due)
+            </Chip>
+          );
+        }
+      } else {
+        return <Chip size="sm" color="default" variant="flat">Publication Not Started</Chip>;
+      }
+    }
+    
+    // Default: just show the registration status
+    return (
+      <Chip
+        size="sm"
+        color={
+          registration.status === 'registered' ? 'success' :
+          registration.status === 'waiting for approval' ? 'danger' :
+          'warning'
+        }
+        variant="flat"
+      >
+        {registration.status}
+      </Chip>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -524,11 +676,7 @@ function RegistrationPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <PaymentTooltip
-                        type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
-                        amount={registration.transactions?.amount || 0}
-                        status={registration.status}
-                      />
+                      <PaymentStatusBadge registration={registration} />
                     </TableCell>
                     <TableCell>
                         <Chip
