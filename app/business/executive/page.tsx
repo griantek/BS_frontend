@@ -517,7 +517,7 @@ function BusinessDashboard() {
                     <span className="font-semibold">{formatCurrency(dashboardData.totalRevenue)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Today's Revenue:</span>
+                    <span>Today&apos;s Revenue:</span>
                     <span className="font-semibold text-success-600">{formatCurrency(dashboardData.todayRevenue)}</span>
                   </div>
                   <div className="flex justify-between">
