@@ -24,7 +24,16 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 // Add helper function
 const getNumericValue = (value: number | undefined): number => {
   if (typeof value !== 'number') return 0;
-  return isNaN(value) ? 0 : value;
+  return isNaN(value) ? 0 : Math.floor(value); // Use floor to ensure integer
+};
+
+// Add this helper function near the top of the file with other helper functions
+const toSafeInteger = (value: any): number => {
+  // First convert to string to handle any input type
+  const str = String(value).replace(/[^0-9]/g, '');
+  
+  // Parse as integer (no decimals)
+  return str ? parseInt(str, 10) : 0;
 };
 
 // Define payment mode map with proper typing
@@ -121,6 +130,29 @@ interface TransactionData {
   transaction_type: string;
 }
 
+// Add new interface for secondary and final transaction data
+interface SecondaryTransactionData {
+  id: number;
+  amount: number;
+  entity_id: string;
+  updated_at: string;
+  transaction_id: string;
+  additional_info: TransactionAdditionalInfo;
+  transaction_date: string;
+  transaction_type: string;
+}
+
+interface FinalTransactionData {
+  id: number;
+  amount: number;
+  entity_id: string;
+  updated_at: string;
+  transaction_id: string;
+  additional_info: TransactionAdditionalInfo;
+  transaction_date: string;
+  transaction_type: string;
+}
+
 // Add type for registration status
 type RegistrationStatus = "pending" | "registered" | "waiting for approval";
 
@@ -151,11 +183,19 @@ interface ExtendedRegistration {
   author_status: string;
   file_path: string | null;
   author_comments: string | null;
-  
+
   // Nested objects
   prospectus: ProspectusData;
   bank_accounts: BankAccountData;
   transactions: TransactionData;
+
+  // Add new fields
+  is_secondary_payment_done: boolean;
+  is_final_payment_done: boolean;
+  secondary_payment: number | null;
+  final_payment: number | null;
+  secondary_transaction?: SecondaryTransactionData;
+  final_transaction?: FinalTransactionData;
 }
 
 interface RegistrationFormData {
@@ -186,7 +226,50 @@ interface RegistrationFormData {
   transactionHash?: string;
   cryptoCurrency?: string;
   selectedServicePrices: Record<string, number>;
+
+  // Secondary payment fields (for paper writing)
+  secondaryPaymentMode?: keyof typeof PAYMENT_MODE_MAP;
+  secondaryAmount?: number;
+  secondaryTransactionDate?: string;
+  secondaryTransactionId?: string;
+  secondaryUpiId?: string;
+  secondaryAccountNumber?: string;
+  secondaryIfscCode?: string;
+  secondaryCardLastFourDigits?: string;
+  secondaryReceiptNumber?: string;
+  secondaryChequeNumber?: string;
+  secondaryWalletProvider?: 'paytm' | 'phonepe' | 'other';
+  secondaryGatewayProvider?: 'razorpay' | 'stripe' | 'other';
+  secondaryTransactionHash?: string;
+  secondaryCryptoCurrency?: string;
+
+  // Final payment fields (for publication)
+  finalPaymentMode?: keyof typeof PAYMENT_MODE_MAP;
+  finalAmount?: number;
+  finalTransactionDate?: string;
+  finalTransactionId?: string;
+  finalUpiId?: string;
+  finalAccountNumber?: string;
+  finalIfscCode?: string;
+  finalCardLastFourDigits?: string;
+  finalReceiptNumber?: string;
+  finalChequeNumber?: string;
+  finalWalletProvider?: 'paytm' | 'phonepe' | 'other';
+  finalGatewayProvider?: 'razorpay' | 'stripe' | 'other';
+  finalTransactionHash?: string;
+  finalCryptoCurrency?: string;
 }
+
+// Add helper function to determine if showing secondary or final payment forms
+const shouldShowSecondaryPayment = (registration: ExtendedRegistration): boolean => {
+  const requirement = registration.prospectus?.requirement?.toLowerCase() || '';
+  return (requirement.includes('paper writing') && registration.is_secondary_payment_done);
+};
+
+const shouldShowFinalPayment = (registration: ExtendedRegistration): boolean => {
+  const requirement = registration.prospectus?.requirement?.toLowerCase() || '';
+  return (requirement.includes('publication') && registration.is_final_payment_done);
+};
 
 function EditRegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
@@ -195,6 +278,8 @@ function EditRegistrationContent({ regId }: { regId: string }) {
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
   const [editors, setEditors] = React.useState<Editor[]>([]);
+  const [showSecondaryPayment, setShowSecondaryPayment] = React.useState(false);
+  const [showFinalPayment, setShowFinalPayment] = React.useState(false);
 
   const {
     register,
@@ -243,12 +328,12 @@ function EditRegistrationContent({ regId }: { regId: string }) {
   };
 
   React.useEffect(() => {
-    const initialAmount = getNumericValue(safeWatch("initialAmount"));
-    const acceptanceAmount = getNumericValue(safeWatch("acceptanceAmount"));
-    const discountPercentage = getNumericValue(safeWatch("discountPercentage"));
+    const initialAmount = toSafeInteger(safeWatch("initialAmount"));
+    const acceptanceAmount = toSafeInteger(safeWatch("acceptanceAmount"));
+    const discountPercentage = toSafeInteger(safeWatch("discountPercentage"));
 
     const subTotal = initialAmount + acceptanceAmount;
-    const discountAmount = (subTotal * discountPercentage) / 100;
+    const discountAmount = Math.floor((subTotal * discountPercentage) / 100);
     const total = subTotal - discountAmount;
 
     setValue("subTotal", subTotal);
@@ -275,6 +360,9 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           setServices(servicesResponse.data);
           setBankAccounts(bankResponse.data);
           setEditors(editorsResponse.data);
+
+          setShowSecondaryPayment(shouldShowSecondaryPayment(reg));
+          setShowFinalPayment(shouldShowFinalPayment(reg));
           
           const [acceptPeriodValue, acceptPeriodUnit] = reg.accept_period.split(' ');
           const [pubPeriodValue, pubPeriodUnit] = reg.pub_period.split(' ');
@@ -322,11 +410,73 @@ function EditRegistrationContent({ regId }: { regId: string }) {
             }),
             selectedServicePrices: servicePrices,
           });
-          
+
+          if (shouldShowSecondaryPayment(reg) && reg.secondary_transaction) {
+            const secondaryPaymentMode = Object.entries(PAYMENT_MODE_MAP).find(
+              ([_, value]) => value === reg.secondary_transaction?.transaction_type
+            )?.[0] as keyof typeof PAYMENT_MODE_MAP || 'cash';
+
+            setValue('secondaryPaymentMode', secondaryPaymentMode);
+            setValue('secondaryAmount', reg.secondary_transaction.amount || 0);
+            setValue('secondaryTransactionDate', reg.secondary_transaction.transaction_date);
+            setValue('secondaryTransactionId', reg.secondary_transaction.transaction_id);
+
+            const additionalInfo = reg.secondary_transaction.additional_info || {};
+            if (additionalInfo.upi_id) setValue('secondaryUpiId', additionalInfo.upi_id);
+            if (additionalInfo.account_number) setValue('secondaryAccountNumber', additionalInfo.account_number);
+            if (additionalInfo.ifsc_code) setValue('secondaryIfscCode', additionalInfo.ifsc_code);
+            if (additionalInfo.card_last_four) setValue('secondaryCardLastFourDigits', additionalInfo.card_last_four);
+            if (additionalInfo.receipt_number) setValue('secondaryReceiptNumber', additionalInfo.receipt_number);
+            if (additionalInfo.cheque_number) setValue('secondaryChequeNumber', additionalInfo.cheque_number);
+            if (additionalInfo.wallet_provider) {
+              setValue('secondaryWalletProvider', additionalInfo.wallet_provider as 'paytm' | 'phonepe' | 'other');
+            }
+            if (additionalInfo.gateway_provider) {
+              setValue('secondaryGatewayProvider', additionalInfo.gateway_provider as 'razorpay' | 'stripe' | 'other');
+            }
+            if (additionalInfo.transaction_hash) setValue('secondaryTransactionHash', additionalInfo.transaction_hash);
+            if (additionalInfo.crypto_currency) setValue('secondaryCryptoCurrency', additionalInfo.crypto_currency);
+          }
+
+          if (shouldShowFinalPayment(reg) && reg.final_transaction) {
+            const finalPaymentMode = Object.entries(PAYMENT_MODE_MAP).find(
+              ([_, value]) => value === reg.final_transaction?.transaction_type
+            )?.[0] as keyof typeof PAYMENT_MODE_MAP || 'cash';
+
+            setValue('finalPaymentMode', finalPaymentMode);
+            setValue('finalAmount', reg.final_transaction.amount || 0);
+            setValue('finalTransactionDate', reg.final_transaction.transaction_date);
+            setValue('finalTransactionId', reg.final_transaction.transaction_id);
+
+            const additionalInfo = reg.final_transaction.additional_info || {};
+            if (additionalInfo.upi_id) setValue('finalUpiId', additionalInfo.upi_id);
+            if (additionalInfo.account_number) setValue('finalAccountNumber', additionalInfo.account_number);
+            if (additionalInfo.ifsc_code) setValue('finalIfscCode', additionalInfo.ifsc_code);
+            if (additionalInfo.card_last_four) setValue('finalCardLastFourDigits', additionalInfo.card_last_four);
+            if (additionalInfo.receipt_number) setValue('finalReceiptNumber', additionalInfo.receipt_number);
+            if (additionalInfo.cheque_number) setValue('finalChequeNumber', additionalInfo.cheque_number);
+            if (additionalInfo.wallet_provider) {
+              setValue('finalWalletProvider', additionalInfo.wallet_provider as 'paytm' | 'phonepe' | 'other');
+            }
+            if (additionalInfo.gateway_provider) {
+              setValue('finalGatewayProvider', additionalInfo.gateway_provider as 'razorpay' | 'stripe' | 'other');
+            }
+            if (additionalInfo.transaction_hash) setValue('finalTransactionHash', additionalInfo.transaction_hash);
+            if (additionalInfo.crypto_currency) setValue('finalCryptoCurrency', additionalInfo.crypto_currency);
+          }
+
+          const mainAdditionalInfo = reg.transactions.additional_info || {};
+          if (mainAdditionalInfo.wallet_provider) {
+            setValue('walletProvider', mainAdditionalInfo.wallet_provider as 'paytm' | 'phonepe' | 'other');
+          }
+          if (mainAdditionalInfo.gateway_provider) {
+            setValue('gatewayProvider', mainAdditionalInfo.gateway_provider as 'razorpay' | 'stripe' | 'other');
+          }
+
           setTimeout(() => {
-            const initialAmount = getNumericValue(initAmount);
-            const acceptanceAmount = getNumericValue(acceptAmount);
-            const discountPercentage = getNumericValue((reg.discount / calculatedSubTotal) * 100);
+            const initialAmount = toSafeInteger(initAmount);
+            const acceptanceAmount = toSafeInteger(acceptAmount);
+            const discountPercentage = toSafeInteger((reg.discount / calculatedSubTotal) * 100);
             
             setValue("subTotal", initialAmount + acceptanceAmount);
             setValue("discountAmount", ((initialAmount + acceptanceAmount) * discountPercentage) / 100);
@@ -372,9 +522,11 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     recalculateInitialAmount(updatedServices, updatedPrices);
   };
 
-  const handlePriceChange = (serviceId: string, price: number) => {
+  // Update the handlePriceChange function to handle string inputs
+  const handlePriceChange = (serviceId: string, price: string) => {
+    const integerPrice = toSafeInteger(price);
     const updatedPrices = { ...safeWatch("selectedServicePrices") };
-    updatedPrices[serviceId] = price;
+    updatedPrices[serviceId] = integerPrice;
     setValue("selectedServicePrices", updatedPrices);
 
     recalculateInitialAmount(safeWatch("selectedServices"), updatedPrices);
@@ -385,7 +537,7 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     prices: Record<string, number>
   ) => {
     const initialAmount = serviceIds.reduce((sum, id) => {
-      return sum + (prices[id] || 0);
+      return sum + toSafeInteger(prices[id] || 0);
     }, 0);
 
     setValue("initialAmount", initialAmount);
@@ -545,6 +697,314 @@ function EditRegistrationContent({ regId }: { regId: string }) {
     }
   };
 
+  const renderSecondaryPaymentFields = () => {
+    const paymentMode = safeWatch("secondaryPaymentMode");
+
+    switch (paymentMode) {
+      case "upi":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="UPI ID"
+              placeholder="example@upi"
+              {...register("secondaryUpiId")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("secondaryTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "netbanking":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Account Number"
+              {...register("secondaryAccountNumber")}
+              className="w-full"
+            />
+            <Input 
+              type="text" 
+              label="IFSC Code" 
+              {...register("secondaryIfscCode")} 
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "card":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Last 4 Digits of Card"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              {...register("secondaryCardLastFourDigits")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("secondaryTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "cash":
+        return (
+          <Input
+            type="text"
+            label="Receipt Number"
+            {...register("secondaryReceiptNumber")}
+            className="w-full"
+          />
+        );
+
+      case "cheque":
+        return (
+          <Input
+            type="text"
+            label="Cheque Number"
+            {...register("secondaryChequeNumber")}
+            className="w-full"
+          />
+        );
+
+      case "wallet":
+        return (
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label htmlFor="secondaryWalletProvider" className="block text-sm font-medium mb-1">Wallet Provider</label>
+              <select
+                id="secondaryWalletProvider"
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("secondaryWalletProvider")}
+              >
+                <option value="">Select Wallet Provider</option>
+                <option value="paytm">Paytm</option>
+                <option value="phonepe">PhonePe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("secondaryTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "gateway":
+        return (
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label htmlFor="secondaryGatewayProvider" className="block text-sm font-medium mb-1">Payment Gateway</label>
+              <select
+                id="secondaryGatewayProvider"
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("secondaryGatewayProvider")}
+              >
+                <option value="">Select Payment Gateway</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="stripe">Stripe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("secondaryTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "crypto":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Transaction Hash"
+              {...register("secondaryTransactionHash")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Cryptocurrency"
+              {...register("secondaryCryptoCurrency")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderFinalPaymentFields = () => {
+    const paymentMode = safeWatch("finalPaymentMode");
+
+    switch (paymentMode) {
+      case "upi":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="UPI ID"
+              placeholder="example@upi"
+              {...register("finalUpiId")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("finalTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "netbanking":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Account Number"
+              {...register("finalAccountNumber")}
+              className="w-full"
+            />
+            <Input 
+              type="text" 
+              label="IFSC Code" 
+              {...register("finalIfscCode")} 
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "card":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Last 4 Digits of Card"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              {...register("finalCardLastFourDigits")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("finalTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "cash":
+        return (
+          <Input
+            type="text"
+            label="Receipt Number"
+            {...register("finalReceiptNumber")}
+            className="w-full"
+          />
+        );
+
+      case "cheque":
+        return (
+          <Input
+            type="text"
+            label="Cheque Number"
+            {...register("finalChequeNumber")}
+            className="w-full"
+          />
+        );
+
+      case "wallet":
+        return (
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label htmlFor="finalWalletProvider" className="block text-sm font-medium mb-1">Wallet Provider</label>
+              <select
+                id="finalWalletProvider"
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("finalWalletProvider")}
+              >
+                <option value="">Select Wallet Provider</option>
+                <option value="paytm">Paytm</option>
+                <option value="phonepe">PhonePe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("finalTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "gateway":
+        return (
+          <div className="w-full space-y-4">
+            <div className="w-full">
+              <label htmlFor="finalGatewayProvider" className="block text-sm font-medium mb-1">Payment Gateway</label>
+              <select
+                id="finalGatewayProvider"
+                className="w-full p-2 rounded-lg border border-gray-300"
+                {...register("finalGatewayProvider")}
+              >
+                <option value="">Select Payment Gateway</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="stripe">Stripe</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <Input
+              type="text"
+              label="Transaction ID"
+              {...register("finalTransactionId")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      case "crypto":
+        return (
+          <div className="w-full space-y-4">
+            <Input
+              type="text"
+              label="Transaction Hash"
+              {...register("finalTransactionHash")}
+              className="w-full"
+            />
+            <Input
+              type="text"
+              label="Cryptocurrency"
+              {...register("finalCryptoCurrency")}
+              className="w-full"
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const onSubmit = async (data: RegistrationFormData) => {
     try {
       if (!registrationData) return;
@@ -587,10 +1047,14 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           if (data.chequeNumber) additionalInfo.cheque_number = data.chequeNumber;
           break;
         case 'wallet':
-          if (data.walletProvider) additionalInfo.wallet_provider = data.walletProvider;
+          if (data.walletProvider) {
+            additionalInfo.wallet_provider = data.walletProvider as 'paytm' | 'phonepe' | 'other';
+          }
           break;
         case 'gateway':
-          if (data.gatewayProvider) additionalInfo.gateway_provider = data.gatewayProvider;
+          if (data.gatewayProvider) {
+            additionalInfo.gateway_provider = data.gatewayProvider as 'razorpay' | 'stripe' | 'other';
+          }
           break;
         case 'crypto':
           if (data.transactionHash) additionalInfo.transaction_hash = data.transactionHash;
@@ -598,12 +1062,104 @@ function EditRegistrationContent({ regId }: { regId: string }) {
           break;
       }
 
+      let secondaryPaymentData = null;
+      if (showSecondaryPayment) {
+        const secondaryAdditionalInfo: Record<string, any> = {};
+        
+        switch (data.secondaryPaymentMode) {
+          case 'upi':
+            if (data.secondaryUpiId) secondaryAdditionalInfo.upi_id = data.secondaryUpiId;
+            break;
+          case 'netbanking':
+            if (data.secondaryAccountNumber) secondaryAdditionalInfo.account_number = data.secondaryAccountNumber;
+            if (data.secondaryIfscCode) secondaryAdditionalInfo.ifsc_code = data.secondaryIfscCode;
+            break;
+          case 'card':
+            if (data.secondaryCardLastFourDigits) secondaryAdditionalInfo.card_last_four = data.secondaryCardLastFourDigits;
+            break;
+          case 'cash':
+            if (data.secondaryReceiptNumber) secondaryAdditionalInfo.receipt_number = data.secondaryReceiptNumber;
+            break;
+          case 'cheque':
+            if (data.secondaryChequeNumber) secondaryAdditionalInfo.cheque_number = data.secondaryChequeNumber;
+            break;
+          case 'wallet':
+            if (data.secondaryWalletProvider) {
+              secondaryAdditionalInfo.wallet_provider = data.secondaryWalletProvider as 'paytm' | 'phonepe' | 'other';
+            }
+            break;
+          case 'gateway':
+            if (data.secondaryGatewayProvider) {
+              secondaryAdditionalInfo.gateway_provider = data.secondaryGatewayProvider as 'razorpay' | 'stripe' | 'other';
+            }
+            break;
+          case 'crypto':
+            if (data.secondaryTransactionHash) secondaryAdditionalInfo.transaction_hash = data.secondaryTransactionHash;
+            if (data.secondaryCryptoCurrency) secondaryAdditionalInfo.crypto_currency = data.secondaryCryptoCurrency;
+            break;
+        }
+        
+        secondaryPaymentData = {
+          transaction_type: data.secondaryPaymentMode ? PAYMENT_MODE_MAP[data.secondaryPaymentMode] : undefined,
+          transaction_id: data.secondaryTransactionId,
+          amount: toSafeInteger(data.secondaryAmount), // Use safer integer conversion
+          transaction_date: data.secondaryTransactionDate,
+          additional_info: secondaryAdditionalInfo,
+        };
+      }
+      
+      let finalPaymentData = null;
+      if (showFinalPayment) {
+        const finalAdditionalInfo: Record<string, any> = {};
+        
+        switch (data.finalPaymentMode) {
+          case 'upi':
+            if (data.finalUpiId) finalAdditionalInfo.upi_id = data.finalUpiId;
+            break;
+          case 'netbanking':
+            if (data.finalAccountNumber) finalAdditionalInfo.account_number = data.finalAccountNumber;
+            if (data.finalIfscCode) finalAdditionalInfo.ifsc_code = data.finalIfscCode;
+            break;
+          case 'card':
+            if (data.finalCardLastFourDigits) finalAdditionalInfo.card_last_four = data.finalCardLastFourDigits;
+            break;
+          case 'cash':
+            if (data.finalReceiptNumber) finalAdditionalInfo.receipt_number = data.finalReceiptNumber;
+            break;
+          case 'cheque':
+            if (data.finalChequeNumber) finalAdditionalInfo.cheque_number = data.finalChequeNumber;
+            break;
+          case 'wallet':
+            if (data.finalWalletProvider) {
+              finalAdditionalInfo.wallet_provider = data.finalWalletProvider as 'paytm' | 'phonepe' | 'other';
+            }
+            break;
+          case 'gateway':
+            if (data.finalGatewayProvider) {
+              finalAdditionalInfo.gateway_provider = data.finalGatewayProvider as 'razorpay' | 'stripe' | 'other';
+            }
+            break;
+          case 'crypto':
+            if (data.finalTransactionHash) finalAdditionalInfo.transaction_hash = data.finalTransactionHash;
+            if (data.finalCryptoCurrency) finalAdditionalInfo.crypto_currency = data.finalCryptoCurrency;
+            break;
+        }
+        
+        finalPaymentData = {
+          transaction_type: data.finalPaymentMode ? PAYMENT_MODE_MAP[data.finalPaymentMode] : undefined,
+          transaction_id: data.finalTransactionId,
+          amount: toSafeInteger(data.finalAmount), // Use safer integer conversion
+          transaction_date: data.finalTransactionDate,
+          additional_info: finalAdditionalInfo,
+        };
+      }
+
       const updateData = {
         services: selectedServiceNames,
-        init_amount: Number(data.initialAmount),
-        accept_amount: Number(data.acceptanceAmount),
-        discount: Number(data.discountAmount),
-        total_amount: Number(data.totalAmount),
+        init_amount: toSafeInteger(data.initialAmount),
+        accept_amount: toSafeInteger(data.acceptanceAmount),
+        discount: toSafeInteger(data.discountAmount),
+        total_amount: toSafeInteger(data.totalAmount),
         accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
         pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
         bank_id: data.selectedBank,
@@ -613,10 +1169,21 @@ function EditRegistrationContent({ regId }: { regId: string }) {
         entity_id: user.id,
         transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
         transaction_id: data.transactionId || '',
-        amount: Number(data.amount),
+        amount: toSafeInteger(data.amount),
         transaction_date: data.transactionDate,
         additional_info: additionalInfo,
-        service_and_prices: data.selectedServicePrices
+        service_and_prices: Object.entries(data.selectedServicePrices).reduce((acc, [key, value]) => {
+          acc[key] = toSafeInteger(value);
+          return acc;
+        }, {} as Record<string, number>),
+        secondary_payment_data: secondaryPaymentData ? {
+          ...secondaryPaymentData,
+          amount: toSafeInteger(secondaryPaymentData.amount)
+        } : null,
+        final_payment_data: finalPaymentData ? {
+          ...finalPaymentData,
+          amount: toSafeInteger(finalPaymentData.amount)
+        } : null,
       };
 
       console.log('Sending update request:', {
@@ -746,12 +1313,12 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-default-600">Price (₹):</span>
                                   <Input
-                                    type="number"
+                                    type="text" // Changed from number to text for better control
                                     min="0"
                                     size="sm"
                                     className="max-w-[150px]"
                                     value={safeWatch("selectedServicePrices")[serviceId]?.toString()}
-                                    onChange={(e) => handlePriceChange(serviceId, Number(e.target.value))}
+                                    onChange={(e) => handlePriceChange(serviceId, e.target.value)}
                                   />
                                 </div>
                               </div>
@@ -924,9 +1491,8 @@ function EditRegistrationContent({ regId }: { regId: string }) {
 
               {registrationData?.status === 'registered' && (
                 <div className="p-6 border-b border-default-100">
-                  <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
+                  <h2 className="text-lg font-semibold mb-4">Initial Payment Details</h2>
                   <div className="space-y-4">
-                    {/* Row 1: Payment Method (full width) */}
                     <div className="w-full">
                       <label htmlFor="payment-mode" className="block text-sm font-medium mb-1">
                         Payment Method
@@ -947,7 +1513,6 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                       </select>
                     </div>
 
-                    {/* Row 2: Transaction Date and Amount Paid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input
                         type="date"
@@ -963,9 +1528,100 @@ function EditRegistrationContent({ regId }: { regId: string }) {
                       />
                     </div>
 
-                    {/* Row 3: Payment specific fields (full width) */}
                     <div className="w-full">
                       {renderPaymentFields()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showSecondaryPayment && (
+                <div className="p-6 border-b border-default-100">
+                  <h2 className="text-lg font-semibold mb-4">Manuscript Payment Details</h2>
+                  <div className="space-y-4">
+                    <div className="w-full">
+                      <label htmlFor="secondary-payment-mode" className="block text-sm font-medium mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        id="secondary-payment-mode"
+                        className="w-full p-2 rounded-lg border border-gray-300"
+                        {...register("secondaryPaymentMode")}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="netbanking">Net Banking</option>
+                        <option value="card">Credit/Debit Card</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="wallet">Wallet</option>
+                        <option value="gateway">Payment Gateway</option>
+                        <option value="crypto">Cryptocurrency</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        type="date"
+                        label="Transaction Date"
+                        {...register('secondaryTransactionDate')}
+                        className="w-full"
+                      />
+                      <Input
+                        type="number"
+                        label="Amount Paid (₹)"
+                        {...register('secondaryAmount')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      {renderSecondaryPaymentFields()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showFinalPayment && (
+                <div className="p-6 border-b border-default-100">
+                  <h2 className="text-lg font-semibold mb-4">Publication Payment Details</h2>
+                  <div className="space-y-4">
+                    <div className="w-full">
+                      <label htmlFor="final-payment-mode" className="block text-sm font-medium mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        id="final-payment-mode"
+                        className="w-full p-2 rounded-lg border border-gray-300"
+                        {...register("finalPaymentMode")}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="netbanking">Net Banking</option>
+                        <option value="card">Credit/Debit Card</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="wallet">Wallet</option>
+                        <option value="gateway">Payment Gateway</option>
+                        <option value="crypto">Cryptocurrency</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        type="date"
+                        label="Transaction Date"
+                        {...register('finalTransactionDate')}
+                        className="w-full"
+                      />
+                      <Input
+                        type="number"
+                        label="Amount Paid (₹)"
+                        {...register('finalAmount')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="w-full">
+                      {renderFinalPaymentFields()}
                     </div>
                   </div>
                 </div>

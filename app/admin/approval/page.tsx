@@ -77,51 +77,72 @@ export default function PendingApprovalsPage() {
     }
   };
 
-  const loadAssignableEntities = async (requirement: string) => {
-    setLoadingEntities(true);
-    setAssignableEntities([]);
+  // const loadAssignableEntities = async (requirement: string) => {
+  //   setLoadingEntities(true);
+  //   setAssignableEntities([]);
 
-    try {
-      let entities: Editor[] = [];
+  //   try {
+  //     let entities: Editor[] = [];
+      
+  //     // Get selected registration details to check author_status
+  //     const selectedReg = pendingRegistrations.find(item => item.registration.id === selectedRegistration);
 
-      if (
-        requirement.toLowerCase().includes("publication") &&
-        requirement.toLowerCase().includes("paper writing")
-      ) {
-        // Case 3: Both publication and paper writing - get editors and authors
-        const response = await api.getAllEditorsAndAuthors();
-        entities = response.data;
-      } else if (requirement.toLowerCase().includes("publication")) {
-        // Case 1: Publication - get editors
-        const response = await api.getAllEditors();
-        entities = response.data;
-      } else if (requirement.toLowerCase().includes("paper writing")) {
-        // Case 2: Paper writing - get authors
-        const response = await api.getAllAuthors();
-        entities = response.data;
-      }
-      // Case 4: Other requirements - leave entities empty
+  //     // Special handling for "Publication and Paper writing"
+  //     if (requirement.toLowerCase().includes("publication and paper writing")) {
+          
+  //       if (selectedReg && selectedReg.registration.status === "waiting for approval") {
+  //         if (selectedReg.registration.author_status === "completed") {
+  //           // If author's work is completed, assign to editors
+  //           console.log("Loading editors for completed paper writing");
+  //           const response = await api.getAllEditors();
+  //           entities = response.data;
+  //         } else if (selectedReg.registration.author_status === "not started" || !selectedReg.registration.author_status) {
+  //           // If author hasn't started, assign to authors
+  //           console.log("Loading authors for new paper writing");
+  //           const response = await api.getAllAuthors();
+  //           entities = response.data;
+  //         } else {
+  //           // For in-progress or other statuses, load both
+  //           console.log("Loading both editors and authors");
+  //           const response = await api.getAllEditorsAndAuthors();
+  //           entities = response.data;
+  //         }
+  //       } else {
+  //         // Default for non "waiting for approval" status - load both
+  //         const response = await api.getAllEditorsAndAuthors();
+  //         entities = response.data;
+  //       }
+  //     } else if (requirement.toLowerCase().includes("publication")) {
+  //       // Case 1: Publication - get editors
+  //       const response = await api.getAllEditors();
+  //       entities = response.data;
+  //     } else if (requirement.toLowerCase().includes("paper writing")) {
+  //       // Case 2: Paper writing - get authors
+  //       const response = await api.getAllAuthors();
+  //       entities = response.data;
+  //     }
+  //     // Case 4: Other requirements - leave entities empty
 
-      setAssignableEntities(entities);
-    } catch (err) {
-      console.error("Error loading assignable entities:", err);
-      setError("Failed to load assignable entities.");
-    } finally {
-      setLoadingEntities(false);
-    }
-  };
+  //     setAssignableEntities(entities);
+  //   } catch (err) {
+  //     console.error("Error loading assignable entities:", err);
+  //     setError("Failed to load assignable entities.");
+  //   } finally {
+  //     setLoadingEntities(false);
+  //   }
+  // };
 
-  const handleAssignClick = (registrationId: number, requirement: string) => {
-    setSelectedRegistration(registrationId);
-    setSelectedEditor("");
-    setAssignSuccess(null);
-    setCurrentRequirement(requirement);
+  // const handleAssignClick = (registrationId: number, requirement: string) => {
+  //   setSelectedRegistration(registrationId);
+  //   setSelectedEditor("");
+  //   setAssignSuccess(null);
+  //   setCurrentRequirement(requirement);
 
-    // Load appropriate entities based on requirement
-    loadAssignableEntities(requirement);
+  //   // Load appropriate entities based on requirement
+  //   loadAssignableEntities(requirement);
 
-    onOpen();
-  };
+  //   onOpen();
+  // };
 
   const handleEditorChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setSelectedEditor(event.target.value);
@@ -220,7 +241,7 @@ export default function PendingApprovalsPage() {
 
       {pendingRegistrations.length === 0 ? (
         <Card className="w-full">
-          <CardBody className="py-8 flex flex-col items-center justify-center">
+          <CardBody className="py-8 flex flex-col items-center justify-center text-center">
             <DocumentTextIcon className="w-16 h-16 text-default-300 mb-4" />
             <h2 className="text-xl font-semibold mb-2">No Pending Approvals</h2>
             <p className="text-default-500 mb-4">

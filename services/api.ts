@@ -575,6 +575,21 @@ interface AssignedRegistration {
       email: string;
       username: string;
     };
+    leads:{
+        leads_id: number;
+        client_name: string;
+        phone: string;
+        email: string;
+        state: string;
+        country: string;
+        requirement: string;
+        assigned_to: string;
+        reg_id: string;
+        tech_person: string;
+        proposed_service_period: string;
+        services: string;
+        notes: string;
+    }
   };
 }
 
@@ -811,6 +826,7 @@ interface PendingRegistrationResponse {
     createdAt: string;
     updatedAt: string;
     adminAssigned: boolean;
+    author_status: string;
   };
   prospectus: {
     id: number;
@@ -1232,6 +1248,22 @@ interface DashboardDataResponse {
   success: boolean;
   data: DashboardData;
   timestamp: string;
+}
+
+// Add interface for payment transaction request
+interface PaymentTransactionRequest {
+  registration_id: number;
+  transaction_type: string;
+  transaction_id: string;
+  amount: number;
+  transaction_date: string;
+  additional_info?: any;
+  entity_id: string;
+}
+
+interface PaymentTransactionResponse {
+  registration: Registration;
+  transaction: Transaction;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -2037,7 +2069,7 @@ const api = {
         }
     },
 
-    // Add new function to get today's follow-up leads
+    // Add new method for getting today's follow-up leads
     async getTodayFollowupLeads(): Promise<ApiResponse<Lead[]>> {
         try {
             const response = await this.axiosInstance.get('/leads/today-followup');
@@ -2718,6 +2750,27 @@ const api = {
             return response.data;
         } catch (error: any) {
             console.error('Error fetching resource allocation suggestions:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add methods for secondary and final payment transactions
+    async addSecondaryPaymentTransaction(data: PaymentTransactionRequest): Promise<ApiResponse<PaymentTransactionResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/common/transaction/secondary-payment', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error adding secondary payment:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async addFinalPaymentTransaction(data: PaymentTransactionRequest): Promise<ApiResponse<PaymentTransactionResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/common/transaction/final-payment', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error adding final payment:', error);
             throw this.handleError(error);
         }
     },

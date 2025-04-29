@@ -88,6 +88,17 @@ function TaskDetail({ params }: { params: Promise<{ id: string }> }) {
         status: statusUpdate
       };
       
+      // Check if this is a combined publication and paper writing task
+      const isPubAndPaperWriting = 
+        (task.prospectus.leads?.requirement?.toLowerCase().includes("publication and paper writing") ||
+         task.prospectus.requirement?.toLowerCase().includes("publication and paper writing"));
+      
+      // Add special fields for combined tasks when marking as completed
+      if (statusUpdate === "completed" && isPubAndPaperWriting) {
+        updateData.admin_assigned = false;
+        updateData.registration_status = "waiting for approval";
+      }
+      
       // If status is completed and there's a file, use FormData
       if (statusUpdate === "completed" && paperFile) {
         const formData = new FormData();
@@ -100,6 +111,12 @@ function TaskDetail({ params }: { params: Promise<{ id: string }> }) {
         }
         
         formData.append('reg_id', task.prospectus.id.toString());
+        
+        // Add special fields for combined tasks
+        if (isPubAndPaperWriting) {
+          formData.append('admin_assigned', 'false');
+          formData.append('registration_status', 'pending');
+        }
         
         // Call API function to update author status with file
         const response = await api.updateAuthorStatusWithFile(formData);

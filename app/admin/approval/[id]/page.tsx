@@ -29,6 +29,7 @@ import {
   PaperClipIcon,
   DocumentArrowDownIcon,
   UserGroupIcon,
+  ClockIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
@@ -85,11 +86,11 @@ interface RegistrationData {
   notes: string | null;
   updated_at: string;
   assigned_to: string | null;
-  registered_by_entity:{
+  registered_by_entity: {
     id: string;
     username: string;
     email: string;
-  }
+  };
   client_id: string;
   admin_assigned: boolean;
   journal_added: boolean;
@@ -113,7 +114,7 @@ interface RegistrationData {
   };
   transaction: Transaction | null;
   bank_details?: {
-    id:string;
+    id: string;
     account_name: string;
     bank: string;
     account_number: string;
@@ -223,7 +224,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
     onClose: onQuotationApprovedModalClose,
   } = useDisclosure();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [banks, setBanks] = useState<Array<{id: string, bank: string, account_name: string}>>([]);
+  const [banks, setBanks] = useState<
+    Array<{ id: string; bank: string; account_name: string }>
+  >([]);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editFormData, setEditFormData] = useState<{
     init_amount: number;
@@ -269,14 +272,13 @@ function ApprovalDetailContent({ id }: { id: string }) {
   // Initialize edit form data when registration data is available
   useEffect(() => {
     if (registration) {
-      
       setEditFormData({
         init_amount: registration.init_amount,
         accept_amount: registration.accept_amount,
         discount: registration.discount,
         total_amount: registration.total_amount,
         bank_id: registration.bank_id,
-        service_and_prices: registration.service_and_prices
+        service_and_prices: registration.service_and_prices,
       });
     }
   }, [registration]);
@@ -286,7 +288,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
     if (banks.length > 0) {
       console.log("Available banks:", banks);
       if (registration?.bank_id) {
-        const selectedBank = banks.find(bank => bank.id === registration.bank_id);
+        const selectedBank = banks.find(
+          (bank) => bank.id === registration.bank_id
+        );
       }
     }
   }, [banks, registration?.bank_id]);
@@ -294,13 +298,12 @@ function ApprovalDetailContent({ id }: { id: string }) {
   // Add this function to handle bank selection specifically
   const handleBankChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!editFormData) return;
-    
+
     const bankId = e.target.value;
-    console.log("Bank selected:", bankId);
-    
+
     setEditFormData({
       ...editFormData,
-      bank_id: bankId
+      bank_id: bankId,
     });
   };
 
@@ -329,14 +332,6 @@ function ApprovalDetailContent({ id }: { id: string }) {
 
         setRegistration(registrationData);
 
-        // Set amount in the form
-        if (registrationData.total_amount) {
-          reset({
-            ...watch(),
-            amount: registrationData.total_amount,
-          });
-        }
-
         // Store prospectus and leads from the new response structure
         if (response.data.prospectus) {
           setProspectus(response.data.prospectus);
@@ -352,7 +347,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
           response.data.prospectus?.requirement ||
           registrationData.prospectus?.requirement ||
           "";
-        loadAssignableEntities(requirement);
+
+        // Pass registrationData directly instead of using the state variable
+        loadAssignableEntities(requirement, registrationData);
       }
 
       if (response.data?.quotations && response.data.quotations.length > 0) {
@@ -370,20 +367,46 @@ function ApprovalDetailContent({ id }: { id: string }) {
     }
   };
 
-  const loadAssignableEntities = async (requirement: string) => {
+  const loadAssignableEntities = async (
+    requirement: string,
+    regData?: RegistrationData
+  ) => {
     setLoadingEntities(true);
     setAssignableEntities([]);
+
+    // Use either the passed registration data or the state value
+    const registrationToUse = regData || registration;
 
     try {
       let entities: Editor[] = [];
 
-      if (
-        requirement.toLowerCase().includes("publication") &&
-        requirement.toLowerCase().includes("paper writing")
-      ) {
-        // Case 3: Both publication and paper writing - get editors and authors
-        const response = await api.getAllEditorsAndAuthors();
-        entities = response.data;
+      // Special case for combined "Publication and Paper writing"
+      if (requirement.toLowerCase().includes("publication and paper writing")) {
+        if (registrationToUse?.status === "waiting for approval") {
+          if (registrationToUse.author_status === "completed") {
+            // If author's work is completed, assign to editors only
+            console.log("Loading editors for completed paper writing");
+            const response = await api.getAllEditors();
+            entities = response.data;
+          } else if (
+            registrationToUse.author_status === "not started" ||
+            !registrationToUse.author_status
+          ) {
+            // If author hasn't started, assign to authors only
+            console.log("Loading authors for new paper writing");
+            const response = await api.getAllAuthors();
+            entities = response.data;
+          } else {
+            // For in-progress or other statuses, load both
+            console.log("Loading both editors and authors");
+            const response = await api.getAllEditorsAndAuthors();
+            entities = response.data;
+          }
+        } else {
+          // For non "waiting for approval" status - load both
+          const response = await api.getAllEditorsAndAuthors();
+          entities = response.data;
+        }
       } else if (requirement.toLowerCase().includes("publication")) {
         // Case 1: Publication - get editors
         const response = await api.getAllEditors();
@@ -716,41 +739,48 @@ function ApprovalDetailContent({ id }: { id: string }) {
   // Handle changes to the edit form fields
   const handleEditChange = (field: string, value: number | string) => {
     if (!editFormData) return;
-    
+
     const updatedData = { ...editFormData, [field]: value };
-    
+
     // Auto-calculate total amount when init_amount, accept_amount, or discount changes
-    if (['init_amount', 'accept_amount', 'discount'].includes(field)) {
-      updatedData.total_amount = 
-        Number(updatedData.init_amount) + 
-        Number(updatedData.accept_amount) - 
+    if (["init_amount", "accept_amount", "discount"].includes(field)) {
+      updatedData.total_amount =
+        Number(updatedData.init_amount) +
+        Number(updatedData.accept_amount) -
         Number(updatedData.discount);
     }
-    
+
     setEditFormData(updatedData);
   };
 
   // Handle changes to service prices
   const handleServicePriceChange = (service: string, price: number) => {
     if (!editFormData || !editFormData.service_and_prices) return;
-    
-    const updatedPrices = { ...editFormData.service_and_prices, [service]: price };
-    
+
+    const updatedPrices = {
+      ...editFormData.service_and_prices,
+      [service]: price,
+    };
+
     // Calculate init_amount as sum of all service prices
-    const newInitAmount = Object.values(updatedPrices).reduce((sum, price) => sum + Number(price), 0);
-    
+    const newInitAmount = Object.values(updatedPrices).reduce(
+      (sum, price) => sum + Number(price),
+      0
+    );
+
     setEditFormData({
       ...editFormData,
       service_and_prices: updatedPrices,
       init_amount: newInitAmount,
-      total_amount: newInitAmount + editFormData.accept_amount - editFormData.discount
+      total_amount:
+        newInitAmount + editFormData.accept_amount - editFormData.discount,
     });
   };
 
   // Save changes to the invoice
   const handleSaveChanges = async () => {
     if (!editFormData || !registration) return;
-    
+
     setIsEditSubmitting(true);
     try {
       // Call API to update registration invoice details
@@ -760,9 +790,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
         discount: editFormData.discount,
         total_amount: editFormData.total_amount,
         bank_id: editFormData.bank_id,
-        service_and_prices: editFormData.service_and_prices
+        service_and_prices: editFormData.service_and_prices,
       });
-      
+
       if (response.success) {
         toast.success("Invoice details updated successfully");
         // Refresh data after update
@@ -790,7 +820,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
         discount: registration.discount,
         total_amount: registration.total_amount,
         bank_id: registration.bank_id,
-        service_and_prices: registration.service_and_prices
+        service_and_prices: registration.service_and_prices,
       });
     }
     // Exit edit mode
@@ -887,8 +917,8 @@ function ApprovalDetailContent({ id }: { id: string }) {
             {registration?.status === "quotation review"
               ? "Quotation Review"
               : registration?.status === "waiting for approval"
-              ? "Approval Needed"
-              : "Quotation Accepted"}
+                ? "Approval Needed"
+                : "Quotation Accepted"}
           </Chip>
         </div>
       </div>
@@ -990,8 +1020,73 @@ function ApprovalDetailContent({ id }: { id: string }) {
               </div>
               <div>
                 <p className="text-sm text-default-500">Registered By</p>
-                <p className="font-medium">{registration.registered_by_entity.username}</p>
+                <p className="font-medium">
+                  {registration.registered_by_entity.username}
+                </p>
               </div>
+
+              {/* Add Paper Status indicator for combined requirements */}
+              {(leads?.requirement
+                ?.toLowerCase()
+                .includes("publication and paper writing") ||
+                prospectus?.requirement
+                  ?.toLowerCase()
+                  .includes("publication and paper writing") ||
+                registration.prospectus?.requirement
+                  ?.toLowerCase()
+                  .includes("publication and paper writing")) &&
+                registration.status === "waiting for approval" && (
+                  <div className="md:col-span-2 mt-4 p-4 bg-default-50 dark:bg-content2 rounded-lg border border-default-200 dark:border-default-700">
+                    <p className="text-sm text-default-500 font-semibold mb-2">
+                      Paper Writing Status
+                    </p>
+                    <div className="flex items-center gap-3">
+                      {registration.author_status === "completed" ? (
+                        <Chip
+                          color="success"
+                          variant="flat"
+                          className="capitalize inline-flex items-center gap-2"
+                          startContent={<CheckCircleIcon className="w-5 h-5" />}
+                        >
+                          Paper Writing Completed
+                        </Chip>
+                      ) : registration.author_status === "in progress" ? (
+                        <Chip
+                          color="primary"
+                          variant="flat"
+                          className="capitalize flex items-center gap-2"
+                          startContent={<ClockIcon className="w-5 h-5" />}
+                        >
+                          Paper Writing In Progress
+                        </Chip>
+                      ) : registration.author_status === "not started" ? (
+                        <Chip
+                          color="warning"
+                          variant="flat"
+                          className="capitalize flex items-center gap-2"
+                          startContent={<ExclamationTriangleIcon className="w-5 h-5" />}
+                        >
+                          Paper Writing Not Started
+                        </Chip>
+                      ) : (
+                        <Chip
+                          color="default"
+                          variant="flat"
+                          className="capitalize flex items-center gap-2"
+                        >
+                          Paper Writing Status Unknown
+                        </Chip>
+                      )}
+
+                      {registration.author_status === "completed" && (
+                        <p className="text-sm text-success-600 font-medium">
+                          Ready for editor assignment
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
               <div className="md:col-span-2 mt-2 border-t border-dashed border-default-200 dark:border-default-700 pt-3">
                 <p className="text-sm text-default-500">Client Notes</p>
                 <p className="font-medium">
@@ -1023,9 +1118,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
                       <div className="flex items-center space-x-2">
                         <DocumentIcon className="h-6 w-6 text-default-500" />
                         <div className="truncate flex-1">
-                          <p className="font-medium truncate">
-                            {file.originalName}
-                          </p>
+                          <p className="font-medium truncate">{file.originalName}</p>
                           <p className="text-xs text-default-500">
                             {(file.size / 1024).toFixed(1)} KB
                           </p>
@@ -1086,7 +1179,13 @@ function ApprovalDetailContent({ id }: { id: string }) {
                   size="sm"
                   color="success"
                   variant="solid"
-                  startContent={isEditSubmitting ? <Spinner size="sm" /> : <CheckCircleIcon className="h-4 w-4" />}
+                  startContent={
+                    isEditSubmitting ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    )
+                  }
                   onClick={handleSaveChanges}
                   isLoading={isEditSubmitting}
                 >
@@ -1143,44 +1242,54 @@ function ApprovalDetailContent({ id }: { id: string }) {
               <h3 className="text-sm font-semibold mb-2">Services</h3>
               {isEditMode && editFormData?.service_and_prices ? (
                 <div className="space-y-2 mb-3">
-                  {Object.entries(editFormData.service_and_prices).map(([service, price]) => (
-                    <div key={service} className="flex justify-between items-center gap-2">
-                      <Input 
-                        className="flex-1" 
-                        size="sm" 
-                        value={service}
-                        readOnly
-                      />
-                      <Input 
-                        className="w-32" 
-                        size="sm" 
-                        type="number"
-                        startContent={<span className="text-default-400">₹</span>}
-                        value={price.toString()}
-                        onChange={(e) => handleServicePriceChange(service, Number(e.target.value))}
-                      />
-                    </div>
-                  ))}
+                  {Object.entries(editFormData.service_and_prices).map(
+                    ([service, price]) => (
+                      <div
+                        key={service}
+                        className="flex justify-between items-center gap-2"
+                      >
+                        <Input
+                          className="flex-1"
+                          size="sm"
+                          value={service}
+                          readOnly
+                        />
+                        <Input
+                          className="w-32"
+                          size="sm"
+                          type="number"
+                          startContent={
+                            <span className="text-default-400">₹</span>
+                          }
+                          value={price.toString()}
+                          onChange={(e) =>
+                            handleServicePriceChange(
+                              service,
+                              Number(e.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : registration.service_and_prices &&
+                Object.keys(registration.service_and_prices).length > 0 ? (
+                <div className="space-y-1 mb-3">
+                  {Object.entries(registration.service_and_prices).map(
+                    ([service, price]) => (
+                      <div
+                        key={service}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>{service}</span>
+                        <span>₹{Number(price).toLocaleString()}</span>
+                      </div>
+                    )
+                  )}
                 </div>
               ) : (
-                registration.service_and_prices &&
-                Object.keys(registration.service_and_prices).length > 0 ? (
-                  <div className="space-y-1 mb-3">
-                    {Object.entries(registration.service_and_prices).map(
-                      ([service, price]) => (
-                        <div
-                          key={service}
-                          className="flex justify-between text-sm"
-                        >
-                          <span>{service}</span>
-                          <span>₹{Number(price).toLocaleString()}</span>
-                        </div>
-                      )
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-sm mb-3">{registration.services}</div>
-                )
+                <div className="text-sm mb-3">{registration.services}</div>
               )}
             </div>
 
@@ -1190,45 +1299,57 @@ function ApprovalDetailContent({ id }: { id: string }) {
                 <>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Initial Amount (Calculated)</span>
-                    <span className="text-sm font-medium">₹{editFormData.init_amount.toLocaleString()}</span>
+                    <span className="text-sm font-medium">
+                      ₹{editFormData.init_amount.toLocaleString()}
+                    </span>
                   </div>
-                  
+
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-sm">Additional Services</span>
-                    <Input 
+                    <Input
                       className="w-32"
                       size="sm"
                       type="number"
                       startContent={<span className="text-default-400">₹</span>}
                       value={editFormData.accept_amount.toString()}
-                      onChange={(e) => handleEditChange('accept_amount', Number(e.target.value))}
+                      onChange={(e) =>
+                        handleEditChange(
+                          "accept_amount",
+                          Number(e.target.value)
+                        )
+                      }
                     />
                   </div>
-                  
+
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-sm text-danger-500">Discount</span>
-                    <Input 
+                    <Input
                       className="w-32"
                       size="sm"
                       type="number"
                       startContent={<span className="text-default-400">₹</span>}
                       value={editFormData.discount.toString()}
-                      onChange={(e) => handleEditChange('discount', Number(e.target.value))}
+                      onChange={(e) =>
+                        handleEditChange("discount", Number(e.target.value))
+                      }
                     />
                   </div>
-                  
+
                   <div className="flex justify-between items-center font-medium pt-2 border-t border-dashed border-default-200 dark:border-default-700">
                     <span>Total Amount</span>
                     <span>₹{editFormData.total_amount.toLocaleString()}</span>
                   </div>
-                  
+
                   {/* Bank Selection - Fixed */}
                   <div className="mt-4">
                     <div className="mb-2">
-                      <span className="text-sm text-default-600">Current Bank:</span>
+                      <span className="text-sm text-default-600">
+                        Current Bank:
+                      </span>
                       {registration.bank_details ? (
                         <span className="text-sm ml-2 font-medium">
-                          {registration.bank_details.account_name} - {registration.bank_details.bank}
+                          {registration.bank_details.account_name} -{" "}
+                          {registration.bank_details.bank}
                         </span>
                       ) : (
                         <span className="text-sm ml-2 text-default-400 italic">
@@ -1236,11 +1357,13 @@ function ApprovalDetailContent({ id }: { id: string }) {
                         </span>
                       )}
                     </div>
-                    
+
                     <Select
                       label="Select Bank"
                       size="sm"
-                      selectedKeys={editFormData.bank_id ? [editFormData.bank_id] : []}
+                      selectedKeys={
+                        editFormData.bank_id ? [editFormData.bank_id] : []
+                      }
                       onChange={handleBankChange}
                       className="w-full"
                       placeholder="Choose a bank account"
@@ -1251,7 +1374,7 @@ function ApprovalDetailContent({ id }: { id: string }) {
                         </SelectItem>
                       ))}
                     </Select>
-                    
+
                     {/* Debug info */}
                     <div className="text-xs text-default-400 mt-1">
                       Selected bank ID: {editFormData.bank_id || "None"}
@@ -1268,7 +1391,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
                   {registration.accept_amount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Additional Services</span>
-                      <span>₹{registration.accept_amount.toLocaleString()}</span>
+                      <span>
+                        ₹{registration.accept_amount.toLocaleString()}
+                      </span>
                     </div>
                   )}
 
@@ -1288,7 +1413,10 @@ function ApprovalDetailContent({ id }: { id: string }) {
                   {registration.bank_details && (
                     <div className="flex justify-between text-sm pt-2">
                       <span>Selected Bank</span>
-                      <span>{registration.bank_details.account_name} ({registration.bank_details.bank})</span>
+                      <span>
+                        {registration.bank_details.account_name} (
+                        {registration.bank_details.bank})
+                      </span>
                     </div>
                   )}
                 </>
@@ -1462,7 +1590,8 @@ function ApprovalDetailContent({ id }: { id: string }) {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-default-600 mb-2">
-                    Assign this registration to handle the client&apos;s project:
+                    Assign this registration to handle the client&apos;s
+                    project:
                   </p>
                   <div className="bg-default-50 dark:bg-content2 p-2 rounded text-sm">
                     <p className="font-medium">Requirement:</p>
@@ -1481,8 +1610,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
                       <div className="bg-primary-100 dark:bg-primary-900/30 text-primary p-2 rounded-md flex items-center gap-2">
                         <UserGroupIcon className="w-5 h-5" />
                         <span className="font-medium">
-                          {assignableEntities.find((e) => e.id === selectedEntity)
-                            ?.username || "Selected Entity"}
+                          {assignableEntities.find(
+                            (e) => e.id === selectedEntity
+                          )?.username || "Selected Entity"}
                         </span>
                       </div>
                       <Button
@@ -1546,8 +1676,9 @@ function ApprovalDetailContent({ id }: { id: string }) {
                       <div className="bg-primary-100 dark:bg-primary-900/30 text-primary p-2 rounded-md flex items-center gap-2">
                         <UserGroupIcon className="w-5 h-5" />
                         <span className="font-medium">
-                          {assignableEntities.find((e) => e.id === selectedEntity)
-                            ?.username || "Selected Entity"}
+                          {assignableEntities.find(
+                            (e) => e.id === selectedEntity
+                          )?.username || "Selected Entity"}
                         </span>
                       </div>
                       <Button
