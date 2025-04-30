@@ -18,7 +18,7 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { BellIcon, ChartPieIcon, UsersIcon, UserGroupIcon, DocumentTextIcon, UserIcon, BriefcaseIcon, TableCellsIcon, UserPlusIcon, BellAlertIcon } from "@heroicons/react/24/outline";
+import { BellIcon, ChartPieIcon, UserGroupIcon,TableCellsIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";
@@ -28,7 +28,7 @@ import api from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 import { ProfileMenu } from '@/components/ProfileMenu';
-import { currentUserHasRecordsAccess, currentUserHasPermission, getCurrentUser, PERMISSIONS } from '@/utils/permissions';
+import { currentUserHasRecordsAccess, currentUserHasPermission,  PERMISSIONS } from '@/utils/permissions';
 
 interface NavItem {
   label: string;
@@ -40,7 +40,7 @@ interface NavItem {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients } = useAuth();
+  const { isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients, isAuthor } = useAuth();
   const [notificationCount, setNotificationCount] = React.useState(5);
   const { setIsNavigating } = useNavigationLoading();
   const [username, setUsername] = React.useState<string>("");
@@ -53,6 +53,8 @@ export const Navbar = () => {
   const [showClientsTab, setShowClientsTab] = React.useState(false); 
   const [showFinanceTab, setShowFinanceTab] = React.useState(false);
   const [showDepartmentTab, setShowDepartmentTab] = React.useState(false);
+  const [showApprovalNav, setShowApprovalNav] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
   const isEditorPath = pathname?.startsWith('/business/editor');
   const isLeadsPath = pathname?.startsWith('/business/conversion');
@@ -62,7 +64,16 @@ export const Navbar = () => {
     // Get username from stored auth data
     if (isLoggedIn) {
       const userData = api.getStoredAuth()?.user;
-      if (userData?.username) {
+      
+      // Check for client-specific data structure
+      const isClientUser = getUserRole() === 'clients';
+      
+      if (isClientUser && userData) {
+        // For clients, check different possible fields for the name
+        const clientName = userData.name || userData.prospectus.client_name || userData.client_name || userData.username || userData.email;
+        setUsername(clientName || "Client");
+      } else if (userData?.username) {
+        // For other roles, use the username field
         setUsername(userData.username);
       }
       
@@ -91,6 +102,7 @@ export const Navbar = () => {
         setShowClientsTab(true);
         setShowFinanceTab(true);  // SuperAdmin has finance tab access
         setShowDepartmentTab(true);  // SuperAdmin has department tab access
+        setShowApprovalNav(true);
         return;
       }
       
@@ -110,6 +122,9 @@ export const Navbar = () => {
 
         // Check for department tab permission
         setShowDepartmentTab(currentUserHasPermission(PERMISSIONS.SHOW_DEPARTMENT_TAB));
+        
+        // Check for approval nav permission
+        setShowApprovalNav(currentUserHasPermission(PERMISSIONS.SHOW_APPROVAL_NAV));
       }
     };
     
@@ -134,6 +149,10 @@ export const Navbar = () => {
         }
         if (typeof event.detail.showDepartmentTab === 'boolean') {
           setShowDepartmentTab(event.detail.showDepartmentTab);
+        }
+        // Add handler for approval nav permission
+        if (typeof event.detail.showApprovalNav === 'boolean') {
+          setShowApprovalNav(event.detail.showApprovalNav);
         }
       }
     };
@@ -165,6 +184,8 @@ export const Navbar = () => {
       path = '/business/conversion';
     } else if (isClients) {
       path = '/business/clients';
+    } else if (isAuthor) {
+      path = '/business/author';
     }
     
     setIsNavigating(true);
@@ -173,6 +194,8 @@ export const Navbar = () => {
 
   const handleNavigation = (path: string) => {
     setIsNavigating(true);
+    // Close the mobile menu when navigation occurs
+    setIsMenuOpen(false);
     router.push(path);
   };
 
@@ -190,7 +213,7 @@ export const Navbar = () => {
   
     // Special handling for admin sections
     if (path.startsWith('/admin/')) {
-      const section = path.split('/')[2]; // Get 'users', 'clients', etc.
+      const section = path.split('/')[2]; // Get xs', 'clients', etc.
       return pathname.startsWith('/admin/' + section);
     }
     
@@ -247,6 +270,10 @@ export const Navbar = () => {
           return showDepartmentTab;
         }
         
+        if (link.href.includes('/admin/approval')) {
+          return showApprovalNav;
+        }
+        
         return true;
       });
     }
@@ -278,7 +305,12 @@ export const Navbar = () => {
     }
     
     if (role === 'clients') {
-      return !isClientsPath ? siteConfig.clientsLinks : [];
+      // Always return client links regardless of path
+      return siteConfig.clientsLinks;
+    }
+    
+    if (role === 'author') {
+      return siteConfig.authorLinks;
     }
     
     return [];
@@ -336,7 +368,13 @@ export const Navbar = () => {
   const hasNavigationLinks = navigationLinks.length > 0;
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
+    <HeroUINavbar 
+      maxWidth="xl" 
+      position="sticky" 
+      className="z-[100]" // Add higher z-index to ensure navbar is above sidebar
+      isMenuOpen={isMenuOpen}
+      onMenuOpenChange={setIsMenuOpen}
+    >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <Button
@@ -381,7 +419,7 @@ export const Navbar = () => {
           </NavbarItem>
         )}
         <NavbarItem className="hidden sm:flex gap-2 items-center">
-          {isEditorPath && hasNotificationsPermission && <NotificationButton />}
+          {/* {isEditorPath && hasNotificationsPermission && <NotificationButton />} */}
           <ThemeSwitch />
           {isLoggedIn && username && (
             <ProfileMenu username={username} userRole={userRole} />
@@ -396,7 +434,12 @@ export const Navbar = () => {
           <ProfileMenu username={username} userRole={userRole} isMobile={true} />
         )}
         {/* Only show menu toggle if there are navigation links */}
-        {hasNavigationLinks && <NavbarMenuToggle />}
+        {hasNavigationLinks && (
+          <NavbarMenuToggle 
+            className="ml-1" 
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          />
+        )}
       </NavbarContent>
 
       {hasNavigationLinks && (
@@ -409,12 +452,17 @@ export const Navbar = () => {
                 <NextLink 
                   className={clsx(
                     linkStyles(),
-                    "flex items-center gap-2",
+                    "flex items-center gap-2 py-3",
                     isActiveMainPath(link.href) && "text-primary font-medium"
                   )} 
                   href={link.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavigation(link.href);
+                    // handleNavigation will close the menu
+                  }}
                 >
-                  <link.icon className="w-4 h-4" />
+                  <link.icon className="w-5 h-5" />
                   {link.label}
                 </NextLink>
               </NavbarMenuItem>

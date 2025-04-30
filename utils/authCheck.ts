@@ -4,10 +4,10 @@ const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
 
-// Update role type to include new roles
-export const getUserRole = (): 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | null => {
+// Update role type to include author role
+export const getUserRole = (): 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | 'author' | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | null;
+  return localStorage.getItem(USER_ROLE_KEY) as 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | 'author' | null;
 };
 
 export const isLoggedIn = (): boolean => {
@@ -25,7 +25,7 @@ export const redirectToLogin = (router: AppRouterInstance, userRole?: string) =>
   router.replace(path);
 };
 
-export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'admin' | 'leads' | 'clients'): boolean => {
+export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | 'author'): boolean => {
   if (typeof window === 'undefined') return false;
   
   const token = localStorage.getItem(TOKEN_KEY);
@@ -56,6 +56,9 @@ export const checkAuth = (router: AppRouterInstance, requiredRole?: 'editor' | '
       case 'clients':
         router.push('/business/clients');
         break;
+      case 'author':
+        router.push('/business/author');
+        break;
       default:
         router.push('/');
     }
@@ -82,6 +85,9 @@ export const redirectToDashboard = (router: AppRouterInstance) => {
       break;
     case 'clients':
       router.replace('/business/clients');
+      break;
+    case 'author':
+      router.replace('/business/author');
       break;
     default:
       router.replace('/');

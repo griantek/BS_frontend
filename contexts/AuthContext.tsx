@@ -6,8 +6,9 @@ interface AuthContextType {
   isAdmin: boolean;
   isExecutive: boolean;
   isEditor: boolean;
-  isLeads: boolean;  // New role state
-  isClients: boolean;  // New role state
+  isLeads: boolean;
+  isClients: boolean;
+  isAuthor: boolean;
   updateAuthState: () => void;
 }
 
@@ -18,8 +19,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isExecutive, setIsExecutive] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
-  const [isLeads, setIsLeads] = useState(false);  // Initialize new role states
-  const [isClients, setIsClients] = useState(false);  // Initialize new role states
+  const [isLeads, setIsLeads] = useState(false);
+  const [isClients, setIsClients] = useState(false);
+  const [isAuthor, setIsAuthor] = useState(false);
 
   const updateAuthState = () => {
     const token = localStorage.getItem('token');
@@ -33,14 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(userRole === 'admin');
       setIsExecutive(userRole === 'executive');
       setIsEditor(userRole === 'editor');
-      setIsLeads(userRole === 'leads');  // Set new role states
-      setIsClients(userRole === 'clients');  // Set new role states
+      setIsLeads(userRole === 'leads');
+      setIsClients(userRole === 'clients');
+      setIsAuthor(userRole === 'author');
     } else {
       setIsAdmin(false);
       setIsExecutive(false);
       setIsEditor(false);
-      setIsLeads(false);  // Reset on logout
-      setIsClients(false);  // Reset on logout
+      setIsLeads(false);
+      setIsClients(false);
+      setIsAuthor(false);
     }
   };
 
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients, updateAuthState 
+      isLoggedIn, isAdmin, isExecutive, isEditor, isLeads, isClients, isAuthor, updateAuthState 
     }}>
       {children}
     </AuthContext.Provider>

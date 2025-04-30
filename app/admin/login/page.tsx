@@ -36,7 +36,10 @@ export default function AdminLogin() {
       const userRole = getUserRole();
       if (userRole === "admin") {
         router.replace("/admin");
-      } else {
+      } else if(userRole === "clients"){
+        router.replace("/business/clients");
+      }
+      else{
         router.replace("/business");
       }
     }
@@ -53,7 +56,10 @@ export default function AdminLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await api.loginAdmin(data);
+      const response = await api.loginAdmin({
+        username: data.username.trim(),
+        password: data.password.trim()
+      });
       if (response.success && response.token && response.admin) {
         api.setStoredAuth(response.token, response.admin, "admin");
         updateAuthState();

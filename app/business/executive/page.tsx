@@ -50,7 +50,8 @@ function BusinessDashboard() {
     pendingRegistrations: 0,
     completedRegistrations: 0,
     totalRevenue: 0,
-    pendingAmount: 0,
+    unpaidAmount: 0, // Renamed from pendingAmount
+    todayRevenue: 0,
   });
   
   // Add lead-related state
@@ -123,18 +124,28 @@ function BusinessDashboard() {
       // Calculate total revenue from completed registrations
       const totalRevenue = completedRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
       
-      // Calculate pending amount considering partial payments
-      let pendingAmount = 0;
+      // Calculate unpaid amount (total amount - paid amount)
+      let totalRegistrationAmount = registrations.reduce((sum, reg) => sum + reg.total_amount, 0);
+      let totalPaidAmount = 0;
       
-      // Add all pending registration amounts
-      pendingAmount += pendingRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
+      // Calculate total paid amount from all transactions
+      registrations.forEach(reg => {
+        if (reg.transactions && reg.transactions.amount) {
+          totalPaidAmount += reg.transactions.amount;
+        }
+      });
       
-      // Add balance amounts from partially paid registrations
+      // Unpaid amount is the difference between total registration amount and total paid amount
+      const unpaidAmount = Math.max(0, totalRegistrationAmount - totalPaidAmount);
+      
+      // Calculate today's revenue from completed registrations with today's date
+      const today = new Date();
+      let todayRevenue = 0;
+      
       completedRegs.forEach(reg => {
-        // Check if there's a transactions property with amount
-        if (reg.transactions && reg.transactions.amount && reg.transactions.amount < reg.total_amount) {
-          const balanceAmount = calculateBalanceAmount(reg.total_amount, reg.transactions.amount);
-          pendingAmount += balanceAmount;
+        // Check if registration/transaction was completed today
+        if (reg.registration_date && isToday(parseISO(reg.registration_date))) {
+          todayRevenue += reg.total_amount;
         }
       });
 
@@ -144,7 +155,8 @@ function BusinessDashboard() {
         pendingRegistrations: pendingRegs.length,
         completedRegistrations: completedRegs.length,
         totalRevenue: totalRevenue,
-        pendingAmount: pendingAmount,
+        unpaidAmount: unpaidAmount, // Updated to use unpaid amount
+        todayRevenue: todayRevenue,
       });
 
       // Check permissions using our utility
@@ -194,8 +206,7 @@ function BusinessDashboard() {
       const newLeadsToday = leads.filter(lead => lead.date === today).length;
       
       // Find converted leads (where status is completed or converted)
-      const convertedLeads = leads.filter(lead => 
-        lead.followup_status === 'completed' || 
+      const convertedLeads = leads.filter(lead =>
         lead.followup_status === 'converted'
       ).length;
       
@@ -335,8 +346,9 @@ function BusinessDashboard() {
         <Card className="border-l-4 border-danger">
           <CardBody className="flex flex-row items-center justify-between">
             <div>
-              <p className="text-default-500 text-sm">Revenue</p>
+              <p className="text-default-500 text-sm">Total Revenue</p>
               <h3 className="text-2xl font-bold">{formatCurrency(dashboardData.totalRevenue)}</h3>
+              <p className="text-xs text-success mt-1">Today: {formatCurrency(dashboardData.todayRevenue)}</p>
             </div>
             <div className="bg-danger/10 p-3 rounded-full">
               <CurrencyRupeeIcon className="w-6 h-6 text-danger" />
@@ -505,8 +517,12 @@ function BusinessDashboard() {
                     <span className="font-semibold">{formatCurrency(dashboardData.totalRevenue)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Pending Amount:</span>
-                    <span className="font-semibold text-warning-600">{formatCurrency(dashboardData.pendingAmount)}</span>
+                    <span>Today&apos;s Revenue:</span>
+                    <span className="font-semibold text-success-600">{formatCurrency(dashboardData.todayRevenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Unpaid Amount:</span>
+                    <span className="font-semibold text-warning-600">{formatCurrency(dashboardData.unpaidAmount)}</span>
                   </div>
                 </div>
 

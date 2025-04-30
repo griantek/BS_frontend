@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card, Button, Divider } from "@heroui/react";
+import { Card, Button, Divider, Badge } from "@heroui/react";
 import { usePathname, useRouter } from 'next/navigation';
 import {
     HomeIcon,
@@ -23,9 +23,18 @@ import clsx from "clsx";
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext';
 import { currentUserHasPermission, PERMISSIONS } from '@/utils/permissions';
 import { getUserRole } from '@/utils/authCheck';
+import api from '@/services/api';
+
+// Define an interface for sidebar items to fix type errors
+interface SidebarItem {
+    name: string;
+    icon: React.ForwardRefExoticComponent<any>;
+    path: string;
+    badge?: boolean;
+    count?: number;
+}
 
 export const Sidebar = () => {
-    // Initialize sidebar as collapsed by default
     const [isCollapsed, setIsCollapsed] = React.useState(true);
     const [isHovering, setIsHovering] = React.useState(false);
     const sidebarRef = React.useRef<HTMLDivElement>(null);
@@ -36,103 +45,130 @@ export const Sidebar = () => {
     const [hasDashboardPermission, setHasDashboardPermission] = React.useState(true);
     const [showAssignedTable, setShowAssignedTable] = React.useState(true);
     const [showJournalTable, setShowJournalTable] = React.useState(true);
-    
-    // Check for user role
+    const [pendingSubmissionsCount, setPendingSubmissionsCount] = React.useState(0);
+
     const role = getUserRole();
 
-    // Check if we're in different sections
     const isEditorPath = pathname?.startsWith('/business/editor');
     const isLeadsPath = pathname?.startsWith('/business/conversion/leads');
     const isExecutiveLeadsPath = pathname?.startsWith('/business/executive/leads');
     const isConversionPath = pathname === '/business/conversion';
     const isRecordsPath = pathname?.startsWith('/business/executive/records');
+    const isAuthorPath = pathname?.startsWith('/business/author');
 
     React.useEffect(() => {
-        // Check if the user has permissions for the various sections
         setHasDashboardPermission(currentUserHasPermission(PERMISSIONS.VIEW_DASHBOARD_EDITOR));
         setShowAssignedTable(currentUserHasPermission(PERMISSIONS.SHOW_ASSIGNED_TABLE));
         setShowJournalTable(currentUserHasPermission(PERMISSIONS.SHOW_JOURNAL_TABLE));
     }, []);
 
-    // Generate Leads sidebar items (original conversion/leads path)
-    const getLeadsSidebarItems = () => {
+    const fetchPendingSubmissionsCount = async () => {
+        try {
+            if (role === 'editor') {
+                const user = api.getStoredUser();
+                if (user && user.id) {
+                    const response = await api.getAssignedRegistrations(user.id);
+                    if (response && response.data) {
+                        setPendingSubmissionsCount(response.data.length);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching pending submissions count:', error);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchPendingSubmissionsCount();
+
+        const intervalId = setInterval(fetchPendingSubmissionsCount, 5 * 60 * 1000);
+
+        return () => clearInterval(intervalId);
+    }, [role]);
+
+    const getLeadsSidebarItems = (): SidebarItem[] => {
         return [
             { name: 'All Leads', icon: TableCellsIcon, path: '/business/conversion/leads/all' },
             { name: 'Followups', icon: BellAlertIcon, path: '/business/conversion/leads/followup' },
         ];
     };
 
-    // Generate Executive Leads sidebar items (new executive/leads path)
-    const getExecutiveLeadsSidebarItems = () => {
+    const getExecutiveLeadsSidebarItems = (): SidebarItem[] => {
         return [
             { name: 'All Leads', icon: TableCellsIcon, path: '/business/executive/leads/all' },
             { name: 'Followups', icon: BellAlertIcon, path: '/business/executive/leads/followup' },
         ];
     };
 
-    // Generate Executive Records sidebar items
-    const getExecutiveRecordsSidebarItems = () => {
+    const getExecutiveRecordsSidebarItems = (): SidebarItem[] => {
         return [
             { name: 'Prospects', icon: UserGroupIconOutline, path: '/business/executive/records/prospectus' },
             { name: 'Registrations', icon: DocumentDuplicateIcon, path: '/business/executive/records/registration' },
         ];
     };
 
-    // Generate editor sidebar items
-    const getEditorSidebarItems = () => {
-        const items = [];
-        
-        // Only add Dashboard if user has permission
+    const getEditorSidebarItems = (): SidebarItem[] => {
+        const items: SidebarItem[] = [];
+
         if (hasDashboardPermission) {
-            items.push({ name: 'Dashboard', icon: HomeIcon, path: '/business/editor' });
+            items.push({ name: 'Dashboard', icon: HomeIcon, path: '/business/editor', badge: false });
         }
-        
-        // Only add Assigned to me if user has permission
+
         if (showAssignedTable) {
-            items.push({ name: 'Assigned to me', icon: ClipboardDocumentListIcon, path: '/business/editor/assigned' });
+            items.push({
+                name: 'Pending Submissions',
+                icon: ClipboardDocumentListIcon,
+                path: '/business/editor/assigned',
+                badge: pendingSubmissionsCount > 0, // Only show badge if count > 0
+                count: pendingSubmissionsCount > 0 ? pendingSubmissionsCount : undefined // Only include count if > 0
+            });
         }
-        
-        // Only add Journal Details if user has permission
+
         if (showJournalTable) {
-            items.push({ name: 'Journal Details', icon: NewspaperIcon, path: '/business/editor/journals' });
+            items.push({ name: 'Journal Submissions', icon: NewspaperIcon, path: '/business/editor/journals', badge: false });
         }
-        
+
         return items;
     };
 
-    // Toggle sidebar state manually (when button is clicked)
+    const getClientSidebarItems = (): SidebarItem[] => {
+        return [
+            { name: 'All Journals', icon: NewspaperIcon, path: '/business/clients/journals' },
+            { name: 'Submissions', icon: ClipboardDocumentListIcon, path: '/business/clients/journals/submissions' },
+            { name: 'Quotations', icon: DocumentTextIcon, path: '/business/clients/journals/quotations' },
+        ];
+    };
+
+    const getAuthorSidebarItems = (): SidebarItem[] => {
+        return [
+            { name: 'Dashboard', icon: HomeIcon, path: '/business/author' },
+            { name: 'Assigned Tasks', icon: ClipboardDocumentListIcon, path: '/business/author/tasks' },
+            { name: 'Completed Work', icon: CheckIcon, path: '/business/author/completed' },
+        ];
+    };
+
     const toggleSidebar = () => {
-        // When manually toggled, update the persisted state
         const newState = !isCollapsed;
         setIsCollapsed(newState);
-        // Store preference in localStorage to persist the manual choice
         localStorage.setItem('sidebarCollapsed', newState.toString());
     };
 
-    // Handle mouse enter - expand immediately on hover
     const handleMouseEnter = () => {
-        // Clear any existing timer
         if (hoverTimerRef.current) {
             clearTimeout(hoverTimerRef.current);
         }
-        
-        // Set hovering state immediately
+
         setIsHovering(true);
     };
 
-    // Handle mouse leave - collapse with slight delay
     const handleMouseLeave = () => {
-        // Clear any existing timer
         if (hoverTimerRef.current) {
             clearTimeout(hoverTimerRef.current);
         }
-        
-        // Set hovering state to false immediately
+
         setIsHovering(false);
-        
-        // Using a short delay to prevent accidental collapse on quick mouse movements
+
         hoverTimerRef.current = setTimeout(() => {
-            // Only auto-collapse if not manually expanded
             const isManuallyExpanded = localStorage.getItem('sidebarCollapsed') === 'false';
             if (!isManuallyExpanded) {
                 setIsCollapsed(true);
@@ -141,69 +177,88 @@ export const Sidebar = () => {
     };
 
     const isActive = (path: string) => {
-        // For editor paths
         if (path === '/business/editor/journals') {
-            return pathname === path || 
-                   pathname.startsWith('/business/editor/view/journal/') || 
-                   pathname.startsWith('/business/editor/edit/journal/');
+            return pathname === path ||
+                pathname.startsWith('/business/editor/view/journal/') ||
+                pathname.startsWith('/business/editor/edit/journal/') ||
+                pathname.startsWith('/business/editor/view/journal/byEmail/');
         }
-        if (path === '/business/editor/assigned') {
-            return pathname === path || 
-                   pathname.startsWith('/business/editor/view/assigned/') ||
-                   pathname.startsWith('/business/editor/assigned/');
+        if (path === '/business/editor/journals/analysis') {
+            return pathname === '/business/editor/journals/analysis' ||
+                pathname.startsWith('/business/editor/view/journal/byEmail');
         }
-        
-        // For leads paths (original conversion path)
+
         if (path === '/business/conversion/leads/all') {
-            return pathname === path || 
-                   pathname.match(/^\/business\/conversion\/leads\/\d+$/) ||
-                   pathname === '/business/conversion/leads/add';
+            return pathname === path ||
+                pathname.match(/^\/business\/conversion\/leads\/\d+$/) ||
+                pathname === '/business/conversion/leads/add';
         }
         if (path === '/business/conversion/leads/followup') {
             return pathname === path || pathname.startsWith('/business/conversion/leads/followup');
         }
 
-        // For executive leads paths (new path)
         if (path === '/business/executive/leads/all') {
-            return pathname === path || 
-                   pathname.match(/^\/business\/executive\/leads\/\d+$/) ||
-                   pathname === '/business/executive/leads/add';
+            return pathname === path ||
+                pathname.match(/^\/business\/executive\/leads\/\d+$/) ||
+                pathname === '/business/executive/leads/add';
         }
         if (path === '/business/executive/leads/followup') {
             return pathname === path || pathname.startsWith('/business/executive/leads/followup');
         }
 
-        // For executive records paths
         if (path === '/business/executive/records/prospectus') {
             return pathname === path || pathname.startsWith('/business/executive/records/prospectus');
         }
         if (path === '/business/executive/records/registration') {
             return pathname === path || pathname.startsWith('/business/executive/records/registration');
         }
-        
+
+        if (path === '/business/clients/journals') {
+            return pathname === path ||
+                pathname.startsWith('/business/clients/journals/') &&
+                !pathname.includes('submissions') &&
+                !pathname.includes('quotations');
+        }
+
+        if (path === '/business/clients/journals/submissions') {
+            return pathname.includes('/business/clients/journals/submissions');
+        }
+
+        if (path === '/business/clients/journals/quotations') {
+            return pathname.includes('/business/clients/journals/quotations');
+        }
+
+        if (path === '/business/author/tasks') {
+            return pathname === path ||
+                pathname.startsWith('/business/author/tasks/');
+        }
+        if (path === '/business/author/completed') {
+            return pathname === path ||
+                pathname.startsWith('/business/author/completed/');
+        }
+
         return pathname === path;
     };
 
     const handleNavigation = (path: string) => {
-        setIsNavigating(true);
-        router.push(path);
+        // Only set navigating state and push to router if we're not already on this path
+        if (pathname !== path) {
+            setIsNavigating(true);
+            router.push(path);
+        }
     };
 
-    // Add an effect to dispatch a custom event when sidebar state changes
     React.useEffect(() => {
-        // Check if there's a saved preference
         const savedState = localStorage.getItem('sidebarCollapsed');
         if (savedState !== null) {
             setIsCollapsed(savedState === 'true');
         }
-        
-        // Update the CSS variable based on current state
+
         document.documentElement.style.setProperty(
             '--sidebar-width',
             isCollapsed && !isHovering ? '4rem' : '16rem'
         );
-        
-        // Clean up timers on unmount
+
         return () => {
             if (hoverTimerRef.current) {
                 clearTimeout(hoverTimerRef.current);
@@ -211,41 +266,42 @@ export const Sidebar = () => {
         };
     }, [isCollapsed, isHovering]);
 
-    // Only show dashboard for conversion path - don't show sidebar
     if (isConversionPath && role === 'leads') {
         return null;
     }
 
-    // Get appropriate sidebar items based on the path
-    const sidebarItems = isLeadsPath && role === 'leads' 
-        ? getLeadsSidebarItems() 
+    const sidebarItems = isLeadsPath && role === 'leads'
+        ? getLeadsSidebarItems()
         : isExecutiveLeadsPath && role === 'executive'
             ? getExecutiveLeadsSidebarItems()
             : isRecordsPath && role === 'executive'
                 ? getExecutiveRecordsSidebarItems()
                 : isEditorPath && role === 'editor'
                     ? getEditorSidebarItems()
-                    : [];
+                    : pathname?.startsWith('/business/clients/journals') && role === 'clients'
+                        ? getClientSidebarItems()
+                        : isAuthorPath && role === 'author'
+                            ? getAuthorSidebarItems()
+                            : [];
 
-    // If no sidebar items to show, don't render the sidebar
     if (sidebarItems.length === 0) {
         return null;
     }
 
-    // Get title based on section
-    const sidebarTitle = isLeadsPath || isExecutiveLeadsPath 
-        ? "Lead Management" 
-        : isRecordsPath 
+    const sidebarTitle = isLeadsPath || isExecutiveLeadsPath
+        ? "Lead Management"
+        : isRecordsPath
             ? "Records Management"
-            : "Navigation";
+            : pathname?.startsWith('/business/clients/journals')
+                ? "Journal Management"
+                : "Navigation";
 
     return (
-        <Card 
+        <Card
             ref={sidebarRef}
             className={clsx(
-                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-50",
+                "fixed top-16 left-0 h-[calc(100vh-4rem)] transition-all duration-300 z-20",
                 isCollapsed && !isHovering ? "w-16" : "w-64",
-                "hidden md:block",
                 "border-t-0 rounded-none bg-background/80 backdrop-blur-md",
                 "shadow-sm border-r border-divider"
             )}
@@ -264,8 +320,8 @@ export const Sidebar = () => {
                         className="ml-auto"
                         title={isCollapsed && !isHovering ? "Expand sidebar" : "Collapse sidebar"}
                     >
-                        {isCollapsed && !isHovering ? 
-                            <ChevronRightIcon className="h-4 w-4" /> : 
+                        {isCollapsed && !isHovering ?
+                            <ChevronRightIcon className="h-4 w-4" /> :
                             <ChevronLeftIcon className="h-4 w-4" />
                         }
                     </Button>
@@ -275,25 +331,44 @@ export const Sidebar = () => {
 
                 <div className="flex flex-col gap-2">
                     {sidebarItems.map((item) => (
-                        <Button
-                            key={item.path}
-                            variant={isActive(item.path) ? "solid" : "light"}
-                            color={isActive(item.path) ? "primary" : "default"}
-                            className={clsx(
-                                "justify-start w-full",
-                                isCollapsed && !isHovering ? "px-2" : "px-4",
-                                "h-10"
-                            )}
-                            startContent={
-                                <item.icon className={clsx(
-                                    "h-5 w-5 flex-shrink-0",
-                                    isActive(item.path) ? "text-primary-foreground" : "text-foreground"
-                                )} />
-                            }
-                            onClick={() => handleNavigation(item.path)}
-                        >
-                            {(!isCollapsed || isHovering) && <span>{item.name}</span>}
-                        </Button>
+                        <div key={item.path} className="relative">
+                            <Button
+                                variant={isActive(item.path) ? "solid" : "light"}
+                                color={isActive(item.path) ? "primary" : "default"}
+                                className={clsx(
+                                    "justify-start w-full",
+                                    isCollapsed && !isHovering ? "px-2" : "px-4",
+                                    "h-10"
+                                )}
+                                startContent={
+                                    <div className="relative">
+                                        <item.icon className={clsx(
+                                            "h-5 w-5 flex-shrink-0",
+                                            isActive(item.path) ? "text-primary-foreground" : "text-foreground"
+                                        )} />
+                                        {/* Show badge next to icon when collapsed */}
+                                        {isCollapsed && !isHovering && item.badge && item.count && item.count > 0 && (
+                                            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-xs text-white">
+                                                {item.count > 99 ? "99+" : item.count}
+                                            </span>
+                                        )}
+                                    </div>
+                                }
+                                onClick={() => handleNavigation(item.path)}
+                            >
+                                {(!isCollapsed || isHovering) && (
+                                    <div className="flex items-center">
+                                        <span>{item.name}</span>
+                                        {/* Show badge next to text when expanded */}
+                                        {item.badge && item.count && item.count > 0 && (
+                                            <span className="ml-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-xs text-white">
+                                                {item.count > 99 ? "99+" : item.count}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </Button>
+                        </div>
                     ))}
                 </div>
             </div>

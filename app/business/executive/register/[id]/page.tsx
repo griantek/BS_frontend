@@ -24,8 +24,9 @@ import type {
   Service,
   CreateRegistrationRequest,
   TransactionInfo,
-  Editor,
 } from "@/services/api";
+import PasswordModal from "@/components/PasswordModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface RegistrationFormData {
   selectedServices: string[];
@@ -62,11 +63,9 @@ interface RegistrationFormData {
   transactionHash?: string;
   cryptoCurrency?: string;
   transactionId?: string;
-  assigned_to?: string;
-  password: string; // Add password field to the interface
+  selectedServicePrices: Record<string, number>; // Add this field to track custom prices
 }
 
-// Add this mapping outside the component
 const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
   cash: "Cash",
   upi: "UPI",
@@ -78,13 +77,29 @@ const PAYMENT_MODE_MAP: Record<string, TransactionInfo["transaction_type"]> = {
   crypto: "Crypto",
 } as const;
 
+// Add this helper function to format services and prices for backend
+const formatServicesAndPrices = (
+  selectedServices: string[],
+  selectedServicePrices: Record<string, number>,
+  servicesList: Service[]
+) => {
+  return selectedServices.reduce((result, serviceId) => {
+    const service = servicesList.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      result[service.service_name] = selectedServicePrices[serviceId] || service.fee;
+    }
+    return result;
+  }, {} as Record<string, number>);
+};
+
 function RegistrationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
   const [prospectData, setProspectData] = React.useState<any>(null);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
-  const [editors, setEditors] = React.useState<Editor[]>([]);
+  const [clientId, setClientId] = React.useState<string | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const {
     register,
@@ -95,26 +110,25 @@ function RegistrationContent({ regId }: { regId: string }) {
   } = useForm<RegistrationFormData>({
     defaultValues: {
       selectedServices: [],
-      initialAmount: 0,
-      acceptanceAmount: 0,
-      discountPercentage: 0,
+      initialAmount: undefined,
+      acceptanceAmount: undefined,
+      discountPercentage: undefined,
       discountAmount: 0,
       subTotal: 0,
       totalAmount: 0,
-      acceptancePeriod: 0,
+      acceptancePeriod: undefined,
       acceptancePeriodUnit: "months",
-      publicationPeriod: 0,
+      publicationPeriod: undefined,
       publicationPeriodUnit: "months",
       selectedBank: "",
       paymentMode: "cash",
-      amount: 0,
-      transactionDate: new Date().toISOString().split("T")[0], // Set today's date as default
+      amount: undefined,
+      transactionDate: new Date().toISOString().split("T")[0],
       transactionId: "",
-      password: "", // Add default empty password
+      selectedServicePrices: {}, // Add this field to track custom prices
     },
   });
 
-  // Fetch initial data
   React.useEffect(() => {
     if (!checkAuth(router)) return;
 
@@ -125,20 +139,16 @@ function RegistrationContent({ regId }: { regId: string }) {
           prospectResponse,
           servicesResponse,
           bankResponse,
-          editorsResponse,
         ] = await Promise.all([
           api.getProspectusByRegId(regId),
           api.getAllServices(),
           api.getAllBankAccounts(),
-          api.getAllEditors(),
         ]);
 
         setProspectData(prospectResponse.data);
         setServices(servicesResponse.data);
         setBankAccounts(bankResponse.data);
-        setEditors(editorsResponse.data);
 
-        // Pre-fill service if it exists
         if (prospectResponse.data.services) {
           const serviceMatch = servicesResponse.data.find(
             (s) => s.service_name === prospectResponse.data.services
@@ -160,7 +170,6 @@ function RegistrationContent({ regId }: { regId: string }) {
     fetchData();
   }, [router, regId, setValue]);
 
-  // Calculate totals
   React.useEffect(() => {
     const initialAmount = getNumericValue(watch("initialAmount"));
     const acceptanceAmount = getNumericValue(watch("acceptanceAmount"));
@@ -182,7 +191,6 @@ function RegistrationContent({ regId }: { regId: string }) {
 
   const getNumericValue = (value: number | undefined) => Number(value || 0);
 
-  // Handle service selection
   const handleServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const service = services.find((s) => s.id === parseInt(event.target.value));
     if (service) {
@@ -192,14 +200,13 @@ function RegistrationContent({ regId }: { regId: string }) {
       ];
       setValue("selectedServices", updatedServices);
 
-      const initialAmount = updatedServices.reduce((sum, serviceId) => {
-        const selectedService = services.find(
-          (s) => s.id === parseInt(serviceId)
-        );
-        return sum + (selectedService?.fee || 0);
-      }, 0);
+      // Set the initial price in the selectedServicePrices
+      const updatedPrices = { ...watch("selectedServicePrices") };
+      updatedPrices[service.id.toString()] = service.fee;
+      setValue("selectedServicePrices", updatedPrices);
 
-      setValue("initialAmount", initialAmount);
+      // Calculate initial amount based on custom prices
+      recalculateInitialAmount(updatedServices, updatedPrices);
     }
   };
 
@@ -209,38 +216,47 @@ function RegistrationContent({ regId }: { regId: string }) {
     );
     setValue("selectedServices", updatedServices);
 
-    const initialAmount = updatedServices.reduce((sum, id) => {
-      const service = services.find((s) => s.id === parseInt(id));
-      return sum + (service?.fee || 0);
+    // Remove price from selectedServicePrices
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    delete updatedPrices[serviceId];
+    setValue("selectedServicePrices", updatedPrices);
+
+    // Recalculate initial amount
+    recalculateInitialAmount(updatedServices, updatedPrices);
+  };
+
+  // New function to handle price changes
+  const handlePriceChange = (serviceId: string, price: number) => {
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    updatedPrices[serviceId] = price;
+    setValue("selectedServicePrices", updatedPrices);
+
+    // Recalculate initial amount
+    recalculateInitialAmount(watch("selectedServices"), updatedPrices);
+  };
+
+  // Helper function to recalculate the initial amount
+  const recalculateInitialAmount = (
+    serviceIds: string[],
+    prices: Record<string, number>
+  ) => {
+    const initialAmount = serviceIds.reduce((sum, id) => {
+      return sum + (prices[id] || 0);
     }, 0);
 
     setValue("initialAmount", initialAmount);
   };
 
-  const onSubmit = async (data: RegistrationFormData) => {
-    try {
-      // Get user data
-      const userStr = localStorage.getItem("user");
-      if (!userStr) {
-        toast.error("User data not found");
-        return;
-      }
+  const getTransactionInfo = () => {
+    const data = watch();
+    const baseInfo = {
+      transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
+      transaction_id: data.transactionId || "",
+      amount: data.amount,
+      transaction_date: data.transactionDate,
+    };
 
-      const user = JSON.parse(userStr);
-
-      // Log user data to verify
-      console.log("User data:", user);
-
-      // Create transaction info
-      const getTransactionInfo = () => {
-        const baseInfo = {
-          transaction_type: PAYMENT_MODE_MAP[data.paymentMode],
-          transaction_id: data.transactionId || "",
-          amount: data.amount,
-          transaction_date: data.transactionDate,
-        };
-
-        let additional_info: Record<string, any> = {};
+    let additional_info: Record<string, any> = {};
 
         switch (data.paymentMode) {
           case "upi":
@@ -291,100 +307,136 @@ function RegistrationContent({ regId }: { regId: string }) {
         return { ...baseInfo, additional_info };
       };
 
-      // First create the client account
-      const clientData = {
-        prospectus_id: prospectData.id,
-        email: prospectData.email,
-        password: data.password,
-      };
-
-      console.log("Creating client account with:", clientData);
-
-      try {
-        const clientResponse = await api.createClient(clientData);
-        console.log("Client response:", clientResponse);
-
-        // Check if we have a valid client response
-        if (!clientResponse.success) {
-          throw new Error("Failed to create client account");
-        }
-
-        // Extract the client ID correctly from the nested data structure
-        // The response has data.data.id structure
-        const clientId = clientResponse.data?.data?.id;
-        console.log("Client ID extracted:", clientId);
-
-        if (!clientId) {
-          throw new Error("Client ID is missing in the response");
-        }
-
-        console.log("Client account created successfully:", clientResponse.data);
-        console.log("Client ID:", clientId); // Log the correct ID
-
-        // Get transaction info
-        const transactionInfo = getTransactionInfo();
-
-        // Now prepare registration data with the new client ID
-        const registrationData: CreateRegistrationRequest = {
-          ...transactionInfo,
-          entity_id: user.id,
-          client_id: clientId, // Use the extracted client ID
-          registered_by: user.id,
-          prospectus_id: prospectData.id,
-          services: data.selectedServices
-            .map(
-              (id) => services.find((s) => s.id === parseInt(id))?.service_name
-            )
-            .filter(Boolean)
-            .join(", "),
-          init_amount: data.initialAmount,
-          accept_amount: data.acceptanceAmount,
-          discount: data.discountAmount,
-          assigned_to: data.assigned_to,
-          total_amount: data.totalAmount,
-          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-          bank_id: data.selectedBank,
-          status: "registered" as const,
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-        };
-
-        // Verify client_id is set before sending
-        if (!registrationData.client_id) {
-          console.error("Client ID is still missing in registration data!");
-          throw new Error("Client ID is required for registration");
-        }
-
-        // Log the data being sent to verify client_id is included
-        console.log("Registration data being sent (with client_id):", {
-          ...registrationData,
-          client_id_exists: !!registrationData.client_id,
-          client_id: registrationData.client_id,
-        });
-
-        // Send to API
-        const response = await api.createRegistration(registrationData);
-        if (response.success) {
-          toast.success("Registration completed successfully!");
-          router.push("/business/executive");
-        } else {
-          toast.error("Registration failed");
-        }
-      } catch (error: any) {
-        // Change clientError to error: any
-        console.error("Client creation error:", error);
-        toast.error(
-          "Failed to create client account: " +
-            (error.message || "Unknown error")
-        );
-        throw error; // Propagate error to the outer catch block
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast.error("Failed to complete registration");
+const onSubmit = async (data: RegistrationFormData) => {
+  try {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      toast.error("User data not found");
+      return;
     }
-  };
+
+    const user = JSON.parse(userStr);
+
+    try {
+      // First check if a client already exists with this email
+      const clientResponse = await api.getClientByEmail(prospectData.email);
+      
+      if (clientResponse.success) {
+        // Client exists, call createClientWithPassword with null password
+        // This will ensure the backend logic is executed without showing the modal
+        createClientWithPassword(null);
+      } else {
+        // Client doesn't exist, open password modal
+        onOpen();
+      }
+    } catch (error: any) {
+      // If error occurs (client doesn't exist or other error)
+      console.error("Client check error:", error);
+      onOpen(); // Open password modal to create new client
+    }
+  } catch (error) {
+    console.error("Registration error:", error);
+    toast.error("Failed to complete registration");
+  }
+};
+
+const createClientWithPassword = async (password: string | null) => {
+  try {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      toast.error("User data not found");
+      return;
+    }
+
+    const user = JSON.parse(userStr);
+
+    // Always attempt to create the client regardless of whether password is null
+    const clientData = {
+      prospectus_id: prospectData.id,
+      email: prospectData.email,
+      password: password, // This can be null, the backend should handle existing users
+    };
+
+    // Try to create client - backend should handle existing clients appropriately
+    const clientResponse = await api.createClient(clientData);
+    
+    // Get the client ID from the response or fetch it if needed
+    let newClientId: string;
+    
+    if (clientResponse.success && clientResponse.data?.data?.id) {
+      // Client was created successfully
+      newClientId = clientResponse.data.data.id;
+    } else {
+      // Client might already exist - try to fetch the existing client ID
+      try {
+        const existingClientResponse = await api.getClientByEmail(prospectData.email);
+        if (existingClientResponse.success && existingClientResponse.data.id) {
+          newClientId = existingClientResponse.data.id;
+        } else {
+          throw new Error("Failed to get client ID");
+        }
+      } catch (error) {
+        console.error("Error getting client:", error);
+        toast.error("Failed to find or create client account");
+        return;
+      }
+    }
+    
+    setClientId(newClientId);
+
+    const formData = watch();
+    const transactionInfo = getTransactionInfo();
+    
+    // Format services and their prices for the backend
+    const servicesAndPrices = formatServicesAndPrices(
+      formData.selectedServices,
+      formData.selectedServicePrices,
+      services
+    );
+
+    const registrationData: CreateRegistrationRequest = {
+      ...transactionInfo,
+      entity_id: user.id,
+      client_id: newClientId,
+      registered_by: user.id,
+      prospectus_id: prospectData.id,
+      services: formData.selectedServices
+        .map(
+          (id) => services.find((s) => s.id === parseInt(id))?.service_name
+        )
+        .filter(Boolean)
+        .join(", "),
+      init_amount: formData.initialAmount,
+      accept_amount: formData.acceptanceAmount,
+      discount: formData.discountAmount,
+      total_amount: formData.totalAmount,
+      accept_period: `${formData.acceptancePeriod} ${formData.acceptancePeriodUnit}`,
+      pub_period: `${formData.publicationPeriod} ${formData.publicationPeriodUnit}`,
+      bank_id: formData.selectedBank,
+      status: "waiting for approval" as const,
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
+      // Add the formatted services and prices
+      service_and_prices: servicesAndPrices
+    };
+
+    const response = await api.createRegistration(registrationData);
+    if (response.success) {
+      toast.success("Registration completed successfully!");
+      router.push("/business/executive/records/prospectus");
+    } else {
+      toast.error("Registration failed");
+    }
+  } catch (error: any) {
+    console.error("Client creation error:", error);
+    toast.error(
+      "Failed to create client account: " +
+        (error.message || "Unknown error")
+    );
+  } finally {
+    onClose();
+  }
+};
 
   const renderPaymentFields = () => {
     const paymentMode = watch("paymentMode");
@@ -521,13 +573,12 @@ function RegistrationContent({ regId }: { regId: string }) {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!prospectData) return <div>No data found</div>;
+  if (isLoading) return <LoadingSpinner text="Loading registration data..." />;
+  if (!prospectData) return <LoadingSpinner text="No prospect data found" />;
 
   return (
     <div className="w-full p-4 md:p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        {/* Left side - Prospect Details */}
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
@@ -577,7 +628,6 @@ function RegistrationContent({ regId }: { regId: string }) {
           </Card>
         </div>
 
-        {/* Right side - Registration Form */}
         <div className="space-y-4 md:space-y-6">
           <Card className="w-full">
             <CardHeader>
@@ -591,7 +641,7 @@ function RegistrationContent({ regId }: { regId: string }) {
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-4 md:space-y-6"
               >
-                {/* Service Selection */}
+                {/* Service Selection - Updated to match quotation style */}
                 <div className="space-y-4">
                   <select
                     className="w-full p-2 rounded-lg border border-gray-300"
@@ -617,26 +667,40 @@ function RegistrationContent({ regId }: { regId: string }) {
                     ))}
                   </select>
 
-                  {/* Selected Services Display */}
                   {watch("selectedServices").length > 0 && (
                     <div className="bg-default-100 p-4 rounded-lg space-y-2">
                       <h4 className="text-sm font-medium">Selected Services</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-3">
                         {watch("selectedServices").map((serviceId) => {
                           const service = services.find(
                             (s) => s.id === parseInt(serviceId)
                           );
                           return (
                             service && (
-                              <Chip
-                                key={service.id}
-                                onClose={() => removeService(serviceId)}
-                                variant="flat"
-                                color="primary"
-                              >
-                                {service.service_name} - ₹
-                                {service.fee.toLocaleString()}
-                              </Chip>
+                              <div key={service.id} className="flex flex-col gap-2 pb-2 border-b border-default-200 last:border-0">
+                                <div className="flex justify-between items-center">
+                                  <div className="font-medium">{service.service_name}</div>
+                                  <Button 
+                                    size="sm" 
+                                    color="danger" 
+                                    variant="light"
+                                    onClick={() => removeService(serviceId)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-default-600">Price (₹):</span>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    size="sm"
+                                    className="max-w-[150px]"
+                                    value={watch("selectedServicePrices")[serviceId]?.toString()}
+                                    onChange={(e) => handlePriceChange(serviceId, Number(e.target.value))}
+                                  />
+                                </div>
+                              </div>
                             )
                           );
                         })}
@@ -645,33 +709,107 @@ function RegistrationContent({ regId }: { regId: string }) {
                   )}
                 </div>
 
-                {/* Amount Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    type="number"
-                    label="Initial Amount (₹)"
-                    value={watch("initialAmount")?.toString()}
-                    readOnly
-                  />
-                  <Input
-                    type="number"
-                    label="Acceptance Amount (₹)"
-                    {...register("acceptanceAmount")}
-                  />
-                  <Input
-                    type="number"
-                    label="Discount (%)"
-                    {...register("discountPercentage")}
-                  />
-                  <Input
-                    type="number"
-                    label="Total Amount (₹)"
-                    value={watch("totalAmount")?.toString()}
-                    readOnly
-                  />
+                {/* Amount Fields - Updated layout */}
+                <div className="space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Initial Amount (INR)"
+                      value={watch("initialAmount")?.toString()}
+                      readOnly
+                    />
+                    <Input
+                      type="number"
+                      label="Acceptance Amount (INR)"
+                      {...register("acceptanceAmount")}
+                    />
+                    <Input
+                      type="number"
+                      label="Discount (%)"
+                      min="0"
+                      max="100"
+                      {...register("discountPercentage")}
+                    />
+                  </div>
+
+                  {/* Total Amount Summary - Styled like in quotation */}
+                  <Card
+                    className="relative overflow-hidden"
+                    classNames={{
+                      base: "border border-default-200/50 bg-gradient-to-br from-default-50 to-default-100 dark:from-default-100 dark:to-default-50",
+                    }}
+                  >
+                    <CardBody className="p-6">
+                      <div className="space-y-4">
+                        {/* Sub Total Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-default-600">Sub Total</span>
+                          <Chip
+                            variant="flat"
+                            classNames={{
+                              base: "bg-default-100 border-default-200",
+                              content:
+                                "text-default-600 font-semibold text-medium",
+                            }}
+                          >
+                            ₹ {watch("subTotal").toLocaleString()}
+                          </Chip>
+                        </div>
+
+                        {/* Discount Row */}
+                        {getNumericValue(watch("discountPercentage")) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-danger-600">Discount</span>
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                classNames={{
+                                  base: "h-5 bg-danger-50 dark:bg-danger-100",
+                                  content:
+                                    "text-tiny font-medium px-2 text-danger",
+                                }}
+                              >
+                                {watch("discountPercentage")}% off
+                              </Chip>
+                            </div>
+                            <span className="text-danger font-medium">
+                              - ₹ {watch("discountAmount").toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+
+                        <Divider className="my-4 bg-default-200/50" />
+
+                        {/* Total Amount Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xl font-semibold text-default-900">
+                            Total Amount
+                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <Chip
+                              size="lg"
+                              classNames={{
+                                base: "bg-primary/10 border-primary/20 px-4",
+                                content: "text-xl font-bold text-primary",
+                              }}
+                            >
+                              ₹ {watch("totalAmount").toLocaleString()}
+                            </Chip>
+                            <span className="text-tiny text-default-500">
+                              {getNumericValue(watch("discountPercentage")) > 0
+                                ? "After discount applied"
+                                : "No discount applied"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
                 </div>
 
-                {/* Period Settings */}
+                {/* Period Settings - Updated layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex gap-2">
                     <Input
@@ -709,21 +847,32 @@ function RegistrationContent({ regId }: { regId: string }) {
                   </div>
                 </div>
 
-                {/* Bank and Payment Details */}
-                <div className="space-y-4">
+                {/* Bank Selection - Updated layout */}
+                <div className="w-full space-y-2">
+                  <label htmlFor="bank-select" className="text-sm font-medium">
+                    Select Bank Account
+                  </label>
                   <select
+                    id="bank-select"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     {...register("selectedBank")}
                   >
-                    <option value="">Select Bank Account</option>
+                    <option value="">Choose a bank account</option>
                     {bankAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.account_name} - {account.bank}
                       </option>
                     ))}
                   </select>
+                </div>
 
+                {/* Payment Method Selection */}
+                <div className="w-full space-y-2">
+                  <label htmlFor="payment-mode" className="text-sm font-medium">
+                    Payment Method
+                  </label>
                   <select
+                    id="payment-mode"
                     className="w-full p-2 rounded-lg border border-gray-300"
                     {...register("paymentMode")}
                   >
@@ -736,78 +885,58 @@ function RegistrationContent({ regId }: { regId: string }) {
                     <option value="gateway">Payment Gateway</option>
                     <option value="crypto">Cryptocurrency</option>
                   </select>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      type="date"
-                      label="Transaction Date"
-                      defaultValue={new Date().toISOString().split("T")[0]}
-                      {...register("transactionDate", {
-                        required: "Transaction date is required",
-                      })}
-                    />
-                    <Input
-                      type="number"
-                      label="Amount Paid (₹)"
-                      required
-                      {...register("amount", {
-                        required: "Amount is required",
-                      })}
-                    />
-                  </div>
+                {/* Payment Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    type="date"
+                    label="Transaction Date"
+                    defaultValue={new Date().toISOString().split("T")[0]}
+                    {...register("transactionDate", {
+                      required: "Transaction date is required",
+                    })}
+                  />
+                  <Input
+                    type="number"
+                    label="Amount Paid (₹)"
+                    required
+                    {...register("amount", {
+                      required: "Amount is required",
+                    })}
+                  />
+                </div>
 
+                {/* Dynamic payment fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {renderPaymentFields()}
                 </div>
 
-                <div className="space-y-4">
-                  {/* Password Field - Added */}
-                  <div className="w-full space-y-2">
-                    <Input
-                      type="password"
-                      label="Create Password"
-                      placeholder="Enter password for client account"
-                      {...register("password", {
-                        required: "Password is required",
-                      })}
-                      isRequired
-                      description="This password will be used for the client's account"
-                    />
-                  </div>
-
-                  {/* Add this before the submit button */}
-                  <select
-                    className="w-full p-2 rounded-lg border border-gray-300"
-                    {...register("assigned_to", {
-                      required: "Editor assignment is required",
-                    })}
+                {/* Form actions */}
+                <div className="flex justify-end gap-3 mt-6">
+                  <Button
+                    color="danger"
+                    variant="light"
+                    onClick={() => router.back()}
                   >
-                    <option value="">Select Editor to Assign</option>
-                    {editors.map((editor) => (
-                      <option key={editor.id} value={editor.id}>
-                        {editor.username}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Existing submit buttons */}
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      color="danger"
-                      variant="light"
-                      onClick={() => router.back()}
-                    >
-                      Cancel
-                    </Button>
-                    <Button color="primary" type="submit">
-                      Complete Registration
-                    </Button>
-                  </div>
+                    Cancel
+                  </Button>
+                  <Button color="primary" type="submit">
+                    Complete Registration
+                  </Button>
                 </div>
               </form>
             </CardBody>
           </Card>
         </div>
       </div>
+
+      <PasswordModal
+        isOpen={isOpen}
+        onOpenChange={onOpen}
+        onConfirm={createClientWithPassword}
+        onCancel={onClose}
+      />
     </div>
   );
 }
@@ -820,7 +949,7 @@ function RegistrationPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <RegistrationContent regId={resolvedParams.id} />
     </Suspense>
   );

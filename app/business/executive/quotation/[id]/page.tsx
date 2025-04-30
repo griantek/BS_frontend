@@ -13,11 +13,12 @@ import {
   Listbox,
   ListboxItem,
   ScrollShadow,
+  useDisclosure, // Import useDisclosure properly
 } from "@heroui/react";
 import { useForm } from "react-hook-form";
 import PDFTemplate from "@/components/PDFTemplate";
 import { BANKS, PERIOD_UNITS, PeriodUnit } from "@/constants/quotation";
-import type { QuotationFormData } from "@/types/quotation";
+// import type { QuotationFormData } from "@/types/quotation";
 import { withExecutiveAuth } from "@/components/withExecutiveAuth";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
@@ -29,8 +30,9 @@ import type {
   BankAccount,
   Service,
 } from "@/services/api";
+import PasswordModal from "@/components/PasswordModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
-// Add interface for better type safety
 interface ProspectData {
   id: number;
   entity_id: string;
@@ -48,7 +50,6 @@ interface ProspectData {
   services: string;
 }
 
-// Add this interface for select items
 interface SelectOptionProps {
   key: string;
   value: string;
@@ -59,7 +60,39 @@ const SelectOption: React.FC<SelectOptionProps> = ({ children, ...props }) => (
   <option {...props}>{children}</option>
 );
 
-// Create a content component to handle the main logic
+interface QuotationFormData {
+  initialAmount: number | undefined;
+  acceptanceAmount: number | undefined;
+  discountPercentage: number | undefined;
+  discountAmount: number;
+  subTotal: number;
+  totalAmount: number;
+  selectedServices: string[];
+  acceptancePeriod: number | undefined;
+  acceptancePeriodUnit: PeriodUnit;
+  publicationPeriod: number | undefined;
+  publicationPeriodUnit: PeriodUnit;
+  selectedBank: string;
+  selectedServicesData: Service[];
+  transactionDate: string;
+  selectedServicePrices: Record<string, number>; // Add this field to track custom prices
+}
+
+// Add this helper function to format services and prices for backend
+const formatServicesAndPrices = (
+  selectedServices: string[],
+  selectedServicePrices: Record<string, number>,
+  servicesList: Service[]
+) => {
+  return selectedServices.reduce((result, serviceId) => {
+    const service = servicesList.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      result[service.service_name] = selectedServicePrices[serviceId] || service.fee;
+    }
+    return result;
+  }, {} as Record<string, number>);
+};
+
 function QuotationContent({ regId }: { regId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -69,6 +102,8 @@ function QuotationContent({ regId }: { regId: string }) {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [bankAccounts, setBankAccounts] = React.useState<BankAccount[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [clientId, setClientId] = React.useState<string | null>(null);
 
   const {
     register,
@@ -92,7 +127,7 @@ function QuotationContent({ regId }: { regId: string }) {
       selectedBank: "",
       selectedServicesData: [],
       transactionDate: new Date().toISOString().split("T")[0], // Add default date
-      password: "", // Add default value for password
+      selectedServicePrices: {}, // Add this field to track custom prices
     },
   });
 
@@ -180,90 +215,6 @@ function QuotationContent({ regId }: { regId: string }) {
     setValue("totalAmount", total);
   }, [initialAmount, acceptanceAmount, discountPercentage, setValue]);
 
-  const generatePDF = async () => {
-    try {
-      const element = document.getElementById("pdf-template");
-      if (!element) throw new Error("PDF template not found");
-
-      // Remove hidden style temporarily
-      element.style.visibility = "visible";
-      element.style.position = "absolute";
-      element.style.top = "0";
-      element.style.left = "0";
-
-      // Wait for rendering
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Create canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: "#ffffff",
-      });
-
-      // Reset element style
-      element.style.visibility = "hidden";
-      element.style.position = "absolute";
-      element.style.left = "-9999px";
-
-      // PDF dimensions (A4)
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Create PDF
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      // Handle multi-page
-      let heightLeft = imgHeight;
-      let position = 0;
-      let pageNumber = 1;
-
-      // Add first page
-      pdf.addImage(
-        canvas.toDataURL("image/jpeg", 1.0),
-        "JPEG",
-        0,
-        position,
-        imgWidth,
-        imgHeight
-      );
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if content overflows
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL("image/jpeg", 1.0),
-          "JPEG",
-          0,
-          position,
-          imgWidth,
-          imgHeight
-        );
-        heightLeft -= pageHeight;
-        pageNumber++;
-      }
-
-      // Add page numbers
-      for (let i = 1; i <= pageNumber; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(10);
-        pdf.text(`Page ${i} of ${pageNumber}`, imgWidth / 2, pageHeight - 10, {
-          align: "center",
-        });
-      }
-
-      pdf.save(`quotation_${prospectData?.reg_id}.pdf`);
-      return true;
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      throw error;
-    }
-  };
-
   const onSubmit = async (data: QuotationFormData) => {
     try {
       setIsGenerating(true);
@@ -276,102 +227,144 @@ function QuotationContent({ regId }: { regId: string }) {
       }
 
       const user = JSON.parse(userStr);
-      console.log("User data:", user); // Log to verify user data
 
       if (!prospectData) {
         throw new Error("Prospect data not found");
+        return;
       }
 
       try {
-        // First create the client account
-        const clientData = {
-          prospectus_id: prospectData.id,
-          email: prospectData.email,
-          password: data.password
-        };
-
-        console.log("Creating client account with:", clientData);
+        // First check if a client already exists with this email
+        const clientResponse = await api.getClientByEmail(prospectData.email);
         
-        const clientResponse = await api.createClient(clientData);
-        
-        // Check if we have a valid client response
-        if (!clientResponse.success) {
-          throw new Error("Failed to create client account");
-        }
-        
-        // Extract the client ID correctly from the nested data structure
-        // The response has data.data.id structure
-        const clientId = clientResponse.data?.data?.id;
-        console.log("Client ID extracted:", clientId);
-        
-        if (!clientId) {
-          throw new Error("Client ID is missing in the response");
-        }
-        
-        console.log("Client account created successfully:", clientResponse.data);
-
-        // Prepare registration data with updated fields and new client ID
-        const registrationData: CreateRegistrationRequest = {
-          // Transaction details 
-          transaction_type: "Cash",
-          transaction_id: "",
-          amount: 0,
-          transaction_date: data.transactionDate || new Date().toISOString().split("T")[0],
-          additional_info: {},
-          
-          entity_id: user.id,
-          client_id: clientId, // Use the extracted client ID
-          registered_by: user.id,
-          prospectus_id: prospectData.id,
-          services: data.selectedServices
-            .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
-            .filter(Boolean)
-            .join(", "),
-          init_amount: data.initialAmount || 0,
-          accept_amount: data.acceptanceAmount || 0,
-          discount: data.discountAmount || 0,
-          total_amount: data.totalAmount || 0,
-          accept_period: `${data.acceptancePeriod} ${data.acceptancePeriodUnit}`,
-          pub_period: `${data.publicationPeriod} ${data.publicationPeriodUnit}`,
-          bank_id: data.selectedBank,
-          status: "pending",
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-        };
-
-        // Verify client_id is set before sending
-        if (!registrationData.client_id) {
-          console.error("Client ID is still missing in registration data!");
-          throw new Error("Client ID is required for registration");
-        }
-
-        // Log the data being sent
-        console.log("Sending registration data:", {
-          ...registrationData,
-          client_id_exists: !!registrationData.client_id,
-          client_id: registrationData.client_id,
-        });
-
-        // Submit registration
-        const response = await api.createRegistration(registrationData);
-
-        if (response.success) {
-          await generatePDF();
-          toast.success("Quotation generated and saved successfully!");
-          router.push("/business/executive");
+        if (clientResponse.success) {
+          // Client exists, call createClientWithPassword with null password
+          // This will ensure the backend logic is executed without showing the modal
+          createClientWithPassword(null);
         } else {
-          throw new Error("Failed to create registration");
+          // Client doesn't exist, open password modal
+          onOpen();
         }
-      } catch (error: any) { // Change clientError to error: any
-        console.error("Client creation error:", error);
-        toast.error("Failed to create client account: " + (error.message || "Unknown error"));
-        throw error; // Propagate error to the outer catch block
+      } catch (error: any) {
+        // If error occurs (client doesn't exist or other error)
+        console.error("Client check error:", error);
+        onOpen(); // Open password modal to create new client
       }
-    } catch (error: any) { // Add type annotation here as well
+    } catch (error: any) {
       console.error("Submission error:", error);
       toast.error("Failed to generate quotation");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // New function to handle client creation with password
+  const createClientWithPassword = async (password: string | null) => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        toast.error("User data not found");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const formData = watch();
+      
+      // Add null check for prospectData
+      if (!prospectData) {
+        toast.error("Prospect data not found");
+        return;
+      }
+
+      // Always attempt to create the client regardless of whether password is null
+      const clientData = {
+        prospectus_id: prospectData.id,
+        email: prospectData.email,
+        password: password, // This can be null, the backend should handle existing users
+      };
+
+      // Try to create client - backend should handle existing clients appropriately
+      const clientResponse = await api.createClient(clientData);
+      
+      // Get the client ID from the response or fetch it if needed
+      let newClientId: string;
+      
+      if (clientResponse.success && clientResponse.data?.data?.id) {
+        // Client was created successfully
+        newClientId = clientResponse.data.data.id;
+      } else {
+        // Client might already exist - try to fetch the existing client ID
+        try {
+          const existingClientResponse = await api.getClientByEmail(prospectData.email);
+          if (existingClientResponse.success && existingClientResponse.data.id) {
+            newClientId = existingClientResponse.data.id;
+          } else {
+            throw new Error("Failed to get client ID");
+          }
+        } catch (error) {
+          console.error("Error getting client:", error);
+          toast.error("Failed to find or create client account");
+          return;
+        }
+      }
+      
+      setClientId(newClientId);
+      
+      // Format services and their prices for the backend
+      const servicesAndPrices = formatServicesAndPrices(
+        formData.selectedServices,
+        formData.selectedServicePrices,
+        services
+      );
+      
+      // Prepare registration data with updated fields
+      const registrationData: CreateRegistrationRequest = {
+        // Transaction details 
+        transaction_type: "Cash",
+        transaction_id: "",
+        amount: 0,
+        transaction_date: formData.transactionDate || new Date().toISOString().split("T")[0],
+        additional_info: {},
+        
+        entity_id: user.id,
+        client_id: newClientId,
+        registered_by: user.id,
+        prospectus_id: prospectData.id,
+        services: formData.selectedServices
+          .map((id) => services.find((s) => s.id === parseInt(id))?.service_name)
+          .filter(Boolean)
+          .join(", "),
+        init_amount: formData.initialAmount || 0,
+        accept_amount: formData.acceptanceAmount || 0,
+        discount: formData.discountAmount || 0,
+        total_amount: formData.totalAmount || 0,
+        accept_period: `${formData.acceptancePeriod} ${formData.acceptancePeriodUnit}`,
+        pub_period: `${formData.publicationPeriod} ${formData.publicationPeriodUnit}`,
+        bank_id: formData.selectedBank,
+        status: "quotation review",
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        // Add the formatted services and prices
+        service_and_prices: servicesAndPrices
+      };
+
+      // Submit registration
+      const response = await api.createRegistration(registrationData);
+
+      if (response.success) {
+        toast.success("Quotation generated and saved successfully!");
+        router.push("/business/executive/records/prospectus");
+      } else {
+        throw new Error("Failed to create registration");
+      }
+    } catch (error: any) {
+      console.error("Client creation error:", error);
+      toast.error(
+        "Failed to create client account: " +
+          (error.message || "Unknown error")
+      );
+    } finally {
+      onClose();
     }
   };
 
@@ -385,15 +378,13 @@ function QuotationContent({ regId }: { regId: string }) {
       ];
       setValue("selectedServices", updatedServices);
 
-      // Calculate initial amount as sum of all service prices
-      const initialAmount = updatedServices.reduce((sum, serviceId) => {
-        const selectedService = services.find(
-          (s) => s.id === parseInt(serviceId)
-        );
-        return sum + (selectedService?.fee || 0);
-      }, 0);
+      // Set the initial price in the selectedServicePrices
+      const updatedPrices = { ...watch("selectedServicePrices") };
+      updatedPrices[service.id.toString()] = service.fee;
+      setValue("selectedServicePrices", updatedPrices);
 
-      setValue("initialAmount", initialAmount);
+      // Calculate initial amount based on custom prices
+      recalculateInitialAmount(updatedServices, updatedPrices);
     }
   };
 
@@ -403,16 +394,35 @@ function QuotationContent({ regId }: { regId: string }) {
     );
     setValue("selectedServices", updatedServices);
 
+    // Remove price from selectedServicePrices
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    delete updatedPrices[serviceId];
+    setValue("selectedServicePrices", updatedPrices);
+
     // Recalculate initial amount
-    const initialAmount = updatedServices.reduce((sum, id) => {
-      const service = services.find((s) => s.id === parseInt(id));
-      return sum + (service?.fee || 0);
+    recalculateInitialAmount(updatedServices, updatedPrices);
+  };
+
+  // New function to handle price changes
+  const handlePriceChange = (serviceId: string, price: number) => {
+    const updatedPrices = { ...watch("selectedServicePrices") };
+    updatedPrices[serviceId] = price;
+    setValue("selectedServicePrices", updatedPrices);
+
+    // Recalculate initial amount
+    recalculateInitialAmount(watch("selectedServices"), updatedPrices);
+  };
+
+  // Helper function to recalculate the initial amount
+  const recalculateInitialAmount = (
+    serviceIds: string[],
+    prices: Record<string, number>
+  ) => {
+    const initialAmount = serviceIds.reduce((sum, id) => {
+      return sum + (prices[id] || 0);
     }, 0);
 
-    // Update all amounts
     setValue("initialAmount", initialAmount);
-    // setValue('writingAmount', initialAmount);
-    // setValue('acceptanceAmount', initialAmount);
   };
 
   // Update PDFTemplate to handle multiple services
@@ -444,8 +454,9 @@ function QuotationContent({ regId }: { regId: string }) {
     setValue("selectedBank", event.target.value);
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!prospectData) return <div>No data found</div>;
+  // Add explicit null check before the return
+  if (isLoading) return <LoadingSpinner text="Loading quotation data..." />;
+  if (!prospectData) return <LoadingSpinner text="No prospect data found" />;
 
   return (
     <div className="w-full p-4 md:p-6">
@@ -550,22 +561,37 @@ function QuotationContent({ regId }: { regId: string }) {
                   {watch("selectedServices").length > 0 && (
                     <div className="bg-default-100 p-4 rounded-lg space-y-2">
                       <h4 className="text-sm font-medium">Selected Services</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-3">
                         {watch("selectedServices").map((serviceId) => {
                           const service = services.find(
                             (s) => s.id === parseInt(serviceId)
                           );
                           return (
                             service && (
-                              <Chip
-                                key={service.id}
-                                onClose={() => removeService(serviceId)}
-                                variant="flat"
-                                color="primary"
-                              >
-                                {service.service_name} - ₹
-                                {service.fee.toLocaleString()}
-                              </Chip>
+                              <div key={service.id} className="flex flex-col gap-2 pb-2 border-b border-default-200 last:border-0">
+                                <div className="flex justify-between items-center">
+                                  <div className="font-medium">{service.service_name}</div>
+                                  <Button 
+                                    size="sm" 
+                                    color="danger" 
+                                    variant="light"
+                                    onClick={() => removeService(serviceId)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-default-600">Price (₹):</span>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    size="sm"
+                                    className="max-w-[150px]"
+                                    value={watch("selectedServicePrices")[serviceId]?.toString()}
+                                    onChange={(e) => handlePriceChange(serviceId, Number(e.target.value))}
+                                  />
+                                </div>
+                              </div>
                             )
                           );
                         })}
@@ -742,18 +768,6 @@ function QuotationContent({ regId }: { regId: string }) {
                   </select>
                 </div>
 
-                {/* Password Field - Added */}
-                <div className="w-full space-y-2">
-                  <Input
-                    type="password"
-                    label="Create Password"
-                    placeholder="Enter password for client account"
-                    {...register("password")}
-                    isRequired
-                    description="This password will be used for the client's account"
-                  />
-                </div>
-
                 <div className="flex justify-end gap-3 mt-6">
                   <Button
                     color="danger"
@@ -767,7 +781,7 @@ function QuotationContent({ regId }: { regId: string }) {
                     type="submit"
                     isLoading={isGenerating}
                   >
-                    Generate PDF
+                    Generate Quotation
                   </Button>
                 </div>
               </form>
@@ -776,23 +790,13 @@ function QuotationContent({ regId }: { regId: string }) {
         </div>
       </div>
 
-      {/* Hidden PDF Template */}
-      <div
-        id="pdf-template"
-        style={{ position: "absolute", left: "-9999px", visibility: "hidden" }}
-      >
-        <PDFTemplate
-          id="pdf-content"
-          prospectData={prospectData}
-          quotationData={{
-            ...watch(), // Pass the selected services array
-            initialAmount: watch("initialAmount") || 0,
-            acceptanceAmount: watch("acceptanceAmount") || 0,
-            discountPercentage: watch("discountPercentage") || 0,
-            selectedServicesData: selectedServiceData,
-          }}
-        />
-      </div>
+      {/* Add the Password Modal */}
+      <PasswordModal
+        isOpen={isOpen}
+        onOpenChange={onOpen}
+        onConfirm={createClientWithPassword}
+        onCancel={onClose}
+      />
     </div>
   );
 }
@@ -806,7 +810,7 @@ function QuotationPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <QuotationContent regId={resolvedParams.id} />
     </Suspense>
   );

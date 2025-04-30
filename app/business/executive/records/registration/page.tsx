@@ -56,6 +56,7 @@ function RegistrationPage() {
   const [filterService, setFilterService] = React.useState<string>("");
   const [departments, setDepartments] = React.useState<string[]>([]);
   const [services, setServices] = React.useState<string[]>([]);
+  const [statuses, setStatuses] = React.useState<string[]>([]);
   
   // Permissions state
   const [canClickRegistrationRows, setCanClickRegistrationRows] = React.useState(false);
@@ -78,6 +79,7 @@ function RegistrationPage() {
     if (registrations.length > 0) {
       const departmentsSet = new Set<string>();
       const servicesSet = new Set<string>();
+      const statusesSet = new Set<string>();
 
       registrations.forEach((reg) => {
         if (reg.prospectus?.department) departmentsSet.add(reg.prospectus.department);
@@ -88,10 +90,12 @@ function RegistrationPage() {
             if (service) servicesSet.add(service);
           });
         }
+        if (reg.status) statusesSet.add(reg.status);
       });
 
       setDepartments(Array.from(departmentsSet));
       setServices(Array.from(servicesSet));
+      setStatuses(Array.from(statusesSet));
     }
 
     // Check permissions
@@ -208,6 +212,7 @@ function RegistrationPage() {
     { key: "reg_id", label: "REG ID" },
     { key: "client", label: "CLIENT" },
     { key: "services", label: "SERVICES" },
+    { key: "requirement", label: "REQUIREMENT" }, // Add new column for requirement
     { key: "amounts", label: "AMOUNT" },
     { key: "payment", label: "PAYMENT" },
     { key: "status", label: "STATUS" },
@@ -268,38 +273,280 @@ function RegistrationPage() {
     </div>
   );
 
-  const PaymentTooltip = ({ 
-    type, 
-    amount, 
-    status 
-  }: { 
-    type: string, 
-    amount: number,
-    status: string 
-  }) => (
-    <div className="group relative">
-      <div className="text-sm">
-        {status === 'pending' ? (
-          '-'
-        ) : (
+  // Enhanced PaymentStatusBadge to show detailed payment status including dues
+  const PaymentStatusBadge = ({ registration }: { registration: Registration }) => {
+    const requirement = registration.leads?.requirement?.toLowerCase() || registration.prospectus?.requirement?.toLowerCase() || '';
+    const isPaperWriting = requirement.includes('paper writing');
+    const isPublication = requirement.includes('publication');
+    const isCombined = isPaperWriting && isPublication;
+    
+    // Calculate if initial payment is fully paid or has balance due
+    const hasInitialPaymentDue = () => {
+      if (registration.status === 'registered' && registration.transactions) {
+        return registration.transactions.amount < registration.total_amount;
+      }
+      return false;
+    };
+    
+    // Check if this is a completed paper writing with secondary payment due
+    const hasPaperWritingPaymentDue = () => {
+      return isPaperWriting && 
+             registration.journal_added && 
+             registration.author_status === 'completed' && 
+             !registration.is_secondary_payment_done;
+    };
+    
+    // Check if this is a completed publication with final payment due
+    const hasPublicationPaymentDue = () => {
+      return isPublication && 
+             registration.journal_added && 
+             !registration.is_final_payment_done;
+    };
+    
+    // Initial payment not made at all - completely pending
+    if (registration.status !== 'registered') {
+      return (
+        <Chip
+          size="sm"
+          color="danger"
+          variant="flat"
+          className="font-medium"
+        >
+          Initial Payment Pending
+        </Chip>
+      );
+    }
+    
+    // Initial payment made but with balance due (partially paid)
+    if (hasInitialPaymentDue()) {
+      return (
+        <Chip
+          size="sm"
+          color="warning"
+          variant="flat"
+          className="font-medium"
+        >
+          Initial Payment Due
+        </Chip>
+      );
+    }
+    
+    // For combined requirements (Paper writing + Publication)
+    if (isCombined) {
+      // Check manuscript completion and payment status
+      const isManuscriptComplete = registration.author_status === 'completed';
+      const isManuscriptPaid = registration.is_secondary_payment_done;
+      
+      // Check publication completion and payment status
+      const isPublicationComplete = registration.journal_added;
+      const isPublicationPaid = registration.is_final_payment_done;
+      
+      // All work is complete and all payments are made
+      if (isManuscriptComplete && isManuscriptPaid && isPublicationComplete && isPublicationPaid) {
+        return (
           <Chip
-            color={type === 'Cash' ? 'warning' : 'primary'}
-            variant="flat"
             size="sm"
+            color="success"
+            variant="flat"
+            className="font-medium"
           >
-            {type}
+            All Payments Complete
           </Chip>
-        )}
-      </div>
-      {status !== 'pending' && amount > 0 && (
-        <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white p-2 rounded-lg shadow-lg whitespace-nowrap -translate-y-full -translate-x-1/4 mt-1">
-          <div className="text-xs">
-            Amount Paid: ₹{amount.toLocaleString()}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        );
+      }
+      
+      // Work is complete but payments are pending
+      if (isManuscriptComplete && isPublicationComplete) {
+        if (!isManuscriptPaid && !isPublicationPaid) {
+          return (
+            <Chip
+              size="sm"
+              color="warning"
+              variant="flat"
+              className="font-medium"
+            >
+              Both Manuscript & Publication Payments Due
+            </Chip>
+          );
+        } else if (!isManuscriptPaid) {
+          return (
+            <Chip
+              size="sm"
+              color="warning"
+              variant="flat"
+              className="font-medium"
+            >
+              Manuscript Payment Due
+            </Chip>
+          );
+        } else if (!isPublicationPaid) {
+          return (
+            <Chip
+              size="sm"
+              color="warning"
+              variant="flat"
+              className="font-medium"
+            >
+              Publication Payment Due
+            </Chip>
+          );
+        }
+      }
+      
+      // Work is partially complete or in progress
+      if (isManuscriptComplete && !isPublicationComplete) {
+        return (
+          <Chip
+            size="sm"
+            color={isManuscriptPaid ? "primary" : "warning"}
+            variant="flat"
+            className="font-medium"
+          >
+            {isManuscriptPaid 
+              ? "Manuscript Complete - Publication In Progress" 
+              : "Manuscript Payment Due - Publication In Progress"}
+          </Chip>
+        );
+      }
+      
+      // If we get here, some or all work is in progress
+      return (
+        <Chip
+          size="sm"
+          color="default"
+          variant="flat"
+          className="font-medium"
+        >
+          Work In Progress
+        </Chip>
+      );
+    }
+    
+    // For paper writing requirement only
+    if (isPaperWriting) {
+      if (registration.author_status === 'completed') {
+        return registration.is_secondary_payment_done
+          ? <Chip size="sm" color="success" variant="flat" className="font-medium">Manuscript Payment Complete</Chip>
+          : <Chip size="sm" color="warning" variant="flat" className="font-medium">Manuscript Payment Due</Chip>;
+      } else if (registration.author_status === 'in progress') {
+        return <Chip size="sm" color="primary" variant="flat" className="font-medium">Manuscript In Progress</Chip>;
+      } else {
+        return <Chip size="sm" color="default" variant="flat" className="font-medium">Manuscript Not Started</Chip>;
+      }
+    }
+    
+    // For publication requirement only
+    if (isPublication) {
+      if (registration.journal_added) {
+        return registration.is_final_payment_done
+          ? <Chip size="sm" color="success" variant="flat" className="font-medium">Publication Payment Complete</Chip>
+          : <Chip size="sm" color="warning" variant="flat" className="font-medium">Publication Payment Due</Chip>;
+      } else {
+        return <Chip size="sm" color="primary" variant="flat" className="font-medium">Publication In Progress</Chip>;
+      }
+    }
+    
+    // Default for other types of registrations - just show initial payment is complete
+    return (
+      <Chip
+        size="sm"
+        color="success"
+        variant="flat"
+        className="font-medium"
+      >
+        Initial Payment Complete
+      </Chip>
+    );
+  };
+
+  // Also update the ProjectStatusBadge to better reflect the statuses
+  const ProjectStatusBadge = ({ registration }: { registration: Registration }) => {
+    const requirement = registration.leads?.requirement?.toLowerCase() || registration.prospectus?.requirement?.toLowerCase() || '';
+    const isPaperWriting = requirement.includes('paper writing');
+    const isPublication = requirement.includes('publication');
+    const isCombined = isPaperWriting && isPublication;
+    
+    // For combined requirement, show combined status
+    if (isCombined) {
+      const isManuscriptComplete = registration.author_status === 'completed';
+      const isManuscriptPaid = registration.is_secondary_payment_done;
+      const isPublicationComplete = registration.journal_added;
+      const isPublicationPaid = registration.is_final_payment_done;
+      
+      if (isManuscriptComplete && isPublicationComplete && isManuscriptPaid && isPublicationPaid) {
+        return (
+          <Chip color="success" size="sm" variant="flat">Project Complete</Chip>
+        );
+      } else if (isManuscriptComplete && isPublicationComplete) {
+        return (
+          <Chip color="warning" size="sm" variant="flat">Work Complete - Payments Due</Chip>
+        );
+      } else if (isManuscriptComplete) {
+        return (
+          <Chip color="primary" size="sm" variant="flat">Manuscript Complete - Publication Pending</Chip>
+        );
+      } else {
+        return (
+          <Chip color="default" size="sm" variant="flat">In Progress</Chip>
+        );
+      }
+    }
+    
+    // Show paper writing status
+    if (isPaperWriting) {
+      if (registration.author_status === 'completed') {
+        return (
+          <Chip 
+            color={registration.is_secondary_payment_done ? "success" : "warning"}
+            size="sm" 
+            variant="flat"
+          >
+            {registration.is_secondary_payment_done ? "Complete" : "Manuscript Complete - Payment Due"}
+          </Chip>
+        );
+      } else {
+        return (
+          <Chip 
+            color={registration.author_status === 'in progress' ? "primary" : "default"}
+            size="sm" 
+            variant="flat"
+          >
+            {registration.author_status === 'in progress' ? "In Progress" : "Not Started"}
+          </Chip>
+        );
+      }
+    }
+    
+    // Show publication status
+    if (isPublication) {
+      if (registration.journal_added) {
+        return (
+          <Chip 
+            color={registration.is_final_payment_done ? "success" : "warning"}
+            size="sm" 
+            variant="flat"
+          >
+            {registration.is_final_payment_done ? "Complete" : "Published - Payment Due"}
+          </Chip>
+        );
+      } else {
+        return (
+          <Chip color="default" size="sm" variant="flat">Not Published</Chip>
+        );
+      }
+    }
+    
+    // Default: just show the registration status
+    return (
+      <Chip 
+        color={registration.status === 'registered' ? "success" : "warning"}
+        size="sm" 
+        variant="flat"
+      >
+        {registration.status === 'registered' ? "Registered" : "Pending"}
+      </Chip>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -373,8 +620,11 @@ function RegistrationPage() {
               onChange={handleStatusChange}
             >
               <SelectItem key="" value="">All Statuses</SelectItem>
-              <SelectItem key="pending" value="pending">Pending</SelectItem>
-              <SelectItem key="registered" value="registered">Registered</SelectItem>
+              {statuses.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </SelectItem>
+              )) as any}
             </Select>
 
             <Select
@@ -503,6 +753,11 @@ function RegistrationPage() {
                     </TableCell>
                     <TableCell>{registration.services}</TableCell>
                     <TableCell>
+                      <div className="line-clamp-2 text-sm">
+                        {registration.leads?.requirement || registration.prospectus?.requirement || "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <AmountTooltip
                         initial={registration.init_amount}
                         accept={registration.accept_amount}
@@ -511,19 +766,19 @@ function RegistrationPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <PaymentTooltip
-                        type={registration.status === 'registered' ? (registration.transactions?.transaction_type || 'Unknown') : 'Pending'}
-                        amount={registration.transactions?.amount || 0}
-                        status={registration.status}
-                      />
+                      <PaymentStatusBadge registration={registration} />
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={registration.status === 'registered' ? 'success' : 'warning'}
+                        <Chip
+                        color={
+                          registration.status === 'registered' ? 'success' :
+                          registration.status === 'waiting for approval' ? 'danger' :
+                          'warning'
+                        }
                         variant="flat"
-                      >
+                        >
                         {registration.status}
-                      </Chip>
+                        </Chip>
                     </TableCell>
                   </TableRow>
                 )

@@ -24,7 +24,11 @@ import {
   UserIcon,
   TableCellsIcon as TableCellsIconHero,
   UserPlusIcon as UserPlusIconHero,
-  BellAlertIcon
+  BellAlertIcon,
+  ClipboardDocumentListIcon,
+  ChatBubbleLeftRightIcon,
+  CheckIcon,
+  CurrencyDollarIcon
 } from "@heroicons/react/24/outline";
 
 export type SiteConfig = typeof siteConfig;
@@ -38,27 +42,27 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/admin",
-      icon: Home
+      icon: ChartPieIcon
     },
     {
       label: "Users",
-      href: "/admin/users/executives",
-      icon: Users
+      href: "/admin/users",
+      icon: UserGroupIcon
     },
     {
       label: "Services",
       href: "/admin/services",
-      icon: Briefcase
+      icon: WrenchScrewdriverIcon
     },
     {
-      label: "Clients",
-      href: "/admin/clients",
-      icon: Building2
+      label: "Approval",
+      href: "/admin/approval",
+      icon: ClipboardDocumentCheckIcon
     },
     {
       label: "Finance",
       href: "/admin/finance",
-      icon: Banknote
+      icon: CurrencyDollarIcon
     },
     {
       label: "Departments",
@@ -83,6 +87,11 @@ export const siteConfig = {
       label: "Records",
       href: "/business/executive/records",
       icon: DocumentTextIcon,
+    },
+    {
+      label: "Journals",
+      href: "/business/executive/journals",
+      icon: NewspaperIconHero,
     }
   ],
 
@@ -97,7 +106,7 @@ export const siteConfig = {
       label: "Journals",
       href: "/business/editor/journals",
       icon: NewspaperIcon,
-    }
+    },
   ],
 
   // Leads Navigation - Add navigation for the leads role
@@ -124,23 +133,37 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/business/clients",
-      icon: Home,
+      icon: ChartPieIcon, 
     },
     {
-      label: "User Accounts",
-      href: "/business/clients/accounts",
-      icon: UserCircleIcon,
+      label: "Journals", // Single main journal entry point
+      href: "/business/clients/journals", 
+      icon: NewspaperIconHero,
     },
     {
-      label: "Invitations",
-      href: "/business/clients/invitations",
-      icon: UserPlusIcon,
+      label: "Support",
+      href: "/business/clients/support",
+      icon: ChatBubbleLeftRightIcon,
+    },
+  ],
+
+  // Author Navigation - Add navigation for the author role
+  authorLinks: [
+    {
+      label: "Dashboard",
+      href: "/business/author",
+      icon: ChartPieIcon
     },
     {
-      label: "Settings",
-      href: "/business/clients/settings",
-      icon: CogIcon,
-    }
+      label: "Assigned Tasks",
+      href: "/business/author/tasks",
+      icon: ClipboardDocumentListIcon
+    },
+    {
+      label: "Completed Work",
+      href: "/business/author/completed",
+      icon: CheckIcon
+    },
   ],
 
   navItems: [

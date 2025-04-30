@@ -46,8 +46,8 @@ function BusinessLoginContent() {
     try {
       document.body.style.cursor = 'wait';
       const response = await api.loginExecutive({
-        username: data.username,
-        password: data.password
+        username: data.username.trim(),
+        password: data.password.trim()
       });
 
       if (!response.success) {
@@ -71,7 +71,7 @@ function BusinessLoginContent() {
           permissions: entityData.role.permissions,
           entity_type: entityType
         }, 
-        entityType as 'editor' | 'executive' | 'leads' | 'clients'
+        entityType as 'editor' | 'executive' | 'leads' | 'clients' | 'author'
       );
 
       // Route based on entity_type
@@ -87,6 +87,9 @@ function BusinessLoginContent() {
           break;
         case 'clients':
           await router.replace('/business/clients');
+          break;
+        case 'author':
+          await router.replace('/business/author');
           break;
         default:
           // Fallback to executive dashboard

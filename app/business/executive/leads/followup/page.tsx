@@ -21,7 +21,7 @@ import {
   MagnifyingGlassIcon,
   ChevronRightIcon,
   XMarkIcon,
-  CheckIcon,
+  CheckCircleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { AlertCircleIcon, CalendarDaysIcon } from "lucide-react";
@@ -30,6 +30,7 @@ import api, { Lead } from "@/services/api";
 import { useRouter } from "next/navigation";
 // Import the appropriate auth HOC
 import { withExecutiveAuth } from "@/components/withExecutiveAuth";
+import { toast } from "react-toastify";
 
 const FollowupsPage = () => {
   const router = useRouter();
@@ -40,6 +41,9 @@ const FollowupsPage = () => {
   const [filterStatus, setFilterStatus] = useState<string>("pending"); // Default to pending
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [domains, setDomains] = useState<string[]>([]);
+  
+  // Add loadingId state to track which lead is being updated
+  const [loadingId, setLoadingId] = useState<number | null>(null);
   
   // Add pagination state
   const [page, setPage] = useState(1);
@@ -205,23 +209,37 @@ const FollowupsPage = () => {
     router.push(`/business/executive/leads/${leadId}`);
   };
 
-  // Mark as completed function
-  const markAsCompleted = async (leadId: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent row click when clicking the button
+  // Mark as completed function - update to fix mobile issues
+  const markAsCompleted = async (leadId: number, e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent propagation for both mouse and touch events
+    e.stopPropagation();
+    e.preventDefault();
     
     try {
+      // Set loading state for this specific lead
+      setLoadingId(leadId);
+      
       const lead = leads.find(l => l.id === leadId);
-      if (!lead) return;
+      if (!lead) {
+        toast.error('Lead not found');
+        return;
+      }
       
       await api.updateLeadStatus(leadId, {
-        followup_status: 'converted',
+        followup_status: 'completed',
         remarks: lead.remarks
       });
+      
+      // Show success notification
+      toast.success('Followup marked as completed');
       
       // Refresh the leads data
       fetchFollowups();
     } catch (err) {
       console.error('Error updating followup status:', err);
+      toast.error('Failed to update followup status');
+    } finally {
+      setLoadingId(null);
     }
   };
 
@@ -482,9 +500,11 @@ const FollowupsPage = () => {
                                     size="sm"
                                     color="success"
                                     variant="flat"
-                                    startContent={<CheckIcon className="h-4 w-4" />}
+                                    isLoading={loadingId === lead.id}
                                     onClick={(e) => markAsCompleted(lead.id, e)}
-                                    className="min-w-0"
+                                    onTouchEnd={(e) => markAsCompleted(lead.id, e)} // Add touch event handler
+                                    disabled={loadingId !== null}
+                                    startContent={<CheckCircleIcon className="h-3.5 w-3.5" />}
                                   >
                                     Mark Complete
                                   </Button>

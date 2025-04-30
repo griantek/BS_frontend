@@ -51,6 +51,7 @@ export const PERMISSIONS = {
   SHOW_ADD_BANK_BUTTON: 'show_add_bank_btn',
   SHOW_DEPARTMENT_TAB: 'show_dept_tab',
   SHOW_ADD_DEPARTMENT_BUTTON: 'show_add_dept_btn',
+  SHOW_APPROVAL_NAV: 'show_approval_nav',
 
   // LEADS PERMISSIONS
   VIEW_DASHBOARD_LEADS: 'view_dash_leads',
@@ -130,14 +131,7 @@ export const currentUserHasPermission = (permissionName: string): boolean => {
   
   const result = hasPermission(currentUser, permissionName);
   
-  // Add debug logs for critical navigation permissions
-  if (permissionName === 'show_users_nav' || 
-      permissionName === 'show_svc_tab' || 
-      permissionName === 'show_clients_tab') {
-    console.log(`Permission check: ${permissionName} => ${result}`, 
-      { currentUser, permissions: currentUser?.permissions });
-  }
-  
+
   return result;
 };
 

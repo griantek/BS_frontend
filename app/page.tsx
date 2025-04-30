@@ -32,6 +32,9 @@ export default function Home() {
       case "clients":
         router.replace("/business/clients");
         break;
+      case "author":
+        router.replace("/business/author");
+        break;
       default:
         setShouldRender(true);
     }

@@ -94,6 +94,7 @@ interface ApiResponse<T> {
     success: boolean;
     data: T;
     timestamp: string;
+    message:string;
 }
 
 // Add new interfaces for services
@@ -191,13 +192,20 @@ interface Registration {
   accept_period: string;
   pub_period: string;
   bank_id: string;  // Added
-  status: 'pending' | 'registered';
+  status: string;
   month: number;
+  author_status:string;
+  journal_added:boolean
+  is_secondary_payment_done:boolean;
+  is_final_payment_done:boolean;
   year: number;
   created_at: string;
+  updated_at: string;
   transaction_id: number;  // Added
   notes?: string;
   client_id:string;
+  registration_date:string;
+  service_and_prices?: Record<string, number>;
   prospectus: {
     id: number;
     date: string;
@@ -239,6 +247,33 @@ interface Registration {
     transaction_date: string;
     transaction_type: string;
   };
+  registered_by:{
+    id: string;
+    username: string;
+    email: string;
+  };
+  leads: {
+    id: number;
+    date: string;
+    leadSource: string;
+    clientName: string;
+    phoneNumber: string;
+    domain: string;
+    researchArea: string | null;
+    title: string | null;
+    degree: string | null;
+    university: string | null;
+    state: string;
+    country: string;
+    requirement: string;
+    detailedRequirement: string;
+    prospectusType: string;
+    followupDate: string;
+    remarks: string;
+    followupStatus: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 // Add interface for registration creation
@@ -271,11 +306,12 @@ interface CreateRegistrationRequest {
   accept_period: string;
   pub_period: string;
   bank_id: string;
-  status: 'registered' | 'pending';  // Explicitly define literal types
+  status: 'registered' | 'pending'  | 'waiting for approval' | 'quotation review';  // Explicitly define literal types
   month: number;
   year: number;
   assigned_to?: string;  // Add this field
   registered_by: string;
+  service_and_prices?: Record<string, number>; // Add this new field
 }
 
 // Add new interface for database registration
@@ -289,7 +325,7 @@ interface RegistrationRecord {
   total_amount: number;
   accept_period: string;
   pub_period: string;
-  status: 'pending' | 'registered';
+  status: 'pending' | 'registered' | 'waiting for approval';
   month: number;
   year: number;
   created_at: string;
@@ -438,7 +474,7 @@ interface JournalData {
   personal_email: string;
   assigned_to: string;
   journal_name: string;
-  status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+  status: string;
   journal_link: string;
   username: string;
   password: string;
@@ -447,6 +483,7 @@ interface JournalData {
   paper_title: string;
   created_at: string;
   updated_at: string;
+  is_private: boolean;
   entities: {
     id: string;
     email: string;
@@ -478,7 +515,7 @@ interface CreateJournalRequest {
 
 // Update the UpdateJournalRequest interface to make all fields required
 interface UpdateJournalRequest {
-    status: 'pending' | 'under review' | 'approved' | 'rejected' | 'submitted';
+    status: string; // Change from literal union to string to allow any status value
     journal_name: string;
     journal_link: string;
     paper_title: string;
@@ -522,17 +559,37 @@ interface AssignedRegistration {
   notes: string | null;
   updated_at: string;
   assigned_to: string;
+  author_status:string;
   prospectus: {
     id: number;
     email: string;
     reg_id: string;
+    client_name: string;
+    requirement: string;
+    phone:string;
+    department:string;
+    tech_person:string;
+    state:string;
     entity: {
       id: string;
       email: string;
       username: string;
     };
-    client_name: string;
-    requirement: string;
+    leads:{
+        leads_id: number;
+        client_name: string;
+        phone: string;
+        email: string;
+        state: string;
+        country: string;
+        requirement: string;
+        assigned_to: string;
+        reg_id: string;
+        tech_person: string;
+        proposed_service_period: string;
+        services: string;
+        notes: string;
+    }
   };
 }
 
@@ -637,6 +694,9 @@ interface UpdateLeadRequest {
   status?: string;
   assigned_to?: string;
   followup_status?:string;
+  other_source?: string;
+  other_domain?: string;
+  other_service?: string;
 }
 
 interface TodayFollowupResponse {
@@ -666,7 +726,7 @@ interface ApproveLeadRequest {
 interface CreateClientRequest {
   prospectus_id: number;
   email: string;
-  password: string;
+  password: string | null;
 }
 
 // Update the interface to match the actual response
@@ -684,21 +744,534 @@ interface ClientLoginRequest {
   password: string;
 }
 
+// Update the ClientLoginResponse interface to match the actual response structure
 interface ClientLoginResponse {
   success: boolean;
   token: string;
-  client: {
+  data: {
     id: string;
     email: string;
-    username?: string;
+    prospectus_id?: number;
     created_at: string;
+    updated_at: string;
+    prospectus?: {
+      id: number;
+      email: string;
+      phone: string;
+      client_name: string;
+    };
   };
+  timestamp: string;
+}
+
+// Update the interface name and structure
+interface ClientPendingRegistrationResponse {
+  success: boolean;
+  data: Registration[];
+  count: number;
+  timestamp: string;
+}
+
+// Add new interfaces for author tasks
+interface AuthorTask {
+  id: number;
+  title: string;
+  description: string;
+  journal_name: string;
+  client_name: string;
+  assigned_date: string;
+  deadline: string;
+  status: 'pending' | 'in_progress' | 'under_review' | 'completed';
+  completion_percentage: number;
+  document_url?: string;
+  paper_requirements?: string;
+  research_area?: string;
+  word_count?: number;
+  review_comments?: string[];
+  last_updated: string;
+}
+
+interface AuthorTaskUpdateRequest {
+  status?: 'pending' | 'in_progress' | 'under_review' | 'completed';
+  completion_percentage?: number;
+  document_url?: string;
+  review_comments?: string[];
+}
+
+interface AuthorStats {
+  assigned_count: number;
+  in_progress_count: number;
+  completed_count: number;
+  under_review_count: number;
+  tasks_this_week: number;
+  tasks_past_due: number;
+}
+
+// Add new interface for pending registration response
+interface PendingRegistrationResponse {
+  registration: {
+    id: number;
+    date: string;
+    services: string;
+    initialAmount: number;
+    acceptedAmount: number;
+    discount: number;
+    totalAmount: number;
+    acceptPeriod: string;
+    pubPeriod: string;
+    status: string;
+    month: number;
+    year: number;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+    adminAssigned: boolean;
+    author_status: string;
+  };
+  prospectus: {
+    id: number;
+    regId: string;
+    clientName: string;
+    email: string;
+    phone: string;
+    department: string;
+    state: string;
+    techPerson: string;
+    requirement: string;
+    services: string;
+    proposedServicePeriod: string;
+    notes: string;
+    nextFollowUp: string;
+    createdBy: {
+      id: string;
+      username: string;
+      email: string;
+    };
+  };
+  leads: {
+    id: number;
+    date: string;
+    leadSource: string;
+    clientName: string;
+    phoneNumber: string;
+    domain: string;
+    researchArea: string | null;
+    title: string | null;
+    degree: string | null;
+    university: string | null;
+    state: string;
+    country: string;
+    requirement: string;
+    detailedRequirement: string;
+    prospectusType: string;
+    followupDate: string;
+    remarks: string;
+    followupStatus: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  registeredBy: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  bankDetails: {
+    id: string;
+    bank: string;
+    branch: string;
+    upi_id: string;
+    ifsc_code: string;
+    created_at: string;
+    updated_at: string;
+    account_name: string;
+    account_type: string;
+    account_number: string;
+    account_holder_name: string;
+  };
+  transactionDetails: {
+    id: number;
+    amount: number;
+    entity_id: string;
+    updated_at: string;
+    transaction_id: string;
+    additional_info: Record<string, any>;
+    transaction_date: string;
+    transaction_type: string;
+  };
+}
+
+interface PendingRegistrationsResponse {
+  success: boolean;
+  data: PendingRegistrationResponse[];
+  count: number;
+  timestamp: string;
+}
+
+// Add new interfaces for client payment
+interface ClientPaymentRequest {
+  quotation_id: number;
+  name: string;
+  amount: number;
+  notes?: string;
+  transaction_date: string;
+  entity_id: string;
+}
+
+// Add new interfaces for profile update
+interface UpdateProfileRequest {
+  username?: string;
+  email?: string;
+}
+
+interface VerifyPasswordRequest {
+  entityId: string;
+  password: string;
+}
+
+interface ChangePasswordRequest {
+  newPassword: string;
+}
+
+// Add new interface for journal data with leads information
+interface JournalDataWithLeads extends JournalData {
+  prospectus: {
+    id: number;
+    email: string;
+    leads?: {
+      id: number;
+      domain: string;
+      client_name: string;
+      lead_source: string;
+      phone_number: string;
+      research_area: string | null;
+    };
+    phone: string;
+    reg_id: string;
+    client_name: string;
+    requirement: string;
+  };
+}
+
+interface JournalDataByLeadsResponse {
+  success: boolean;
+  data: JournalDataWithLeads[];
+  count: number;
+  timestamp: string;
+}
+
+// Update the interface for journal data with leads information to match new response format
+interface JournalDataWithExecutive extends JournalData {
+  prospectus: {
+    id: number;
+    email: string;
+    phone: string;
+    reg_id: string;
+    entity_id: string;
+    client_name: string;
+    requirement: string;
+  };
+}
+
+interface JournalDataByExecutiveResponse {
+  success: boolean;
+  data: JournalDataWithExecutive[];
+  count: number;
+  timestamp: string;
+}
+interface JournalDataByPersonalEmail {
+  success: boolean;
+  data: JournalData[];
+  count: number;
+  timestamp: string;
+}
+
+// Add new interface for paginated journal response
+interface PaginatedJournalResponse {
+  success: boolean;
+  data: JournalData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+  timestamp: string;
+}
+
+// Add interface for quotation file
+interface QuotationFile {
+  id: number;
+  originalName: string;
+  filename: string;
+  size: number;
+  mimetype: string;
+  url: string;
+  created_at: string;
+}
+
+// Add interface for client quotation
+interface ClientQuotation {
+  id: number;
+  quotation_id: number;
+  name: string;
+  amount: number;
+  notes?: string;
+  transaction_date: string;
+  client_id: string;
+  created_at: string;
+  updated_at: string;
+  files: QuotationFile[];
+}
+
+// Add response interface for client registration with quotation
+interface ClientRegistrationWithQuotationResponse {
+  success: boolean;
+  data: {
+    registrations: Registration[];
+    quotations: ClientQuotation[];
+    transaction: Transaction[];
+    prospectus: {
+      id: number;
+      client_name: string;
+      email: string;
+      phone: string;
+      requirement: string;
+      services: string;
+      notes: string;
+      leads_id: number;
+    };
+    leads?: {
+      id: number;
+      requirement: string;
+      detailed_requirement?: string;
+      client_name?: string;
+      phone_number?: string;
+    };
+  };
+  timestamp: string;
+  message: string;
+}
+
+// Add new interface for combined data response
+interface CombinedRegistrationData {
+  registration: Registration;
+  quotations: ClientQuotation[];
+  journalData: JournalData[];
+  transaction: Transaction[];
+  prospectus?: {
+    id: number;
+    client_name: string;
+    email: string;
+    phone: string;
+    requirement: string;
+    leads_id?: number;
+  };
+  leads?: {
+    id: number;
+    requirement: string;
+    detailed_requirement?: string;
+  };
+}
+
+interface CombinedDataResponse {
+  success: boolean;
+  data: CombinedRegistrationData;
+  timestamp: string;
+}
+
+// Add new interfaces for analytics endpoints
+interface EntityPerformance {
+    entity: {
+        id: string;
+        username: string;
+        email: string;
+        role: string;
+        entityType: string;
+    };
+    performanceMetrics: {
+        productivity: any;
+        quality: any;
+        efficiency: any;
+        financialContribution: any;
+    };
+    historicalTrends?: any[];
+    teamComparison?: any;
+    summary: {
+        overallPerformanceScore: number;
+        performanceRating: string;
+        keyStrengths: string[];
+        improvementAreas: string[];
+        trendDirection: string;
+    };
+    improvementSuggestions: Array<{
+        area: string;
+        suggestion: string;
+        expectedImpact: string;
+    }>;
+}
+
+interface EntityRevenue {
+    revenueByPeriod: {
+        period: string;
+        revenue: number;
+    }[];
+    metrics: {
+        totalRevenue: number;
+        averageRevenue: number;
+        growthTrend: number;
+    };
+    serviceRevenue: {
+        service_id: number;
+        service_name: string;
+        revenue: number;
+        count: number;
+        percentageOfTotal: number;
+    }[];
+    entities: any[];
+}
+
+interface EntityWorkload {
+    currentAssignments: {
+        type: string;
+        id: number;
+        client_name: string;
+        status: string;
+        deadline: string;
+        priority: string;
+    }[];
+    workloadMetrics: {
+        activeAssignmentsCount: number;
+        completedLast30Days: number;
+        upcomingDeadlines: number;
+        workloadStatus: string;
+        capacityUtilization: number;
+    };
+    timeManagement: {
+        avgCompletionTime: number;
+        onTimeCompletionRate: number;
+        avgResponseTime: number;
+    };
+}
+
+interface ClientAcquisition {
+    totalClients: number;
+    activeClients: number;
+    repeatClients: number;
+    clientSatisfaction: number;
+    topClients: {
+        client_name: string;
+        revenue: number;
+        services_count: number;
+    }[];
+    clientRetentionRate: number;
+    avgClientLifetimeValue: number;
+}
+
+interface SystemEfficiency {
+    overallSystemMetrics: any;
+    efficiencyTrends: any[];
+    bottleneckAnalysis: any;
+    resourceAllocationAnalysis: any;
+    summary: any;
+    optimizationRecommendations: any[];
+}
+
+// Add new interface for dashboard data response
+interface DashboardData {
+  entityCounts: {
+    total: number;
+    executive: number;
+    editor: number;
+    author: number;
+    admin: number;
+    other: number;
+  };
+  contentMetrics: {
+    prospectus: number;
+    registrations: number;
+    journals: number;
+    leads: number;
+  };
+  financialMetrics: {
+    totalRevenue: number;
+    averageTransactionValue: number;
+    pendingAmount: number;
+    recentTransactions: Array<{
+      id: number; 
+      transaction_type: string; 
+      amount: number; 
+      transaction_date: string; 
+      entities: {
+        id: string;
+        username: string;
+      };
+    }>;
+  };
+  recentActivities: {
+    recentExecutives: Array<{
+      id: string; 
+      username: string; 
+      role_details: {
+        name: string; 
+        entity_type: string;
+      }; 
+      created_at: string;
+    }>;
+    recentServices: Array<{
+      id: number; 
+      service_name: string; 
+      fee: number;
+    }>;
+  };
+  journalMetrics: {
+    total: number;
+    statusDistribution: {
+      pending: number;
+      under_review: number;
+      approved: number;
+      rejected: number;
+      submitted: number;
+    };
+  };
+  serviceMetrics: {
+    total: number;
+    topServices: Array<{
+      service_name: string; 
+      count: number;
+    }>;
+  };
+}
+
+// Add new interface for dashboard data response
+interface DashboardDataResponse {
+  success: boolean;
+  data: DashboardData;
+  timestamp: string;
+}
+
+// Add interface for payment transaction request
+interface PaymentTransactionRequest {
+  registration_id: number;
+  transaction_type: string;
+  transaction_id: string;
+  amount: number;
+  transaction_date: string;
+  additional_info?: any;
+  entity_id: string;
+}
+
+interface PaymentTransactionResponse {
+  registration: Registration;
+  transaction: Transaction;
 }
 
 const PUBLIC_ENDPOINTS = [
     '/entity/login',     // Add the new entity login endpoint
     '/entity/create',    // Add entity creation endpoint
-    '/admin/login'
+    '/admin/login',
+    '/clients/login',
+    '/entity/verify-password' // Add this to public endpoints to prevent auto-logout
 ];
 
 // API service
@@ -719,7 +1292,15 @@ const api = {
                 );
 
                 if (isPublicEndpoint) {
-                    return config; // Allow public endpoints without auth
+                    // For verify-password, we still need to add the auth token
+                    if (config.url?.includes('/entity/verify-password')) {
+                        const token = this.getStoredToken();
+                        if (token) {
+                            const finalToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                            config.headers.Authorization = finalToken;
+                        }
+                    }
+                    return config; // Allow public endpoints without auth requirement
                 }
 
                 const token = this.getStoredToken();
@@ -741,9 +1322,14 @@ const api = {
         this.axiosInstance.interceptors.response.use(
             (response) => response,
             (error) => {
+                // Ignore 401 errors from verify-password endpoint
+                if (error?.config?.url?.includes('/entity/verify-password')) {
+                    return Promise.reject(error);
+                }
+                
                 // Only handle auth errors for non-public endpoints
                 if (error?.response?.status === 401 && 
-                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.endsWith(endpoint))) {
+                    !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.includes(endpoint))) {
                     const userRole = localStorage.getItem(USER_ROLE_KEY) || 'executive';
                     const path = window.location.pathname;
                     
@@ -856,7 +1442,6 @@ const api = {
     // Get single prospect by registration ID
     async getProspectusByRegId(regId: string): Promise<ApiResponse<Prospectus>> {
         try {
-            console.log('Fetching prospect by regId:', regId);
             const response = await this.axiosInstance.get(`/entity/prospectus/register/${regId}`);
             return response.data;
         } catch (error: any) {
@@ -871,13 +1456,24 @@ const api = {
         }
     },
 
-    async deleteProspectus(regIds: string[]): Promise<{ success: boolean }> {
+    async deleteProspectus(regId: string[]): Promise<{ success: boolean }> {
         try {
             const response = await this.axiosInstance.delete('/prospectus/delete', {
-                data: { reg_ids: regIds }
+                data: { reg_id: regId }
             });
             return response.data;
         } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method for soft deleting a prospectus
+    async softDeleteProspectus(prospectusId: number): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.put(`entity/prospectus/${prospectusId}/soft-delete`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error soft-deleting prospectus:', error);
             throw this.handleError(error);
         }
     },
@@ -929,19 +1525,6 @@ const api = {
             const response = await this.axiosInstance.delete(`/common/services/${id}`);
             return response.data;
         } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
-    // Add new method for getting executives
-    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
-        try {
-            // Try one of these endpoints based on your backend structure:
-            const response = await this.axiosInstance.get('/entity/all');
-            
-            return response.data;
-        } catch (error: any) {
-            console.error('API getAllExecutives error:', error);
             throw this.handleError(error);
         }
     },
@@ -1010,11 +1593,6 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            // Add logging to see what's being sent
-            console.log("createRegistration data:", {
-              ...data,
-              client_id: data.client_id
-            });
             
             if (!data.client_id) {
               console.error("Missing client_id in registration data!");
@@ -1042,7 +1620,8 @@ const api = {
               status: data.status,
               month: data.month,
               year: data.year,
-              assigned_to: data.assigned_to
+              assigned_to: data.assigned_to,
+              service_and_prices: data.service_and_prices // Ensure service_and_prices is included
             };
             
             const response = await this.axiosInstance.post('/common/registration/create', requestData);
@@ -1078,6 +1657,17 @@ const api = {
         }
     },
 
+    // Add new method to approve quotation review
+    async approveQuotationReview(registrationId: number): Promise<ApiResponse<Registration>> {
+      try {
+        const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/pending`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error approving quotation review:', error);
+        throw this.handleError(error);
+      }
+    },
+
     // Delete registration by ID
     async deleteRegistration(id: number): Promise<ApiResponse<void>> {
         try {
@@ -1101,6 +1691,16 @@ const api = {
     async getAssignedRegistrations(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
         try {
             const response = await this.axiosInstance.get(`/editor/assigned-registrations/${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching assigned registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getAssignedRegistrationsAuthor(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/authors/assigned-registrations/${entityId}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching assigned registrations:', error);
@@ -1223,7 +1823,7 @@ const api = {
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
         try {
-                        const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
+            const response = await this.axiosInstance.get(`/editor/journal-data/${id}`);
             return response.data;
         } catch (error: any) {
             console.error('Error fetching journal data:', error);
@@ -1240,6 +1840,24 @@ const api = {
             console.error('Error updating journal:', error);
             throw this.handleError(error);
         }
+    },
+
+    // Add new method for updating registration invoice details
+    async updateRegistrationInvoice(id: number, data: {
+      init_amount: number;
+      accept_amount: number;
+      discount: number;
+      total_amount: number;
+      bank_id: string;
+      service_and_prices?: Record<string, number>;
+    }): Promise<ApiResponse<Registration>> {
+      try {
+        const response = await this.axiosInstance.put(`/common/registration/invoice/${id}`, data);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error updating registration invoice:', error);
+        throw this.handleError(error);
+      }
     },
 
     async deleteJournal(id: number): Promise<ApiResponse<void>> {
@@ -1275,14 +1893,61 @@ const api = {
         }
     },
 
+    // Add new method for getting executives
+    async getAllEntities(): Promise<ApiResponse<ExecutiveWithRoleName[]>> {
+        try {
+            // Try one of these endpoints based on your backend structure:
+            const response = await this.axiosInstance.get('/entity/all');
+            
+            return response.data;
+        } catch (error: any) {
+            console.error('API getAllExecutives error:', error);
+            throw this.handleError(error);
+        }
+    },
+
     // Add new method for fetching editors
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
-            console.log('Fetching all editors');
+            
             const response = await this.axiosInstance.get('/entity/editors/all');
             return response.data;
         } catch (error: any) {
             console.error('Error in getAllEditors:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+    // Add new method for fetching editors
+    async getAllAuthors(): Promise<ApiResponse<Editor[]>> {
+        try {
+            
+            const response = await this.axiosInstance.get('/entity/author/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllAuthors:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
+
+    async getAllEditorsAndAuthors(): Promise<ApiResponse<Editor[]>> {
+        try {
+            
+            const response = await this.axiosInstance.get('/entity/editors-authors/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error in getAllEditorsAndAuthors:', {
                 message: error.message,
                 response: error.response?.data,
                 status: error.response?.status,
@@ -1320,25 +1985,6 @@ const api = {
             throw this.handleError(error);
         }
     },
-
-    async getEditorDashboardStats(): Promise<ApiResponse<DashboardStats>> {
-        try {
-            const response = await this.axiosInstance.get('/editor/dashboard/stats');
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
-    async getEditorRecentActivity(): Promise<ApiResponse<ActivityItem[]>> {
-        try {
-            const response = await this.axiosInstance.get('/editor/dashboard/recent-activity');
-            return response.data;
-        } catch (error: any) {
-            throw this.handleError(error);
-        }
-    },
-
     // Leads endpoints
     async getAllLeads(): Promise<ApiResponse<Lead[]>> {
         try {
@@ -1423,7 +2069,7 @@ const api = {
         }
     },
 
-    // Add new function to get today's follow-up leads
+    // Add new method for getting today's follow-up leads
     async getTodayFollowupLeads(): Promise<ApiResponse<Lead[]>> {
         try {
             const response = await this.axiosInstance.get('/leads/today-followup');
@@ -1435,17 +2081,27 @@ const api = {
         }
     },
 
-    // Update the createClient method to handle the actual response format
+    // Add this new method under the leads endpoints section
+    async getLeadsByCreator(creatorId: string): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get(`/leads/creator/${creatorId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching leads by creator:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update the createClient method to handle null passwords
     async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.post('/clients', data);
-            // Log the response structure to understand it better
-            console.log("Raw client creation response:", response.data);
             
             return {
                 success: true,
                 data: response.data, // Keep the original nested structure
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                message: "Client created successfully"
             };
         } catch (error: any) {
             console.error('Error creating client:', error);
@@ -1454,7 +2110,7 @@ const api = {
     },
 
     // Add client login method
-    async clientLogin(email: string, password: string): Promise<ApiResponse<ClientLoginResponse>> {
+    async clientLogin(email: string, password: string): Promise<ClientLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/clients/login', {
                 email,
@@ -1466,13 +2122,244 @@ const api = {
                 localStorage.setItem(USER_ROLE_KEY, 'clients');
             }
             
-            return {
-                success: true,
-                data: response.data,
-                timestamp: new Date().toISOString()
-            };
+            return response.data;
         } catch (error: any) {
             console.error('Client login error:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to check if client exists by email
+    async getClientByEmail(email: string): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/email/${email}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error checking client by email:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to get client pending prospectus
+    async getClientPendingRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/pending`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to get client pending prospectus
+    async getClientQuotationReviewRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/quotationReview`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientRegisteredRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/registered`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client registered registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
+        try {
+            const response = await this.axiosInstance.get(`/clients/${clientId}/registration/`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client registered registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Mock data functions for author tasks while the backend is developed
+    // Author-related mock functions
+    async getAuthorStats(): Promise<ApiResponse<AuthorStats>> {
+        // Mock data for now
+        const mockStats = {
+          assigned_count: 8,
+          in_progress_count: 3,
+          completed_count: 12,
+          under_review_count: 2,
+          tasks_this_week: 4,
+          tasks_past_due: 1,
+        };
+        
+        return {
+          success: true,
+          data: mockStats,
+          timestamp: new Date().toISOString(),
+          message: "Author stats retrieved successfully"
+        };
+      },
+      
+      async getAuthorTasks(): Promise<ApiResponse<AuthorTask[]>> {
+        // Mock data for now
+        const mockTasks = [
+          {
+            id: 1,
+            title: "Smart City Infrastructure Paper",
+            description: "Research and write a paper on smart city infrastructure implementation challenges and solutions.",
+            journal_name: "Journal of Urban Technology",
+            client_name: "Smart Cities Inc.",
+            assigned_date: "2023-10-15",
+            deadline: "2023-11-15",
+            status: "in_progress" as const,
+            completion_percentage: 65,
+            paper_requirements: "5000-7000 words, APA format, at least 25 citations from reputable sources",
+            research_area: "Urban Technology",
+            word_count: 6500,
+            last_updated: "2023-11-01",
+          },
+          {
+            id: 2,
+            title: "Quantum Computing Applications in Healthcare",
+            description: "Write a comprehensive review of quantum computing applications in healthcare and diagnostics.",
+            journal_name: "Digital Health Research",
+            client_name: "QuantumHealth Research",
+            assigned_date: "2023-10-20",
+            deadline: "2023-11-30",
+            status: "pending" as const,
+            completion_percentage: 0,
+            paper_requirements: "Academic review, 10,000+ words with extensive citations",
+            research_area: "Quantum Computing, Healthcare",
+            last_updated: "2023-10-20",
+          },
+          {
+            id: 3,
+            title: "Sustainable Energy Systems",
+            description: "Create a research paper on innovative sustainable energy systems for developing countries.",
+            journal_name: "Renewable Energy Research",
+            client_name: "GreenEnergy Foundation",
+            assigned_date: "2023-09-05",
+            deadline: "2023-10-20",
+            status: "completed" as const,
+            completion_percentage: 100,
+            document_url: "https://example.com/documents/sustainable-energy-paper-final.pdf",
+            paper_requirements: "Case study approach, focus on practical implementations",
+            research_area: "Renewable Energy",
+            word_count: 8200,
+            last_updated: "2023-10-18",
+          },
+          {
+            id: 4,
+            title: "Blockchain in Financial Inclusion",
+            description: "Research on blockchain technology applications for financial inclusion in underbanked populations.",
+            journal_name: "Financial Technology Review",
+            client_name: "Global Finance Initiative",
+            assigned_date: "2023-10-25",
+            deadline: "2023-12-10",
+            status: "under_review" as const,
+            completion_percentage: 90,
+            document_url: "https://example.com/documents/blockchain-finance-draft.pdf",
+            paper_requirements: "Focus on case studies from Southeast Asia and Africa",
+            research_area: "Blockchain, Financial Technology",
+            word_count: 7800,
+            review_comments: ["Please expand section 3.2 with more examples", "Add recent regulations from 2023"],
+            last_updated: "2023-11-05",
+          },
+          {
+            id: 5,
+            title: "AI Ethics in Automated Decision Systems",
+            description: "Critical analysis of ethical considerations in AI-powered automated decision systems.",
+            journal_name: "AI and Society",
+            client_name: "Ethics in Technology Institute",
+            assigned_date: "2023-11-01",
+            deadline: "2023-12-20",
+            status: "pending" as const,
+            completion_percentage: 0,
+            paper_requirements: "Interdisciplinary approach, combining technical and philosophical perspectives",
+            research_area: "AI Ethics",
+            last_updated: "2023-11-01",
+          }
+        ];
+        
+        return {
+          success: true,
+          data: mockTasks,
+          timestamp: new Date().toISOString(),
+          message: "Tasks retrieved successfully"
+        };
+      },
+      
+      async getTaskById(id: number): Promise<ApiResponse<AuthorTask>> {
+        // Mock implementation
+        const allTasks = await this.getAuthorTasks();
+        const task = allTasks.data.find(t => t.id === id);
+        
+        if (!task) {
+          throw new Error(`Task with ID ${id} not found`);
+        }
+        
+        return {
+          success: true,
+          data: task,
+          timestamp: new Date().toISOString(),
+          message:"Task retrieved successfully"
+        };
+      },
+      
+      async updateTask(id: number, data: AuthorTaskUpdateRequest): Promise<ApiResponse<AuthorTask>> {
+        // Mock implementation - would normally send to backend
+        console.log(`Updating task ${id} with data:`, data);
+        
+        // For mock purposes, we'll pretend the update was successful and return the task
+        const taskResponse = await this.getTaskById(id);
+        const updatedTask = {
+          ...taskResponse.data,
+          ...data,
+          last_updated: new Date().toISOString()
+        };
+        
+        return {
+          success: true,
+          data: updatedTask,
+          timestamp: new Date().toISOString(),
+          message: "Task updated successfully"
+        };
+      },
+
+    // Add new method for fetching pending registrations
+    async getRegistrationForApproval(): Promise<PendingRegistrationsResponse> {
+        try {
+            const response = await this.axiosInstance.get('/admin/registrations/forApproval');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching pending registrations:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add method to approve/assign a registration
+    async assignRegistration(registrationId: number, editorId: string): Promise<ApiResponse<Registration>> {
+        try {
+            const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/assign`, {
+                assigned_to: editorId
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error assigning registration:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add this new method for deleting an entity
+    async deleteEntity(id: string): Promise<ApiResponse<void>> {
+        try {
+            const response = await this.axiosInstance.delete(`/entity/${id}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error deleting entity:', error);
             throw this.handleError(error);
         }
     },
@@ -1486,7 +2373,7 @@ const api = {
         return userStr ? JSON.parse(userStr) : null;
     },
 
-    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients') {
+    setStoredAuth(token: string, user: any, role: 'editor' | 'executive' | 'admin' | 'leads' | 'clients' | 'author') {
         if (!token || !role) {
             throw new Error('Invalid auth data: missing token or role');
         }
@@ -1565,7 +2452,345 @@ const api = {
                 error: error.message || 'An unexpected error occurred'
             };
         }
-    }
+    },
+
+    // Add new method to get journal data by editor ID
+    async getJournalDataByEditor(
+      editorId: string, 
+      options: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        searchTerm?: string;
+      } = {}
+    ): Promise<PaginatedJournalResponse> {
+      try {
+        const { 
+          page = 1, 
+          limit = 10, 
+          status, 
+          sortBy = 'created_at', 
+          sortOrder = 'desc',
+          searchTerm = '' 
+        } = options;
+        
+        // Build query params
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (status && status !== 'all') params.append('status', status);
+        params.append('sortBy', sortBy);
+        params.append('sortOrder', sortOrder);
+        if (searchTerm) params.append('searchTerm', searchTerm);
+        
+        const response = await this.axiosInstance.get(
+          `/editor/journal-data/editor/${editorId}?${params.toString()}`
+        );
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by editor:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add this new function to the api object
+    async getJournalDataByEditorSimple(editorId: string): Promise<ApiResponse<JournalData[]>> {
+      try {
+        const response = await this.axiosInstance.get(`/editor/journal-data/assigned/${editorId}`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by editor:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Update this method to handle just the status and optional comments update
+    async updateAuthorStatus(regId: number, data: {status: string, comments?: string}): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.put(`/authors/status/${regId}`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating author status:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update this method to handle optional file uploads with status update
+    async updateAuthorStatusWithFile(formData: FormData): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.post('/authors/upload-paper', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error uploading paper:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Update the client payment method to match the successful updateAuthorStatusWithFile method
+    async submitClientPayment(paymentData: FormData): Promise<ApiResponse<any>> {
+        try {
+            // Log for debugging purposes
+            
+            // Log files separately for better visibility
+            // const entries = Array.from(paymentData.entries());
+            // entries.forEach(pair => {
+            //     const [key, value] = pair;
+            //     if (value instanceof File) {
+            //         console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+            //     } else {
+            //         console.log(`${key}: ${value}`);
+            //     }
+            // });
+            
+            // Make sure to use the correct content type for multipart/form-data
+            const response = await this.axiosInstance.post('/clients/payment/submit', paymentData, {
+                headers: {
+                    // Do NOT set Content-Type as axios will set it correctly with the boundary
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error submitting client payment:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add these methods to the api object
+    async updateUserProfile(userId: string, data: UpdateProfileRequest): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.put(`/entity/${userId}/user-profile`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating user profile:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async verifyPassword(data: VerifyPasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+        try {
+            const response = await this.axiosInstance.post('/entity/verify-password', data);
+            
+            // If the request is successful, make sure to return the proper structure
+            return {
+                success: true,
+                data: { success: true },
+                timestamp: new Date().toISOString(),
+                message: 'Password verified successfully'
+            };
+        } catch (error: any) {
+            console.error('Error verifying password:', error);
+            
+            // Check if the error response matches the expected format for wrong password
+            if (error.response?.data?.error === 'Invalid password') {
+                return {
+                    success: false,
+                    data: { success: false },
+                    timestamp: new Date().toISOString(),
+                    message: 'Current password is incorrect'
+                };
+            }
+            
+            // Return a generic error for other error types
+            return {
+                success: false,
+                data: { success: false },
+                timestamp: new Date().toISOString(),
+                message: 'Failed to verify password'
+            };
+        }
+    },
+
+    async changePassword(userId: string, data: ChangePasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+        try {
+            const response = await this.axiosInstance.put(`/entity/${userId}/change-password`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error changing password:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add this method to the api object
+    async getJournalDataByExecutive(userId: string): Promise<JournalDataByExecutiveResponse> {
+      try {
+        const response = await this.axiosInstance.post('/entity/journal-data-by-executive', {
+          user_id: userId
+        });
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by executive:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add the new method to the api object
+    async getClientRegistrationWithQuotation(registrationId: number): Promise<ClientRegistrationWithQuotationResponse> {
+      try {
+        const response = await this.axiosInstance.get(`/clients/prosReg/${registrationId}`);
+        
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching registration with quotation:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add new method to get combined data
+    async getCombinedData(regId: number): Promise<CombinedDataResponse> {
+      try {
+        const response = await this.axiosInstance.post('/clients/combined-data', {
+          reg_id: regId
+        });
+        
+        // Log the combined data structure for debugging
+        console.log('Combined data response structure:', {
+          hasRegistration: !!response.data?.data?.registration,
+          hasQuotations: response.data?.data?.quotations?.length || 0,
+          hasJournalData: response.data?.data?.journalData?.length || 0,
+          hasTransaction: response.data?.data?.transaction?.length || 0,
+          hasProspectus: !!response.data?.data?.prospectus,
+          hasLeads: !!response.data?.data?.leads
+        });
+        
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching combined registration data:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add this method to the api object
+    async getJournalDataByEmail(email: string): Promise<JournalDataByPersonalEmail> {
+      try {
+        const response = await this.axiosInstance.get(`/editor/journal-data/email/${encodeURIComponent(email)}`);
+        return response.data;
+      } catch (error: any) {
+        console.error('Error fetching journal data by email:', error);
+        throw this.handleError(error);
+      }
+    },
+
+    // Add new method for quick status update
+    async updateJournalStatus(id: number, status: string): Promise<ApiResponse<JournalData>> {
+        try {
+            const response = await this.axiosInstance.put(`/editor/journal-data/${id}/status`, { status });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating journal status:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add these new methods for analytics
+    
+    async getEntityPerformance(entityId: string): Promise<ApiResponse<EntityPerformance>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-scorecard/${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity performance:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getEntityRevenue(entityId: string, period?: string): Promise<ApiResponse<EntityRevenue>> {
+        try {
+            const queryParams = new URLSearchParams();
+            queryParams.append('entityId', entityId);
+            if (period) queryParams.append('period', period);
+            
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-revenue?${queryParams.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity revenue:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getEntityWorkload(entityId: string): Promise<ApiResponse<EntityWorkload>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/entity-workload?entityId=${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching entity workload:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getClientAcquisitionMetrics(entityId: string): Promise<ApiResponse<ClientAcquisition>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/client-acquisition?entityId=${entityId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching client acquisition metrics:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getSystemEfficiency(): Promise<ApiResponse<SystemEfficiency>> {
+        try {
+            const response = await this.axiosInstance.get('/admin/analytics/system-efficiency');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching system efficiency:', error);
+            throw this.handleError(error);
+        }
+    },
+    
+    async getResourceAllocationSuggestions(taskType: string, taskId: string): Promise<ApiResponse<any>> {
+        try {
+            const response = await this.axiosInstance.get(`/admin/analytics/resource-allocation?taskType=${taskType}&taskId=${taskId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching resource allocation suggestions:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add methods for secondary and final payment transactions
+    async addSecondaryPaymentTransaction(data: PaymentTransactionRequest): Promise<ApiResponse<PaymentTransactionResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/common/transaction/secondary-payment', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error adding secondary payment:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    async addFinalPaymentTransaction(data: PaymentTransactionRequest): Promise<ApiResponse<PaymentTransactionResponse>> {
+        try {
+            const response = await this.axiosInstance.post('/common/transaction/final-payment', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error adding final payment:', error);
+            throw this.handleError(error);
+        }
+    },
+
+    // Add new method to get dashboard data
+    async getDashboardData(): Promise<DashboardDataResponse> {
+        try {
+            const response = await this.axiosInstance.get('/admin/dashboard');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching dashboard data:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
@@ -1591,13 +2816,13 @@ export type {
     BankAccountRequest,
     JournalData,
     UpdateJournalRequest,
-Editor,  // Add this export
+    Editor,
     AssignedRegistration,
     CreateJournalRequest,
     ProspectusAssistData,
     DashboardStats,
     ActivityItem,
-    Permission,  // Add this export
+    Permission,
     Lead,
     CreateLeadRequest,
     UpdateLeadRequest,
@@ -1606,6 +2831,34 @@ Editor,  // Add this export
     CreateClientRequest,
     CreateClientResponse,  
     ClientLoginRequest,
-    ClientLoginResponse
+    ClientLoginResponse,
+    ClientPendingRegistrationResponse,
+    AuthorTask,
+    AuthorTaskUpdateRequest,
+    AuthorStats,
+    PendingRegistrationResponse,
+    PendingRegistrationsResponse,
+    ClientPaymentRequest,
+    UpdateProfileRequest,
+    VerifyPasswordRequest,
+    ChangePasswordRequest,
+    JournalDataWithLeads,
+    JournalDataByLeadsResponse,
+    JournalDataWithExecutive,
+    JournalDataByExecutiveResponse,
+    PaginatedJournalResponse,
+    QuotationFile,
+    ClientQuotation,
+    ClientRegistrationWithQuotationResponse,
+    CombinedRegistrationData,
+    CombinedDataResponse,
+    JournalDataByPersonalEmail,
+    EntityPerformance,
+    EntityRevenue,
+    EntityWorkload,
+    ClientAcquisition,
+    SystemEfficiency,
+    DashboardData,
+    DashboardDataResponse,
 };
 export default api;
