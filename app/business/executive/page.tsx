@@ -20,7 +20,8 @@ import {
   PhoneIcon,
   CalendarDaysIcon,
   ArrowPathIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import api from '@/services/api';
@@ -50,8 +51,18 @@ function BusinessDashboard() {
     pendingRegistrations: 0,
     completedRegistrations: 0,
     totalRevenue: 0,
-    unpaidAmount: 0, // Renamed from pendingAmount
+    unpaidAmount: 0,
     todayRevenue: 0,
+    secondaryPaymentsTotal: 0,
+    secondaryPaymentsCompleted: 0,
+    secondaryPaymentsPending: 0,
+    secondaryPaymentsAmount: 0,
+    finalPaymentsTotal: 0,
+    finalPaymentsCompleted: 0,
+    finalPaymentsPending: 0,
+    finalPaymentsAmount: 0,
+    totalPaidAmount: 0,
+    todayCollectedAmount: 0, // Add this new state variable for tracking today's actual collected amount
   });
   
   // Add lead-related state
@@ -124,22 +135,90 @@ function BusinessDashboard() {
       // Calculate total revenue from completed registrations
       const totalRevenue = completedRegs.reduce((sum, reg) => sum + reg.total_amount, 0);
       
-      // Calculate unpaid amount (total amount - paid amount)
-      let totalRegistrationAmount = registrations.reduce((sum, reg) => sum + reg.total_amount, 0);
+      // Initialize payment metrics
       let totalPaidAmount = 0;
+      let secondaryPaymentsTotal = 0;
+      let secondaryPaymentsCompleted = 0;
+      let secondaryPaymentsPending = 0;
+      let secondaryPaymentsAmount = 0;
+      let finalPaymentsTotal = 0;
+      let finalPaymentsCompleted = 0;
+      let finalPaymentsPending = 0;
+      let finalPaymentsAmount = 0;
+      let todayCollectedAmount = 0; // New variable for tracking today's collected amount
       
-      // Calculate total paid amount from all transactions
+      const today = new Date();
+      
+      // Calculate total paid amount from all transactions and payment types
       registrations.forEach(reg => {
+        // Initial payment
         if (reg.transactions && reg.transactions.amount) {
           totalPaidAmount += reg.transactions.amount;
+          
+          // Check if this transaction was made today
+          if (reg.transactions.transaction_date && isToday(parseISO(reg.transactions.transaction_date))) {
+            todayCollectedAmount += reg.transactions.amount;
+          }
+        }
+        
+        // Count registrations requiring secondary payments (manuscript payments)
+        // Check if registration involves paper writing (which requires secondary payment)
+        const requirement = reg.prospectus?.leads?.requirement?.toLowerCase() || 
+                           reg.prospectus?.requirement?.toLowerCase() || '';
+        const isPaperWriting = requirement.includes('paper writing');
+        
+        if (isPaperWriting && reg.author_status === 'completed') {
+          secondaryPaymentsTotal++;
+          
+          if (reg.is_secondary_payment_done) {
+            secondaryPaymentsCompleted++;
+            // If there's a secondary transaction, add the amount
+            if (reg.secondary_transaction && reg.secondary_transaction.amount) {
+              secondaryPaymentsAmount += reg.secondary_transaction.amount;
+              totalPaidAmount += reg.secondary_transaction.amount;
+              
+              // Check if this secondary transaction was made today
+              if (reg.secondary_transaction.transaction_date && 
+                  isToday(parseISO(reg.secondary_transaction.transaction_date))) {
+                todayCollectedAmount += reg.secondary_transaction.amount;
+              }
+            }
+          } else {
+            secondaryPaymentsPending++;
+          }
+        }
+        
+        // Count registrations requiring final payments (publication payments)
+        // Check if registration involves publication (which requires final payment)
+        const isPublication = requirement.includes('publication');
+        
+        if (isPublication && reg.journal_added) {
+          finalPaymentsTotal++;
+          
+          if (reg.is_final_payment_done) {
+            finalPaymentsCompleted++;
+            // If there's a final transaction, add the amount
+            if (reg.final_transaction && reg.final_transaction.amount) {
+              finalPaymentsAmount += reg.final_transaction.amount;
+              totalPaidAmount += reg.final_transaction.amount;
+              
+              // Check if this final transaction was made today
+              if (reg.final_transaction.transaction_date && 
+                  isToday(parseISO(reg.final_transaction.transaction_date))) {
+                todayCollectedAmount += reg.final_transaction.amount;
+              }
+            }
+          } else {
+            finalPaymentsPending++;
+          }
         }
       });
       
-      // Unpaid amount is the difference between total registration amount and total paid amount
+      // Calculate unpaid amount as difference between total registration amount and total paid amount
+      const totalRegistrationAmount = registrations.reduce((sum, reg) => sum + reg.total_amount, 0);
       const unpaidAmount = Math.max(0, totalRegistrationAmount - totalPaidAmount);
       
       // Calculate today's revenue from completed registrations with today's date
-      const today = new Date();
       let todayRevenue = 0;
       
       completedRegs.forEach(reg => {
@@ -155,8 +234,18 @@ function BusinessDashboard() {
         pendingRegistrations: pendingRegs.length,
         completedRegistrations: completedRegs.length,
         totalRevenue: totalRevenue,
-        unpaidAmount: unpaidAmount, // Updated to use unpaid amount
+        unpaidAmount: unpaidAmount,
         todayRevenue: todayRevenue,
+        secondaryPaymentsTotal,
+        secondaryPaymentsCompleted,
+        secondaryPaymentsPending,
+        secondaryPaymentsAmount,
+        finalPaymentsTotal,
+        finalPaymentsCompleted,
+        finalPaymentsPending,
+        finalPaymentsAmount,
+        totalPaidAmount,
+        todayCollectedAmount, // Include the new todayCollectedAmount in the state
       });
 
       // Check permissions using our utility
@@ -292,7 +381,7 @@ function BusinessDashboard() {
                 View Records
               </Button>
             )}
-            {hasAddProspectPermission && (
+            {/* {hasAddProspectPermission && (
               <Button 
                 color="primary" 
                 onClick={() => router.push('/business/executive/add_prospect')}
@@ -300,7 +389,14 @@ function BusinessDashboard() {
               >
                 Add Prospect
               </Button>
-            )}
+            )} */}
+            <Button 
+              color="primary" 
+              onClick={() => router.push('/business/executive/leads/add')}
+              startContent={<PlusIcon className="h-4 w-4" />}
+            >
+              Add New Lead
+            </Button>
           </div>
         </CardHeader>
       </Card>
@@ -343,21 +439,247 @@ function BusinessDashboard() {
           </CardBody>
         </Card>
 
-        <Card className="border-l-4 border-danger">
+        {/* Change from Total Revenue to Total Collected - Update to show actual collected amount */}
+        <Card className="border-l-4 border-success">
           <CardBody className="flex flex-row items-center justify-between">
             <div>
-              <p className="text-default-500 text-sm">Total Revenue</p>
-              <h3 className="text-2xl font-bold">{formatCurrency(dashboardData.totalRevenue)}</h3>
-              <p className="text-xs text-success mt-1">Today: {formatCurrency(dashboardData.todayRevenue)}</p>
+              <p className="text-default-500 text-sm">Total Collected</p>
+              <h3 className="text-2xl font-bold">{formatCurrency(dashboardData.totalPaidAmount)}</h3>
+              <p className="text-xs text-success mt-1">Today: {formatCurrency(dashboardData.todayCollectedAmount)}</p>
             </div>
-            <div className="bg-danger/10 p-3 rounded-full">
-              <CurrencyRupeeIcon className="w-6 h-6 text-danger" />
+            <div className="bg-success/10 p-3 rounded-full">
+              <CurrencyRupeeIcon className="w-6 h-6 text-success" />
             </div>
           </CardBody>
         </Card>
       </div>
 
-      {/* Leads and Follow-ups Section */}
+      {/* Add a new row for more financial insights - especially unpaid amounts */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="border-l-4 border-primary">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Initial Payments</p>
+              <h3 className="text-xl font-bold">
+                {formatCurrency(dashboardData.totalPaidAmount - dashboardData.secondaryPaymentsAmount - dashboardData.finalPaymentsAmount)}
+              </h3>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-full">
+              <DocumentTextIcon className="w-6 h-6 text-primary" />
+            </div>
+          </CardBody>
+        </Card>
+        
+        <Card className="border-l-4 border-secondary">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Manuscript Payments</p>
+              <h3 className="text-xl font-bold">
+                {formatCurrency(dashboardData.secondaryPaymentsAmount)}
+              </h3>
+            </div>
+            <div className="bg-secondary/10 p-3 rounded-full">
+              <DocumentDuplicateIcon className="w-6 h-6 text-secondary" />
+            </div>
+          </CardBody>
+        </Card>
+        
+        <Card className="border-l-4 border-indigo-500">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div>
+              <p className="text-default-500 text-sm">Publication Payments</p>
+              <h3 className="text-xl font-bold">
+                {formatCurrency(dashboardData.finalPaymentsAmount)}
+              </h3>
+            </div>
+            <div className="bg-indigo-500/10 p-3 rounded-full">
+              <DocumentDuplicateIcon className="w-6 h-6 text-indigo-500" />
+            </div>
+          </CardBody>
+        </Card>
+      </div> */}
+
+      {/* Add a Due Amounts Card */}
+      <div className="mb-6">
+        <Card className="border-l-4 border-danger">
+          <CardBody className="flex flex-row items-center justify-between">
+            <div className="flex flex-grow">
+              <div className="flex-grow">
+                <p className="text-default-500 text-sm">Outstanding Amount</p>
+                <h3 className="text-2xl font-bold text-danger">{formatCurrency(dashboardData.unpaidAmount)}</h3>
+              </div>
+              
+              <div className="flex flex-col items-end">
+                <div className="flex items-center">
+                  <p className="text-xs text-default-500 mr-2">Total Value:</p>
+                  <p className="text-sm font-medium">{formatCurrency(dashboardData.totalRevenue)}</p>
+                </div>
+                <div className="flex items-center">
+                  <p className="text-xs text-default-500 mr-2">Collected:</p>
+                  <p className="text-sm font-medium text-success">{formatCurrency(dashboardData.totalPaidAmount)}</p>
+                </div>
+                <div className="flex items-center">
+                  <p className="text-xs text-default-500 mr-2">Due:</p>
+                  <p className="text-sm font-medium text-danger">{formatCurrency(dashboardData.unpaidAmount)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-danger/10 p-3 rounded-full ml-4">
+              <ExclamationTriangleIcon className="w-6 h-6 text-danger" />
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Update the Payment Insights card - focus on collected amounts and outstanding */}
+      <div className="mb-6">
+        <Card className="shadow-sm">
+          <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center">
+                <CurrencyRupeeIcon className="h-5 w-5 mr-2 text-success" />
+                Payment Insights
+              </h3>
+              <p className="text-default-500 text-sm">Detailed payment breakdown</p>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Initial Payments */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-medium text-primary-600 mb-3">Initial Payments</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Collected:</span>
+                    <span className="font-semibold">{formatCurrency(dashboardData.totalPaidAmount - dashboardData.secondaryPaymentsAmount - dashboardData.finalPaymentsAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Registrations:</span>
+                    <span className="font-semibold">{dashboardData.completedRegistrations}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Pending Registrations:</span>
+                    <span className="font-semibold">{dashboardData.pendingRegistrations}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Secondary Payments (Manuscript) */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-medium text-secondary-600 mb-3">Manuscript Payments</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Collected:</span>
+                    <span className="font-semibold text-success">{formatCurrency(dashboardData.secondaryPaymentsAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Completed Payments:</span>
+                    <span className="font-semibold">{dashboardData.secondaryPaymentsCompleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Pending Payments:</span>
+                    <span className="font-semibold text-warning">{dashboardData.secondaryPaymentsPending}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Final Payments (Publication) */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-medium text-indigo-600 mb-3">Publication Payments</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Collected:</span>
+                    <span className="font-semibold text-success">{formatCurrency(dashboardData.finalPaymentsAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Completed Payments:</span>
+                    <span className="font-semibold">{dashboardData.finalPaymentsCompleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Pending Payments:</span>
+                    <span className="font-semibold text-warning">{dashboardData.finalPaymentsPending}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Payment Summary Row - More prominent display of collected vs outstanding */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Collected Amount Summary */}
+              <div className="bg-success-50 dark:bg-success-900/20 p-4 rounded-xl border border-success-200 dark:border-success-800">
+                <h3 className="text-lg font-semibold text-success-700 dark:text-success-400 mb-3">Total Collected Amount</h3>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-3xl font-bold text-success-600 dark:text-success-400">
+                      {formatCurrency(dashboardData.totalPaidAmount)}
+                    </div>
+                    <div className="text-sm text-success-600 dark:text-success-400 mt-1">
+                      Today: {formatCurrency(dashboardData.todayCollectedAmount)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-sm">Initial:</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(dashboardData.totalPaidAmount - dashboardData.secondaryPaymentsAmount - dashboardData.finalPaymentsAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-sm">Manuscript:</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(dashboardData.secondaryPaymentsAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-sm">Publication:</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(dashboardData.finalPaymentsAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Outstanding Amount Summary */}
+              <div className="bg-danger-50 dark:bg-danger-900/20 p-4 rounded-xl border border-danger-200 dark:border-danger-800">
+                <h3 className="text-lg font-semibold text-danger-700 dark:text-danger-400 mb-3">Outstanding Amount</h3>
+                <div className="flex justify-between items-center">
+                  <div className="text-3xl font-bold text-danger-600 dark:text-danger-400">
+                    {formatCurrency(dashboardData.unpaidAmount)}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm">
+                      <span className="text-default-600">Total Value: </span>
+                      <span className="font-medium">{formatCurrency(dashboardData.totalRevenue)}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-default-600">Collection Rate: </span>
+                      <span className="font-medium">
+                        {dashboardData.totalRevenue > 0 
+                          ? Math.round((dashboardData.totalPaidAmount / dashboardData.totalRevenue) * 100) 
+                          : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-divider flex justify-center">
+              <Button
+                color="primary"
+                variant="light"
+                onClick={() => router.push('/business/executive/records/registration')}
+                endContent={<ChevronRightIcon className="h-4 w-4" />}
+              >
+                View All Registrations
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Add back Leads and Follow-ups Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Today's Follow-ups Card */}
         <Card className="shadow-sm">
@@ -369,7 +691,7 @@ function BusinessDashboard() {
               </h3>
               <p className="text-default-500 text-sm">
                 {todayFollowups.length === 0 ? "No follow-ups scheduled for today" : 
-                 `${todayFollowups.length} follow-ups need attention today`}
+                  `${todayFollowups.length} follow-ups need attention today`}
               </p>
             </div>
             <Button 
@@ -433,7 +755,7 @@ function BusinessDashboard() {
           </CardBody>
         </Card>
 
-        {/* Quick Stats */}
+        {/* Quick Stats - Leads & Prospects */}
         <Card className="shadow-sm">
           <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
             <div>
@@ -520,10 +842,6 @@ function BusinessDashboard() {
                     <span>Today&apos;s Revenue:</span>
                     <span className="font-semibold text-success-600">{formatCurrency(dashboardData.todayRevenue)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Unpaid Amount:</span>
-                    <span className="font-semibold text-warning-600">{formatCurrency(dashboardData.unpaidAmount)}</span>
-                  </div>
                 </div>
 
                 <Button 
@@ -540,7 +858,7 @@ function BusinessDashboard() {
         </Card>
       </div>
 
-      {/* Recent Leads */}
+      {/* Recent Leads Section - Keep this if it was removed */}
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
           <div>
