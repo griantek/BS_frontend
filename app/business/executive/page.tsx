@@ -51,9 +51,8 @@ function BusinessDashboard() {
     pendingRegistrations: 0,
     completedRegistrations: 0,
     totalRevenue: 0,
-    unpaidAmount: 0, // Renamed from pendingAmount
+    unpaidAmount: 0,
     todayRevenue: 0,
-    // Add new metrics for secondary and final payments
     secondaryPaymentsTotal: 0,
     secondaryPaymentsCompleted: 0,
     secondaryPaymentsPending: 0,
@@ -62,7 +61,8 @@ function BusinessDashboard() {
     finalPaymentsCompleted: 0,
     finalPaymentsPending: 0,
     finalPaymentsAmount: 0,
-    totalPaidAmount: 0, // Total of all payment types
+    totalPaidAmount: 0,
+    todayCollectedAmount: 0, // Add this new state variable for tracking today's actual collected amount
   });
   
   // Add lead-related state
@@ -145,12 +145,20 @@ function BusinessDashboard() {
       let finalPaymentsCompleted = 0;
       let finalPaymentsPending = 0;
       let finalPaymentsAmount = 0;
+      let todayCollectedAmount = 0; // New variable for tracking today's collected amount
+      
+      const today = new Date();
       
       // Calculate total paid amount from all transactions and payment types
       registrations.forEach(reg => {
         // Initial payment
         if (reg.transactions && reg.transactions.amount) {
           totalPaidAmount += reg.transactions.amount;
+          
+          // Check if this transaction was made today
+          if (reg.transactions.transaction_date && isToday(parseISO(reg.transactions.transaction_date))) {
+            todayCollectedAmount += reg.transactions.amount;
+          }
         }
         
         // Count registrations requiring secondary payments (manuscript payments)
@@ -168,6 +176,12 @@ function BusinessDashboard() {
             if (reg.secondary_transaction && reg.secondary_transaction.amount) {
               secondaryPaymentsAmount += reg.secondary_transaction.amount;
               totalPaidAmount += reg.secondary_transaction.amount;
+              
+              // Check if this secondary transaction was made today
+              if (reg.secondary_transaction.transaction_date && 
+                  isToday(parseISO(reg.secondary_transaction.transaction_date))) {
+                todayCollectedAmount += reg.secondary_transaction.amount;
+              }
             }
           } else {
             secondaryPaymentsPending++;
@@ -187,6 +201,12 @@ function BusinessDashboard() {
             if (reg.final_transaction && reg.final_transaction.amount) {
               finalPaymentsAmount += reg.final_transaction.amount;
               totalPaidAmount += reg.final_transaction.amount;
+              
+              // Check if this final transaction was made today
+              if (reg.final_transaction.transaction_date && 
+                  isToday(parseISO(reg.final_transaction.transaction_date))) {
+                todayCollectedAmount += reg.final_transaction.amount;
+              }
             }
           } else {
             finalPaymentsPending++;
@@ -199,7 +219,6 @@ function BusinessDashboard() {
       const unpaidAmount = Math.max(0, totalRegistrationAmount - totalPaidAmount);
       
       // Calculate today's revenue from completed registrations with today's date
-      const today = new Date();
       let todayRevenue = 0;
       
       completedRegs.forEach(reg => {
@@ -217,7 +236,6 @@ function BusinessDashboard() {
         totalRevenue: totalRevenue,
         unpaidAmount: unpaidAmount,
         todayRevenue: todayRevenue,
-        // Add new secondary and final payment metrics
         secondaryPaymentsTotal,
         secondaryPaymentsCompleted,
         secondaryPaymentsPending,
@@ -227,6 +245,7 @@ function BusinessDashboard() {
         finalPaymentsPending,
         finalPaymentsAmount,
         totalPaidAmount,
+        todayCollectedAmount, // Include the new todayCollectedAmount in the state
       });
 
       // Check permissions using our utility
@@ -420,13 +439,13 @@ function BusinessDashboard() {
           </CardBody>
         </Card>
 
-        {/* Change from Total Revenue to Total Collected */}
+        {/* Change from Total Revenue to Total Collected - Update to show actual collected amount */}
         <Card className="border-l-4 border-success">
           <CardBody className="flex flex-row items-center justify-between">
             <div>
               <p className="text-default-500 text-sm">Total Collected</p>
               <h3 className="text-2xl font-bold">{formatCurrency(dashboardData.totalPaidAmount)}</h3>
-              <p className="text-xs text-success mt-1">Today: {formatCurrency(dashboardData.todayRevenue)}</p>
+              <p className="text-xs text-success mt-1">Today: {formatCurrency(dashboardData.todayCollectedAmount)}</p>
             </div>
             <div className="bg-success/10 p-3 rounded-full">
               <CurrencyRupeeIcon className="w-6 h-6 text-success" />
@@ -595,7 +614,7 @@ function BusinessDashboard() {
                       {formatCurrency(dashboardData.totalPaidAmount)}
                     </div>
                     <div className="text-sm text-success-600 dark:text-success-400 mt-1">
-                      Today: {formatCurrency(dashboardData.todayRevenue)}
+                      Today: {formatCurrency(dashboardData.todayCollectedAmount)}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -660,7 +679,186 @@ function BusinessDashboard() {
         </Card>
       </div>
 
-      {/* Recent Leads */}
+      {/* Add back Leads and Follow-ups Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Today's Follow-ups Card */}
+        <Card className="shadow-sm">
+          <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center">
+                <BellAlertIcon className="h-5 w-5 mr-2 text-warning" />
+                Today&apos;s Follow-ups
+              </h3>
+              <p className="text-default-500 text-sm">
+                {todayFollowups.length === 0 ? "No follow-ups scheduled for today" : 
+                  `${todayFollowups.length} follow-ups need attention today`}
+              </p>
+            </div>
+            <Button 
+              size="sm" 
+              color="warning" 
+              variant="light"
+              onClick={() => router.push('/business/executive/leads/followup')}
+              endContent={<ChevronRightIcon className="h-4 w-4" />}
+            >
+              View All
+            </Button>
+          </CardHeader>
+          <CardBody className="py-3">
+            {todayFollowups.length === 0 ? (
+              <div className="text-center py-6 text-default-400">
+                <ClockIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No follow-ups scheduled for today</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayFollowups.map((followup) => (
+                  <div 
+                    key={followup.id} 
+                    className="p-3 bg-default-50 rounded-lg hover:bg-default-100 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/business/executive/leads/${followup.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        router.push(`/business/executive/leads/${followup.id}`);
+                      }
+                    }}
+                  >
+                    <div className="flex justify-between mb-1">
+                      <h4 className="font-medium">{followup.client_name}</h4>
+                      <div className="flex items-center text-sm text-warning">
+                        <CalendarDaysIcon className="h-4 w-4 mr-1" /> 
+                        Today
+                      </div>
+                    </div>
+                    <div className="text-sm flex items-center gap-2 mb-1">
+                      <PhoneIcon className="h-4 w-4 text-default-400" />
+                      {followup.phone_number || "No phone number"}
+                    </div>
+                    <p className="text-sm text-default-600 line-clamp-1">
+                      {followup.remarks || "No remarks"}
+                    </p>
+                  </div>
+                ))}
+
+                <Button 
+                  color="warning" 
+                  variant="flat" 
+                  className="w-full mt-2"
+                  onClick={() => router.push('/business/executive/leads/followup')}
+                >
+                  Manage All Follow-ups
+                </Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Quick Stats - Leads & Prospects */}
+        <Card className="shadow-sm">
+          <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
+            <div>
+              <h3 className="text-lg font-semibold">Leads & Prospects Stats</h3>
+              <p className="text-default-500 text-sm">Activity overview</p>
+            </div>
+            <Button
+              size="sm"
+              variant="light"
+              startContent={<ArrowPathIcon className="h-4 w-4" />}
+              onClick={() => {
+                fetchDashboardData(userData?.id || '');
+                fetchLeadsData();
+              }}
+            >
+              Refresh
+            </Button>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-primary-50/50 p-4 rounded-lg">
+                <h4 className="font-medium text-primary-600 mb-2">Leads Activity</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total Leads:</span>
+                    <span className="font-semibold">{leadsData.totalLeads}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>New Today:</span>
+                    <span className="font-semibold">{leadsData.newLeadsToday}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Follow-ups (Pending):</span>
+                    <span className="font-semibold">{leadsData.pendingFollowups}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Follow-ups (Today):</span>
+                    <span className="font-semibold">{leadsData.todayFollowups}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Overdue Follow-ups:</span>
+                    <span className="font-semibold text-danger">{leadsData.overdueFollowups}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Converted Leads:</span>
+                    <span className="font-semibold text-success">{leadsData.convertedLeads}</span>
+                  </div>
+                </div>
+
+                <Button 
+                  color="primary" 
+                  variant="flat" 
+                  className="w-full mt-3"
+                  onClick={goToLeadsManagement}
+                >
+                  Manage Leads
+                </Button>
+              </div>
+
+              <div className="bg-success-50/50 p-4 rounded-lg">
+                <h4 className="font-medium text-success-600 mb-2">Prospects & Revenue</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total Prospects:</span>
+                    <span className="font-semibold">{dashboardData.totalProspects}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Registrations:</span>
+                    <span className="font-semibold">{dashboardData.totalRegistrations}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pending Registrations:</span>
+                    <span className="font-semibold">{dashboardData.pendingRegistrations}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Completed Registrations:</span>
+                    <span className="font-semibold">{dashboardData.completedRegistrations}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Revenue:</span>
+                    <span className="font-semibold">{formatCurrency(dashboardData.totalRevenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Today&apos;s Revenue:</span>
+                    <span className="font-semibold text-success-600">{formatCurrency(dashboardData.todayRevenue)}</span>
+                  </div>
+                </div>
+
+                <Button 
+                  color="success" 
+                  variant="flat" 
+                  className="w-full mt-3"
+                  onClick={goToProspects}
+                >
+                  View Prospects
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Recent Leads Section - Keep this if it was removed */}
       <Card className="mb-6">
         <CardHeader className="flex justify-between items-center border-b border-divider pb-2">
           <div>
@@ -721,6 +919,15 @@ function BusinessDashboard() {
               ))}
             </div>
           )}
+          <div className="mt-4 pt-4 border-t border-divider flex justify-center">
+            <Button 
+              color="primary" 
+              onClick={() => router.push('/business/executive/leads/add')}
+              startContent={<PlusIcon className="h-4 w-4" />}
+            >
+              Add New Lead
+            </Button>
+          </div>
         </CardBody>
       </Card>
     </div>
