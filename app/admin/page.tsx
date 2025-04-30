@@ -1268,15 +1268,17 @@ function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Add CSS for funnel shape */}
-      <style jsx global>{`
-        .clip-funnel-top {
-          clip-path: polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%);
-        }
-        .clip-funnel-bottom {
-          clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
-        }
-      `}</style>
+      {/* Replace the style jsx global with inline styles */}
+      {/* <style dangerouslySetInnerHTML={{
+        __html: `
+          .clip-funnel-top {
+            clip-path: polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%);
+          }
+          .clip-funnel-bottom {
+            clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+          }
+        `
+      }} /> */}
     </div>
   );
 }
