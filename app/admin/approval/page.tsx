@@ -279,7 +279,7 @@ export default function PendingApprovalsPage() {
               <TableBody>
                 {pendingRegistrations.map((item) => {
                   // Use leads.requirement if available, fall back to prospectus.requirement
-                  const requirement = item.leads?.requirement;
+                  const requirement = item.leads?.requirement || item.prospectus.requirement ;
 
                   return (
                     <TableRow key={item.registration.id}>

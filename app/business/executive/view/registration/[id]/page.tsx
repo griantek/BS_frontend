@@ -313,7 +313,7 @@ const PaymentStatusDisplay = ({
   );
 };
 
-// Update the PaymentTimeline component to properly handle both individual and combined requirements
+// Update the PaymentTimeline component with clearer status descriptions
 const PaymentTimeline = ({
   registration,
   handleOpenPaymentModal,
@@ -325,7 +325,6 @@ const PaymentTimeline = ({
                       registration.prospectus?.requirement?.toLowerCase() || '';
   const isPaperWriting = requirement.includes('paper writing');
   const isPublication = requirement.includes('publication');
-  const isCombined = isPaperWriting && isPublication;
   
   // Format date helper function
   const formatTimelineDate = (date: string) => {
@@ -417,7 +416,7 @@ const PaymentTimeline = ({
           </div>
         </div>
         
-        {/* Manuscript Payment - For Paper Writing (combined or individual) */}
+        {/* Secondary Payment - Only for Paper Writing */}
         {isPaperWriting && (
           <div className="flex mb-8 items-start relative">
             <div className="flex flex-col items-center mr-4 z-10">
@@ -487,7 +486,7 @@ const PaymentTimeline = ({
           </div>
         )}
         
-        {/* Publication Payment - For Publication (combined or individual) */}
+        {/* Final Payment - Only for Publication */}
         {isPublication && (
           <div className="flex mb-8 items-start relative">
             <div className="flex flex-col items-center mr-4 z-10">

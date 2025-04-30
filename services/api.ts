@@ -197,7 +197,9 @@ interface Registration {
   author_status:string;
   journal_added:boolean
   is_secondary_payment_done:boolean;
+  secondary_payment:boolean;
   is_final_payment_done:boolean;
+  final_payment:boolean;
   year: number;
   created_at: string;
   updated_at: string;
@@ -224,6 +226,54 @@ interface Registration {
     isregistered: boolean;
     next_follow_up: string;
     proposed_service_period: string;
+    leads: {
+        id: number;
+        date: string;
+        leadSource: string;
+        clientName: string;
+        phoneNumber: string;
+        domain: string;
+        researchArea: string | null;
+        title: string | null;
+        degree: string | null;
+        university: string | null;
+        state: string;
+        country: string;
+        requirement: string;
+        detailedRequirement: string;
+        prospectusType: string;
+        followupDate: string;
+        remarks: string;
+        followupStatus: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+  };
+  secondary_transaction: {
+    id: number;
+    amount: number;
+    entity_id: string;
+    executive: object;
+    transaction_id: string;
+    transaction_date: string;
+    transaction_type: string;
+    additional_info: {
+      upi_id?: string;
+      [key: string]: any;
+    };
+  };
+  final_transaction: {
+    id: number;
+    amount: number;
+    entity_id: string;
+    executive: object;
+    transaction_id: string;
+    transaction_date: string;
+    transaction_type: string;
+    additional_info: {
+      upi_id?: string;
+      [key: string]: any;
+    };
   };
   bank_accounts: {  // Changed from bank_account to bank_accounts
     id: string;
