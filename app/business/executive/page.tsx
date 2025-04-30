@@ -436,7 +436,7 @@ function BusinessDashboard() {
       </div>
 
       {/* Add a new row for more financial insights - especially unpaid amounts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="border-l-4 border-primary">
           <CardBody className="flex flex-row items-center justify-between">
             <div>
@@ -478,7 +478,7 @@ function BusinessDashboard() {
             </div>
           </CardBody>
         </Card>
-      </div>
+      </div> */}
 
       {/* Add a Due Amounts Card */}
       <div className="mb-6">
