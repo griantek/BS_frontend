@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token' ;
+const TOKEN_KEY = process.env.NEXT_PUBLIC_TOKEN_KEY || 'token';
 const USER_KEY = process.env.NEXT_PUBLIC_USER_KEY || 'user';
 const LOGIN_STATUS_KEY = process.env.NEXT_PUBLIC_LOGIN_STATUS_KEY || 'isLoggedIn';
 const USER_ROLE_KEY = process.env.NEXT_PUBLIC_USER_ROLE_KEY || 'userRole';
@@ -31,13 +31,13 @@ interface ExecutiveLoginResponse {
 }
 
 interface AdminLoginResponse {
-  success: boolean;
-  token: string;
-  admin: {
-    id: number;
-    username: string;
-    created_at: string;
-  };
+    success: boolean;
+    token: string;
+    admin: {
+        id: number;
+        username: string;
+        created_at: string;
+    };
 }
 
 interface Prospectus {
@@ -55,9 +55,9 @@ interface Prospectus {
     proposed_service_period: string;
     created_at: string;
     services: string;
-    notes:string;
-    next_follow_up:string;
-    isregistered:boolean;
+    notes: string;
+    next_follow_up: string;
+    isregistered: boolean;
     entities?: {
         id: string;
         username: string;
@@ -94,37 +94,37 @@ interface ApiResponse<T> {
     success: boolean;
     data: T;
     timestamp: string;
-    message:string;
+    message: string;
 }
 
 // Add new interfaces for services
 interface Service {
-  id: number;
-  service_name: string;
-  service_type: string | null;
-  description: string | null;
-  fee: number;
-  min_duration: string | null;
-  max_duration: string | null;
+    id: number;
+    service_name: string;
+    service_type: string | null;
+    description: string | null;
+    fee: number;
+    min_duration: string | null;
+    max_duration: string | null;
 }
 
 // Add interface for update request
 interface UpdateServiceRequest {
-  service_name: string;
-  service_type?: string;
-  description?: string;
-  fee: number;
-  min_duration?: string;
-  max_duration?: string;
+    service_name: string;
+    service_type?: string;
+    description?: string;
+    fee: number;
+    min_duration?: string;
+    max_duration?: string;
 }
 
 interface CreateServiceRequest {
-  service_name: string;
-  service_type?: string;
-  description?: string;
-  fee: number;
-  min_duration?: string;
-  max_duration?: string;
+    service_name: string;
+    service_type?: string;
+    description?: string;
+    fee: number;
+    min_duration?: string;
+    max_duration?: string;
 }
 
 // Add new interface for Executive
@@ -142,10 +142,10 @@ interface ExecutiveWithRoleName {
     username: string;
     email: string;
     role_details: {
-        id:string;
+        id: string;
         name: string;
         description: string;
-        entity_type:string;
+        entity_type: string;
     };
     created_at: string;
     password?: string; // Add optional password field
@@ -153,16 +153,16 @@ interface ExecutiveWithRoleName {
 
 // Add new interface for BankAccount
 interface BankAccount {
-  id: string;
-  account_name: string;
-  account_holder_name: string;
-  account_number: string;
-  ifsc_code: string;
-  account_type: string;
-  bank: string;
-  upi_id: string;
-  branch:string;
-  created_at: string;
+    id: string;
+    account_name: string;
+    account_holder_name: string;
+    account_number: string;
+    ifsc_code: string;
+    account_type: string;
+    bank: string;
+    upi_id: string;
+    branch: string;
+    created_at: string;
 }
 
 // Add new interface for Department
@@ -180,52 +180,128 @@ interface CreateDepartmentRequest {
 
 // Update Registration interface
 interface Registration {
-  id: number;
-  prospectus_id: number;
-  date: string;  // Added
-  services: string;
-  init_amount: number;
-  accept_amount: number;
-  discount: number;
-  total_amount: number;
-  assigned_to: string;
-  accept_period: string;
-  pub_period: string;
-  bank_id: string;  // Added
-  status: string;
-  month: number;
-  author_status:string;
-  journal_added:boolean
-  is_secondary_payment_done:boolean;
-  secondary_payment:boolean;
-  is_final_payment_done:boolean;
-  final_payment:boolean;
-  year: number;
-  created_at: string;
-  updated_at: string;
-  transaction_id: number;  // Added
-  notes?: string;
-  client_id:string;
-  registration_date:string;
-  service_and_prices?: Record<string, number>;
-  prospectus: {
     id: number;
-    date: string;
-    email: string;
-    notes: string;
-    phone: string;
-    state: string;
-    reg_id: string;
+    prospectus_id: number;
+    date: string;  // Added
     services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    assigned_to: string;
+    accept_period: string;
+    pub_period: string;
+    bank_id: string;  // Added
+    status: string;
+    month: number;
+    author_status: string;
+    journal_added: boolean
+    is_secondary_payment_done: boolean;
+    secondary_payment: boolean;
+    is_final_payment_done: boolean;
+    final_payment: boolean;
+    year: number;
     created_at: string;
-    department: string;
-    client_name: string;
-    requirement: string;
-    tech_person: string;
-    executive_id: string;
-    isregistered: boolean;
-    next_follow_up: string;
-    proposed_service_period: string;
+    updated_at: string;
+    transaction_id: number;  // Added
+    notes?: string;
+    client_id: string;
+    registration_date: string;
+    service_and_prices?: Record<string, number>;
+    prospectus: {
+        id: number;
+        date: string;
+        email: string;
+        notes: string;
+        phone: string;
+        state: string;
+        reg_id: string;
+        services: string;
+        created_at: string;
+        department: string;
+        client_name: string;
+        requirement: string;
+        tech_person: string;
+        executive_id: string;
+        isregistered: boolean;
+        next_follow_up: string;
+        proposed_service_period: string;
+        leads: {
+            id: number;
+            date: string;
+            leadSource: string;
+            clientName: string;
+            phoneNumber: string;
+            domain: string;
+            researchArea: string | null;
+            title: string | null;
+            degree: string | null;
+            university: string | null;
+            state: string;
+            country: string;
+            requirement: string;
+            detailedRequirement: string;
+            prospectusType: string;
+            followupDate: string;
+            remarks: string;
+            followupStatus: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+    };
+    secondary_transaction: {
+        id: number;
+        amount: number;
+        entity_id: string;
+        executive: object;
+        transaction_id: string;
+        transaction_date: string;
+        transaction_type: string;
+        additional_info: {
+            upi_id?: string;
+            [key: string]: any;
+        };
+    };
+    final_transaction: {
+        id: number;
+        amount: number;
+        entity_id: string;
+        executive: object;
+        transaction_id: string;
+        transaction_date: string;
+        transaction_type: string;
+        additional_info: {
+            upi_id?: string;
+            [key: string]: any;
+        };
+    };
+    bank_accounts: {  // Changed from bank_account to bank_accounts
+        id: string;
+        bank: string;
+        branch: string;
+        upi_id: string;
+        ifsc_code: string;
+        created_at: string;
+        account_name: string;
+        account_type: string;
+        account_number: string;
+        account_holder_name: string;
+    };
+    transactions: {  // Changed from transaction to transactions
+        id: number;
+        amount: number;
+        entity_id: string;
+        executive: object;
+        transaction_id: string;
+        additional_info: object;
+        transaction_date: string;
+        transaction_type: string;
+    };
+    registered_by: {
+        id: string;
+        username: string;
+        email: string;
+    };
     leads: {
         id: number;
         date: string;
@@ -247,165 +323,89 @@ interface Registration {
         followupStatus: string;
         createdAt: string;
         updatedAt: string;
-      };
-  };
-  secondary_transaction: {
-    id: number;
-    amount: number;
-    entity_id: string;
-    executive: object;
-    transaction_id: string;
-    transaction_date: string;
-    transaction_type: string;
-    additional_info: {
-      upi_id?: string;
-      [key: string]: any;
     };
-  };
-  final_transaction: {
-    id: number;
-    amount: number;
-    entity_id: string;
-    executive: object;
-    transaction_id: string;
-    transaction_date: string;
-    transaction_type: string;
-    additional_info: {
-      upi_id?: string;
-      [key: string]: any;
-    };
-  };
-  bank_accounts: {  // Changed from bank_account to bank_accounts
-    id: string;
-    bank: string;
-    branch: string;
-    upi_id: string;
-    ifsc_code: string;
-    created_at: string;
-    account_name: string;
-    account_type: string;
-    account_number: string;
-    account_holder_name: string;
-  };
-  transactions: {  // Changed from transaction to transactions
-    id: number;
-    amount: number;
-    entity_id: string;
-    executive: object;
-    transaction_id: string;
-    additional_info: object;
-    transaction_date: string;
-    transaction_type: string;
-  };
-  registered_by:{
-    id: string;
-    username: string;
-    email: string;
-  };
-  leads: {
-    id: number;
-    date: string;
-    leadSource: string;
-    clientName: string;
-    phoneNumber: string;
-    domain: string;
-    researchArea: string | null;
-    title: string | null;
-    degree: string | null;
-    university: string | null;
-    state: string;
-    country: string;
-    requirement: string;
-    detailedRequirement: string;
-    prospectusType: string;
-    followupDate: string;
-    remarks: string;
-    followupStatus: string;
-    createdAt: string;
-    updatedAt: string;
-  };
 }
 
 // Add interface for registration creation
 interface TransactionInfo {
-  transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
-  transaction_id: string;
-  amount: number;
-  transaction_date: string;
-  additional_info: Record<string, any>;
+    transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
+    transaction_id: string;
+    amount: number;
+    transaction_date: string;
+    additional_info: Record<string, any>;
 }
 
 // Update the CreateRegistrationRequest interface
 interface CreateRegistrationRequest {
-  // Transaction details
-  transaction_type: TransactionInfo['transaction_type'];
-  transaction_id: string;
-  amount: number;
-  transaction_date: string;
-  additional_info: Record<string, any>;
-  
+    // Transaction details
+    transaction_type: TransactionInfo['transaction_type'];
+    transaction_id: string;
+    amount: number;
+    transaction_date: string;
+    additional_info: Record<string, any>;
 
-  entity_id: string; 
-  client_id: string;
-  prospectus_id: number;
-  services: string;
-  init_amount: number;
-  accept_amount: number;
-  discount: number;
-  total_amount: number;
-  accept_period: string;
-  pub_period: string;
-  bank_id: string;
-  status: 'registered' | 'pending'  | 'waiting for approval' | 'quotation review';  // Explicitly define literal types
-  month: number;
-  year: number;
-  assigned_to?: string;  // Add this field
-  registered_by: string;
-  service_and_prices?: Record<string, number>; // Add this new field
+
+    entity_id: string;
+    client_id: string;
+    prospectus_id: number;
+    services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    accept_period: string;
+    pub_period: string;
+    bank_id: string;
+    status: 'registered' | 'pending' | 'waiting for approval' | 'quotation review';  // Explicitly define literal types
+    month: number;
+    year: number;
+    assigned_to?: string;  // Add this field
+    registered_by: string;
+    service_and_prices?: Record<string, number>; // Add this new field
 }
 
 // Add new interface for database registration
 interface RegistrationRecord {
-  id: number;
-  prospectus_id: number;
-  services: string;
-  init_amount: number;
-  accept_amount: number;
-  discount: number;
-  total_amount: number;
-  accept_period: string;
-  pub_period: string;
-  status: 'pending' | 'registered' | 'waiting for approval';
-  month: number;
-  year: number;
-  created_at: string;
-  prospectus: {
     id: number;
-    client_name: string;
-    [key: string]: any;
-  };
-  bank_account: {
-    id: string;
-    bank_name: string;
-    account_number: string;
-    [key: string]: any;
-  };
-  transaction: {
-    id: number;
-    transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
-    amount: number;
-    executive: {
-      id: string;
-      username: string;
+    prospectus_id: number;
+    services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    accept_period: string;
+    pub_period: string;
+    status: 'pending' | 'registered' | 'waiting for approval';
+    month: number;
+    year: number;
+    created_at: string;
+    prospectus: {
+        id: number;
+        client_name: string;
+        [key: string]: any;
     };
-  };
+    bank_account: {
+        id: string;
+        bank_name: string;
+        account_number: string;
+        [key: string]: any;
+    };
+    transaction: {
+        id: number;
+        transaction_type: 'UPI' | 'Bank Transfer' | 'Card' | 'Cash' | 'Cheque' | 'Wallet' | 'Online Payment' | 'Crypto';
+        amount: number;
+        executive: {
+            id: string;
+            username: string;
+        };
+    };
 }
 
 // Add new interface for paginated response
 interface PaginatedResponse<T> {
-  total: number;
-  filtered: number;
-  items: T[];
+    total: number;
+    filtered: number;
+    items: T[];
 }
 
 // Update the Role interface to match the new response format
@@ -426,81 +426,81 @@ interface Role {
 
 // Add these new interfaces
 interface Permission {
-  id: number;
-  name: string;
-  description: string;
-  entity_type:string;
+    id: number;
+    name: string;
+    description: string;
+    entity_type: string;
 }
 
 // Update the CreateRoleRequest interface
 interface CreateRoleRequest {
-  name: string;
-  description: string;
-  permissions: number[];  // Changed from object to array of permission IDs
-  entity_type: string;
+    name: string;
+    description: string;
+    permissions: number[];  // Changed from object to array of permission IDs
+    entity_type: string;
 }
 
 interface ServerRegistration {
-  id: number;
-  prospectus_id: number;
-  services: string;
-  init_amount: number;
-  accept_amount: number;
-  discount: number;
-  total_amount: number;
-  accept_period: string;
-  pub_period: string;
-  assigned_to: string;
-  status: 'pending' | 'registered';
-  month: number;
-  year: number;
-  created_at: string;
-  prospectus: {
     id: number;
-    reg_id: string;
-    client_name: string;
-    entities:{
-        id:string;
-        username:string;
-        email:string;
+    prospectus_id: number;
+    services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    accept_period: string;
+    pub_period: string;
+    assigned_to: string;
+    status: 'pending' | 'registered';
+    month: number;
+    year: number;
+    created_at: string;
+    prospectus: {
+        id: number;
+        reg_id: string;
+        client_name: string;
+        entities: {
+            id: string;
+            username: string;
+            email: string;
+        };
     };
-  };
-  assigned_username:string;
-  bank_account: {
-    bank: string;
-    account_number: string;
-  };
-  transaction: {
-    id: number;
-    amount: number;
-    entity_id: string; 
-    transaction_id: string;
-    transaction_type: string;
-  };
+    assigned_username: string;
+    bank_account: {
+        bank: string;
+        account_number: string;
+    };
+    transaction: {
+        id: number;
+        amount: number;
+        entity_id: string;
+        transaction_id: string;
+        transaction_type: string;
+    };
 }
 
 // Add Transaction interface near other interfaces
 interface Transaction {
-  id: number;
-  transaction_type: string;
-  transaction_id: string;
-  amount: number;
-  transaction_date: string;
-  additional_info: Record<string, any>;
-  entity_id: string;
-  entities: { 
-    id: string;
-    username: string;
-  };
-  registration: Array<{
     id: number;
-    prospectus: {
-      id: number;
-      reg_id: string;
-      client_name: string;
+    transaction_type: string;
+    transaction_id: string;
+    amount: number;
+    transaction_date: string;
+    additional_info: Record<string, any>;
+    entity_id: string;
+    entities: {
+        id: string;
+        username: string;
     };
-  }>;
-  executive_name: string;
+    registration: Array<{
+        id: number;
+        prospectus: {
+            id: number;
+            reg_id: string;
+            client_name: string;
+        };
+    }>;
+    executive_name: string;
 }
 
 // Add new interface for bank account creation/update
@@ -517,33 +517,33 @@ interface BankAccountRequest {
 
 // First add the interface for Journal Data
 interface JournalData {
-  id: number;
-  prospectus_id: number;
-  client_name: string;
-  requirement: string;
-  personal_email: string;
-  assigned_to: string;
-  journal_name: string;
-  status: string;
-  journal_link: string;
-  username: string;
-  password: string;
-  orcid_username1: string;
-  password1: string;
-  paper_title: string;
-  created_at: string;
-  updated_at: string;
-  is_private: boolean;
-  entities: {
-    id: string;
-    email: string;
-    username: string;
-  };
-  prospectus: {
     id: number;
-    reg_id: string;
-  };
-  status_link: string | null; // Add this new field
+    prospectus_id: number;
+    client_name: string;
+    requirement: string;
+    personal_email: string;
+    assigned_to: string;
+    journal_name: string;
+    status: string;
+    journal_link: string;
+    username: string;
+    password: string;
+    orcid_username1: string;
+    password1: string;
+    paper_title: string;
+    created_at: string;
+    updated_at: string;
+    is_private: boolean;
+    entities: {
+        id: string;
+        email: string;
+        username: string;
+    };
+    prospectus: {
+        id: number;
+        reg_id: string;
+    };
+    status_link: string | null; // Add this new field
 }
 
 // Add new interface for journal creation
@@ -590,57 +590,57 @@ interface Editor {
 }
 
 interface AssignedRegistration {
-  id: number;
-  prospectus_id: number;
-  date: string;
-  services: string;
-  init_amount: number;
-  accept_amount: number;
-  discount: number;
-  total_amount: number;
-  accept_period: string;
-  pub_period: string;
-  bank_id: string;
-  status: 'registered' | 'pending';
-  month: number;
-  year: number;
-  created_at: string;
-  transaction_id: number;
-  notes: string | null;
-  updated_at: string;
-  assigned_to: string;
-  author_status:string;
-  prospectus: {
     id: number;
-    email: string;
-    reg_id: string;
-    client_name: string;
-    requirement: string;
-    phone:string;
-    department:string;
-    tech_person:string;
-    state:string;
-    entity: {
-      id: string;
-      email: string;
-      username: string;
-    };
-    leads:{
-        leads_id: number;
-        client_name: string;
-        phone: string;
+    prospectus_id: number;
+    date: string;
+    services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    accept_period: string;
+    pub_period: string;
+    bank_id: string;
+    status: 'registered' | 'pending';
+    month: number;
+    year: number;
+    created_at: string;
+    transaction_id: number;
+    notes: string | null;
+    updated_at: string;
+    assigned_to: string;
+    author_status: string;
+    prospectus: {
+        id: number;
         email: string;
-        state: string;
-        country: string;
-        requirement: string;
-        assigned_to: string;
         reg_id: string;
+        client_name: string;
+        requirement: string;
+        phone: string;
+        department: string;
         tech_person: string;
-        proposed_service_period: string;
-        services: string;
-        notes: string;
-    }
-  };
+        state: string;
+        entity: {
+            id: string;
+            email: string;
+            username: string;
+        };
+        leads: {
+            leads_id: number;
+            client_name: string;
+            phone: string;
+            email: string;
+            state: string;
+            country: string;
+            requirement: string;
+            assigned_to: string;
+            reg_id: string;
+            tech_person: string;
+            proposed_service_period: string;
+            services: string;
+            notes: string;
+        }
+    };
 }
 
 // Add new interface for prospectus assist data
@@ -673,461 +673,461 @@ interface ActivityItem {
 }
 
 interface ProspectusResponse {
-  data: Prospectus[];
-  total: number;
-  page: number;
-  per_page: number;
+    data: Prospectus[];
+    total: number;
+    page: number;
+    per_page: number;
 }
 
 // Add new interfaces for leads
 interface Lead {
-  id: number;
-  lead_source: string;
-  client_name: string;
-  phone_number: string;
-  country: string;
-  domain:string;
-  state: string;
-  requirement: string;
-  detailed_requirement?: string;
-  remarks?: string;
-  date: string;
-  followup_date: string;
-  created_at: string;
-  updated_at: string;
-  status?: string;
-  prospectus_type:string;
-  assigned_to?: string;
-  entity_id?: string;
-  research_area?: string;
-  title?: string;
-  degree?: string;
-  university?: string;
-  attended?: boolean;
-  followup_status?: string;
+    id: number;
+    lead_source: string;
+    client_name: string;
+    phone_number: string;
+    country: string;
+    domain: string;
+    state: string;
+    requirement: string;
+    detailed_requirement?: string;
+    remarks?: string;
+    date: string;
+    followup_date: string;
+    created_at: string;
+    updated_at: string;
+    status?: string;
+    prospectus_type: string;
+    assigned_to?: string;
+    entity_id?: string;
+    research_area?: string;
+    title?: string;
+    degree?: string;
+    university?: string;
+    attended?: boolean;
+    followup_status?: string;
 }
 
 interface CreateLeadRequest {
-  lead_source: string;
-  client_name: string;
-  phone_number: string; // Changed from contact_number
-  country: string;
-  state: string;
-  domain: string; // Changed from main_subject
-  requirement: string; // Changed from requirements
-  detailed_requirement?: string;
-  remarks?: string; // Changed from customer_remarks
-  followup_date?: string;
-  prospectus_type?: string;
-  assigned_to?: string; 
-  created_by?: string; // Added to match schema
-  followup_status?: string; // Changed from boolean to string
-  attended?: boolean; // Added to match schema
-  // Fields for form handling only (not sent to API)
-  other_source?: string;
-  other_domain?: string;
-  other_service?: string;
+    lead_source: string;
+    client_name: string;
+    phone_number: string; // Changed from contact_number
+    country: string;
+    state: string;
+    domain: string; // Changed from main_subject
+    requirement: string; // Changed from requirements
+    detailed_requirement?: string;
+    remarks?: string; // Changed from customer_remarks
+    followup_date?: string;
+    prospectus_type?: string;
+    assigned_to?: string;
+    created_by?: string; // Added to match schema
+    followup_status?: string; // Changed from boolean to string
+    attended?: boolean; // Added to match schema
+    // Fields for form handling only (not sent to API)
+    other_source?: string;
+    other_domain?: string;
+    other_service?: string;
 }
 
 interface UpdateLeadRequest {
-  lead_source?: string;
-  client_name?: string;
-  phone_number?: string;
-  country?: string;
-  prospectus_type?:string;
-  state?: string;
-  domain?: string;
-  requirement?: string;
-  detailed_requirement?: string;
-  remarks?: string;
-  followup_date?: string;
-  status?: string;
-  assigned_to?: string;
-  followup_status?:string;
-  other_source?: string;
-  other_domain?: string;
-  other_service?: string;
+    lead_source?: string;
+    client_name?: string;
+    phone_number?: string;
+    country?: string;
+    prospectus_type?: string;
+    state?: string;
+    domain?: string;
+    requirement?: string;
+    detailed_requirement?: string;
+    remarks?: string;
+    followup_date?: string;
+    status?: string;
+    assigned_to?: string;
+    followup_status?: string;
+    other_source?: string;
+    other_domain?: string;
+    other_service?: string;
 }
 
 interface TodayFollowupResponse {
-  data: Lead[];
-  count: number;
-  today: string;
+    data: Lead[];
+    count: number;
+    today: string;
 }
 
 // Add this new interface for the lead approval request
 interface ApproveLeadRequest {
-  leads_id: number;
-  client_name: string;
-  phone: string;
-  email: string;
-  state: string;
-  country: string;
-  requirement: string;
-  assigned_to: string;
-  reg_id: string;
-  tech_person: string;
-  proposed_service_period: string;
-  services: string;
-  notes: string;
+    leads_id: number;
+    client_name: string;
+    phone: string;
+    email: string;
+    state: string;
+    country: string;
+    requirement: string;
+    assigned_to: string;
+    reg_id: string;
+    tech_person: string;
+    proposed_service_period: string;
+    services: string;
+    notes: string;
 }
 
 // Add new interface for client creation
 interface CreateClientRequest {
-  prospectus_id: number;
-  email: string;
-  password: string | null;
+    prospectus_id: number;
+    email: string;
+    password: string | null;
 }
 
 // Update the interface to match the actual response
 interface CreateClientResponse {
-  id: string;
-  prospectus_id: number;
-  email: string;
-  created_at: string;
-  updated_at: string;
+    id: string;
+    prospectus_id: number;
+    email: string;
+    created_at: string;
+    updated_at: string;
 }
 
 // Add new interface for client login
 interface ClientLoginRequest {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 }
 
 // Update the ClientLoginResponse interface to match the actual response structure
 interface ClientLoginResponse {
-  success: boolean;
-  token: string;
-  data: {
-    id: string;
-    email: string;
-    prospectus_id?: number;
-    created_at: string;
-    updated_at: string;
-    prospectus?: {
-      id: number;
-      email: string;
-      phone: string;
-      client_name: string;
+    success: boolean;
+    token: string;
+    data: {
+        id: string;
+        email: string;
+        prospectus_id?: number;
+        created_at: string;
+        updated_at: string;
+        prospectus?: {
+            id: number;
+            email: string;
+            phone: string;
+            client_name: string;
+        };
     };
-  };
-  timestamp: string;
+    timestamp: string;
 }
 
 // Update the interface name and structure
 interface ClientPendingRegistrationResponse {
-  success: boolean;
-  data: Registration[];
-  count: number;
-  timestamp: string;
+    success: boolean;
+    data: Registration[];
+    count: number;
+    timestamp: string;
 }
 
 // Add new interfaces for author tasks
 interface AuthorTask {
-  id: number;
-  title: string;
-  description: string;
-  journal_name: string;
-  client_name: string;
-  assigned_date: string;
-  deadline: string;
-  status: 'pending' | 'in_progress' | 'under_review' | 'completed';
-  completion_percentage: number;
-  document_url?: string;
-  paper_requirements?: string;
-  research_area?: string;
-  word_count?: number;
-  review_comments?: string[];
-  last_updated: string;
+    id: number;
+    title: string;
+    description: string;
+    journal_name: string;
+    client_name: string;
+    assigned_date: string;
+    deadline: string;
+    status: 'pending' | 'in_progress' | 'under_review' | 'completed';
+    completion_percentage: number;
+    document_url?: string;
+    paper_requirements?: string;
+    research_area?: string;
+    word_count?: number;
+    review_comments?: string[];
+    last_updated: string;
 }
 
 interface AuthorTaskUpdateRequest {
-  status?: 'pending' | 'in_progress' | 'under_review' | 'completed';
-  completion_percentage?: number;
-  document_url?: string;
-  review_comments?: string[];
+    status?: 'pending' | 'in_progress' | 'under_review' | 'completed';
+    completion_percentage?: number;
+    document_url?: string;
+    review_comments?: string[];
 }
 
 interface AuthorStats {
-  assigned_count: number;
-  in_progress_count: number;
-  completed_count: number;
-  under_review_count: number;
-  tasks_this_week: number;
-  tasks_past_due: number;
+    assigned_count: number;
+    in_progress_count: number;
+    completed_count: number;
+    under_review_count: number;
+    tasks_this_week: number;
+    tasks_past_due: number;
 }
 
 // Add new interface for pending registration response
 interface PendingRegistrationResponse {
-  registration: {
-    id: number;
-    date: string;
-    services: string;
-    initialAmount: number;
-    acceptedAmount: number;
-    discount: number;
-    totalAmount: number;
-    acceptPeriod: string;
-    pubPeriod: string;
-    status: string;
-    month: number;
-    year: number;
-    notes: string | null;
-    createdAt: string;
-    updatedAt: string;
-    adminAssigned: boolean;
-    author_status: string;
-  };
-  prospectus: {
-    id: number;
-    regId: string;
-    clientName: string;
-    email: string;
-    phone: string;
-    department: string;
-    state: string;
-    techPerson: string;
-    requirement: string;
-    services: string;
-    proposedServicePeriod: string;
-    notes: string;
-    nextFollowUp: string;
-    createdBy: {
-      id: string;
-      username: string;
-      email: string;
+    registration: {
+        id: number;
+        date: string;
+        services: string;
+        initialAmount: number;
+        acceptedAmount: number;
+        discount: number;
+        totalAmount: number;
+        acceptPeriod: string;
+        pubPeriod: string;
+        status: string;
+        month: number;
+        year: number;
+        notes: string | null;
+        createdAt: string;
+        updatedAt: string;
+        adminAssigned: boolean;
+        author_status: string;
     };
-  };
-  leads: {
-    id: number;
-    date: string;
-    leadSource: string;
-    clientName: string;
-    phoneNumber: string;
-    domain: string;
-    researchArea: string | null;
-    title: string | null;
-    degree: string | null;
-    university: string | null;
-    state: string;
-    country: string;
-    requirement: string;
-    detailedRequirement: string;
-    prospectusType: string;
-    followupDate: string;
-    remarks: string;
-    followupStatus: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  registeredBy: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  bankDetails: {
-    id: string;
-    bank: string;
-    branch: string;
-    upi_id: string;
-    ifsc_code: string;
-    created_at: string;
-    updated_at: string;
-    account_name: string;
-    account_type: string;
-    account_number: string;
-    account_holder_name: string;
-  };
-  transactionDetails: {
-    id: number;
-    amount: number;
-    entity_id: string;
-    updated_at: string;
-    transaction_id: string;
-    additional_info: Record<string, any>;
-    transaction_date: string;
-    transaction_type: string;
-  };
+    prospectus: {
+        id: number;
+        regId: string;
+        clientName: string;
+        email: string;
+        phone: string;
+        department: string;
+        state: string;
+        techPerson: string;
+        requirement: string;
+        services: string;
+        proposedServicePeriod: string;
+        notes: string;
+        nextFollowUp: string;
+        createdBy: {
+            id: string;
+            username: string;
+            email: string;
+        };
+    };
+    leads: {
+        id: number;
+        date: string;
+        leadSource: string;
+        clientName: string;
+        phoneNumber: string;
+        domain: string;
+        researchArea: string | null;
+        title: string | null;
+        degree: string | null;
+        university: string | null;
+        state: string;
+        country: string;
+        requirement: string;
+        detailedRequirement: string;
+        prospectusType: string;
+        followupDate: string;
+        remarks: string;
+        followupStatus: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+    registeredBy: {
+        id: string;
+        username: string;
+        email: string;
+    };
+    bankDetails: {
+        id: string;
+        bank: string;
+        branch: string;
+        upi_id: string;
+        ifsc_code: string;
+        created_at: string;
+        updated_at: string;
+        account_name: string;
+        account_type: string;
+        account_number: string;
+        account_holder_name: string;
+    };
+    transactionDetails: {
+        id: number;
+        amount: number;
+        entity_id: string;
+        updated_at: string;
+        transaction_id: string;
+        additional_info: Record<string, any>;
+        transaction_date: string;
+        transaction_type: string;
+    };
 }
 
 interface PendingRegistrationsResponse {
-  success: boolean;
-  data: PendingRegistrationResponse[];
-  count: number;
-  timestamp: string;
+    success: boolean;
+    data: PendingRegistrationResponse[];
+    count: number;
+    timestamp: string;
 }
 
 // Add new interfaces for client payment
 interface ClientPaymentRequest {
-  quotation_id: number;
-  name: string;
-  amount: number;
-  notes?: string;
-  transaction_date: string;
-  entity_id: string;
+    quotation_id: number;
+    name: string;
+    amount: number;
+    notes?: string;
+    transaction_date: string;
+    entity_id: string;
 }
 
 // Add new interfaces for profile update
 interface UpdateProfileRequest {
-  username?: string;
-  email?: string;
+    username?: string;
+    email?: string;
 }
 
 interface VerifyPasswordRequest {
-  entityId: string;
-  password: string;
+    entityId: string;
+    password: string;
 }
 
 interface ChangePasswordRequest {
-  newPassword: string;
+    newPassword: string;
 }
 
 // Add new interface for journal data with leads information
 interface JournalDataWithLeads extends JournalData {
-  prospectus: {
-    id: number;
-    email: string;
-    leads?: {
-      id: number;
-      domain: string;
-      client_name: string;
-      lead_source: string;
-      phone_number: string;
-      research_area: string | null;
+    prospectus: {
+        id: number;
+        email: string;
+        leads?: {
+            id: number;
+            domain: string;
+            client_name: string;
+            lead_source: string;
+            phone_number: string;
+            research_area: string | null;
+        };
+        phone: string;
+        reg_id: string;
+        client_name: string;
+        requirement: string;
     };
-    phone: string;
-    reg_id: string;
-    client_name: string;
-    requirement: string;
-  };
 }
 
 interface JournalDataByLeadsResponse {
-  success: boolean;
-  data: JournalDataWithLeads[];
-  count: number;
-  timestamp: string;
+    success: boolean;
+    data: JournalDataWithLeads[];
+    count: number;
+    timestamp: string;
 }
 
 // Update the interface for journal data with leads information to match new response format
 interface JournalDataWithExecutive extends JournalData {
-  prospectus: {
-    id: number;
-    email: string;
-    phone: string;
-    reg_id: string;
-    entity_id: string;
-    client_name: string;
-    requirement: string;
-  };
+    prospectus: {
+        id: number;
+        email: string;
+        phone: string;
+        reg_id: string;
+        entity_id: string;
+        client_name: string;
+        requirement: string;
+    };
 }
 
 interface JournalDataByExecutiveResponse {
-  success: boolean;
-  data: JournalDataWithExecutive[];
-  count: number;
-  timestamp: string;
+    success: boolean;
+    data: JournalDataWithExecutive[];
+    count: number;
+    timestamp: string;
 }
 interface JournalDataByPersonalEmail {
-  success: boolean;
-  data: JournalData[];
-  count: number;
-  timestamp: string;
+    success: boolean;
+    data: JournalData[];
+    count: number;
+    timestamp: string;
 }
 
 // Add new interface for paginated journal response
 interface PaginatedJournalResponse {
-  success: boolean;
-  data: JournalData[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
-  timestamp: string;
+    success: boolean;
+    data: JournalData[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasMore: boolean;
+    };
+    timestamp: string;
 }
 
 // Add interface for quotation file
 interface QuotationFile {
-  id: number;
-  originalName: string;
-  filename: string;
-  size: number;
-  mimetype: string;
-  url: string;
-  created_at: string;
+    id: number;
+    originalName: string;
+    filename: string;
+    size: number;
+    mimetype: string;
+    url: string;
+    created_at: string;
 }
 
 // Add interface for client quotation
 interface ClientQuotation {
-  id: number;
-  quotation_id: number;
-  name: string;
-  amount: number;
-  notes?: string;
-  transaction_date: string;
-  client_id: string;
-  created_at: string;
-  updated_at: string;
-  files: QuotationFile[];
+    id: number;
+    quotation_id: number;
+    name: string;
+    amount: number;
+    notes?: string;
+    transaction_date: string;
+    client_id: string;
+    created_at: string;
+    updated_at: string;
+    files: QuotationFile[];
 }
 
 // Add response interface for client registration with quotation
 interface ClientRegistrationWithQuotationResponse {
-  success: boolean;
-  data: {
-    registrations: Registration[];
-    quotations: ClientQuotation[];
-    transaction: Transaction[];
-    prospectus: {
-      id: number;
-      client_name: string;
-      email: string;
-      phone: string;
-      requirement: string;
-      services: string;
-      notes: string;
-      leads_id: number;
+    success: boolean;
+    data: {
+        registrations: Registration[];
+        quotations: ClientQuotation[];
+        transaction: Transaction[];
+        prospectus: {
+            id: number;
+            client_name: string;
+            email: string;
+            phone: string;
+            requirement: string;
+            services: string;
+            notes: string;
+            leads_id: number;
+        };
+        leads?: {
+            id: number;
+            requirement: string;
+            detailed_requirement?: string;
+            client_name?: string;
+            phone_number?: string;
+        };
     };
-    leads?: {
-      id: number;
-      requirement: string;
-      detailed_requirement?: string;
-      client_name?: string;
-      phone_number?: string;
-    };
-  };
-  timestamp: string;
-  message: string;
+    timestamp: string;
+    message: string;
 }
 
 // Add new interface for combined data response
 interface CombinedRegistrationData {
-  registration: Registration;
-  quotations: ClientQuotation[];
-  journalData: JournalData[];
-  transaction: Transaction[];
-  prospectus?: {
-    id: number;
-    client_name: string;
-    email: string;
-    phone: string;
-    requirement: string;
-    leads_id?: number;
-  };
-  leads?: {
-    id: number;
-    requirement: string;
-    detailed_requirement?: string;
-  };
+    registration: Registration;
+    quotations: ClientQuotation[];
+    journalData: JournalData[];
+    transaction: Transaction[];
+    prospectus?: {
+        id: number;
+        client_name: string;
+        email: string;
+        phone: string;
+        requirement: string;
+        leads_id?: number;
+    };
+    leads?: {
+        id: number;
+        requirement: string;
+        detailed_requirement?: string;
+    };
 }
 
 interface CombinedDataResponse {
-  success: boolean;
-  data: CombinedRegistrationData;
-  timestamp: string;
+    success: boolean;
+    data: CombinedRegistrationData;
+    timestamp: string;
 }
 
 // Add new interfaces for analytics endpoints
@@ -1227,93 +1227,101 @@ interface SystemEfficiency {
     optimizationRecommendations: any[];
 }
 
-// Add new interface for dashboard data response
-interface DashboardData {
-  entityCounts: {
-    total: number;
-    executive: number;
-    editor: number;
-    author: number;
-    admin: number;
-    other: number;
-  };
-  contentMetrics: {
+// Add new interfaces for admin dashboard data
+interface DashboardCounts {
     prospectus: number;
-    registrations: number;
-    journals: number;
+    quotations: number;
+    entities: number;
+    registration: number;
     leads: number;
-  };
-  financialMetrics: {
-    totalRevenue: number;
-    averageTransactionValue: number;
-    pendingAmount: number;
-    recentTransactions: Array<{
-      id: number; 
-      transaction_type: string; 
-      amount: number; 
-      transaction_date: string; 
-      entities: {
-        id: string;
-        username: string;
-      };
-    }>;
-  };
-  recentActivities: {
-    recentExecutives: Array<{
-      id: string; 
-      username: string; 
-      role_details: {
-        name: string; 
-        entity_type: string;
-      }; 
-      created_at: string;
-    }>;
-    recentServices: Array<{
-      id: number; 
-      service_name: string; 
-      fee: number;
-    }>;
-  };
-  journalMetrics: {
-    total: number;
-    statusDistribution: {
-      pending: number;
-      under_review: number;
-      approved: number;
-      rejected: number;
-      submitted: number;
-    };
-  };
-  serviceMetrics: {
-    total: number;
-    topServices: Array<{
-      service_name: string; 
-      count: number;
-    }>;
-  };
+    departments: number;
+    clients: number;
+    transactions: number;
+    services: number;
+    roles: number;
+    bank_accounts: number;
+    journal_data: number;
 }
 
-// Add new interface for dashboard data response
-interface DashboardDataResponse {
-  success: boolean;
-  data: DashboardData;
-  timestamp: string;
+interface RecentEntity {
+    id: string;
+    username: string;
+    email: string;
+    created_at: string;
+    role_details: {
+        name: string;
+        entity_type: string;
+    };
+}
+
+interface RecentProspectus {
+    id: number;
+    client_name: string;
+    email: string;
+    phone: string;
+    requirement: string;
+    services: string;
+}
+
+interface RecentRole {
+    id: number;
+    name: string;
+    entity_type: string;
+    description: string;
+}
+
+interface RecentRegistration {
+    id: number;
+    date: string;
+    services: string;
+    init_amount: number;
+    status: string;
+}
+
+interface RecentLead {
+    id: number;
+    date: string;
+    client_name: string;
+    phone_number: string;
+    requirement: string;
 }
 
 // Add interface for payment transaction request
 interface PaymentTransactionRequest {
-  registration_id: number;
-  transaction_type: string;
-  transaction_id: string;
-  amount: number;
-  transaction_date: string;
-  additional_info?: any;
-  entity_id: string;
+    registration_id: number;
+    transaction_type: string;
+    transaction_id: string;
+    amount: number;
+    transaction_date: string;
+    additional_info?: any;
+}
+interface AdminDashboardData {
+    counts: DashboardCounts;
+    recentData: {
+        entities?: RecentEntity[];
+        prospectus?: RecentProspectus[];
+        roles?: RecentRole[];
+        registrations?: RecentRegistration[];
+        leads?: RecentLead[];
+        bankAccounts?: any[];
+        services?: any[];
+        departments?: any[];
+        clients?: any[];
+        quotations?: any[];
+        transactions?: any[];
+        journals?: any[];
+    };
 }
 
 interface PaymentTransactionResponse {
-  registration: Registration;
-  transaction: Transaction;
+    registration: Registration;
+    transaction: Transaction;
+}
+
+interface AdminDashboardResponse {
+    success: boolean;
+    data: AdminDashboardData;
+    timestamp: string;
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -1323,6 +1331,170 @@ const PUBLIC_ENDPOINTS = [
     '/clients/login',
     '/entity/verify-password' // Add this to public endpoints to prevent auto-logout
 ];
+
+// Add interface for registration financial data
+interface RegistrationFinancialData {
+    id: number;
+    prospectus_id: number;
+    date: string;
+    services: string;
+    init_amount: number;
+    accept_amount: number;
+    discount: number;
+    total_amount: number;
+    accept_period: string;
+    pub_period: string;
+    bank_id: string;
+    status: string;
+    month: number;
+    year: number;
+    created_at: string;
+    transaction_id: number;
+    notes: string | null;
+    updated_at: string;
+    assigned_to: string | null;
+    registered_by: string;
+    client_id: string;
+    admin_assigned: boolean;
+    journal_added: boolean;
+    author_status: string;
+    file_path: string | null;
+    author_comments: string | null;
+    service_and_prices: Record<string, number>;
+    is_deleted: boolean;
+    deleted_at: string | null;
+    registration_date: string;
+    final_payment: boolean | null;
+    is_final_payment_done: boolean;
+    secondary_payment: boolean | null;
+    is_secondary_payment_done: boolean;
+    prospectus: {
+      id: number;
+      date: string;
+      lead?: {
+        id: number;
+        date: string;
+        state: string;
+        title: string | null;
+        degree: string | null;
+        domain: string;
+        country: string;
+        remarks: string;
+        attended: boolean;
+        created_at: string;
+        created_by: string;
+        university: string | null;
+        updated_at: string;
+        assigned_to: string;
+        client_name: string;
+        lead_source: string;
+        requirement: string;
+        phone_number: string;
+        followup_date: string;
+        research_area: string | null;
+        followup_status: string;
+        prospectus_type: string;
+        detailed_requirement: string;
+      };
+      email: string;
+      notes: string;
+      phone: string;
+      state: string;
+      entity: {
+        id: string;
+        email: string;
+        username: string;
+      };
+      reg_id: string;
+      leads_id?: number;
+      services: string;
+      entity_id: string;
+      created_at: string;
+      deleted_at: string | null;
+      department: string;
+      is_deleted: boolean;
+      updated_at: string;
+      client_name: string;
+      requirement: string;
+      tech_person: string;
+      isregistered: boolean;
+      next_follow_up: string;
+      proposed_service_period: string;
+    };
+    bank_account: {
+      id: string;
+      bank: string;
+      branch: string;
+      upi_id: string;
+      ifsc_code: string;
+      created_at: string;
+      updated_at: string;
+      account_name: string;
+      account_type: string;
+      account_number: string;
+      account_holder_name: string;
+    };
+    transaction: {
+      id: number;
+      amount: number;
+      entity_id: string;
+      deleted_at: string | null;
+      is_deleted: boolean;
+      updated_at: string;
+      transaction_id: string;
+      additional_info: Record<string, any>;
+      transaction_date: string;
+      transaction_type: string;
+    };
+    assigned_entity: {
+      id: string;
+      email: string;
+      username: string;
+    } | null;
+    registered_entity: {
+      id: string;
+      email: string;
+      username: string;
+    };
+    client: {
+      id: string;
+      email: string;
+      password: string;
+      created_at: string;
+      updated_at: string;
+      prospectus_ids: number[];
+    };
+    secondary_payment_details?: {
+      id: number;
+      transaction_type: string;
+      transaction_id: string;
+      amount: number;
+      transaction_date: string;
+      additional_info: Record<string, any>;
+      entity_id: string;
+      updated_at: string;
+      is_deleted: boolean;
+      deleted_at: string | null;
+    };
+    final_payment_details?: {
+      id: number;
+      transaction_type: string;
+      transaction_id: string;
+      amount: number;
+      transaction_date: string;
+      additional_info: Record<string, any>;
+      entity_id: string;
+      updated_at: string;
+      is_deleted: boolean;
+      deleted_at: string | null;
+    };
+  }
+  
+  interface RegistrationFinancialDataResponse {
+    success: boolean;
+    data: RegistrationFinancialData[];
+    timestamp: string;
+  }
 
 // API service
 const api = {
@@ -1355,7 +1527,7 @@ const api = {
 
                 const token = this.getStoredToken();
                 const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY);
-                
+
                 if (!token || isLoggedIn !== 'true') {
                     return Promise.reject(new Error('Not authenticated'));
                 }
@@ -1376,17 +1548,17 @@ const api = {
                 if (error?.config?.url?.includes('/entity/verify-password')) {
                     return Promise.reject(error);
                 }
-                
+
                 // Only handle auth errors for non-public endpoints
-                if (error?.response?.status === 401 && 
+                if (error?.response?.status === 401 &&
                     !PUBLIC_ENDPOINTS.some(endpoint => error.config?.url?.includes(endpoint))) {
                     const userRole = localStorage.getItem(USER_ROLE_KEY) || 'executive';
                     const path = window.location.pathname;
-                    
+
                     if (!path.includes('/login')) {
                         this.clearStoredAuth();
-                        window.location.href = userRole === 'admin' 
-                            ? '/admin/login' 
+                        window.location.href = userRole === 'admin'
+                            ? '/admin/login'
                             : '/business/executive/login';
                     }
                 }
@@ -1398,13 +1570,13 @@ const api = {
     async loginExecutive(credentials: LoginCredentials): Promise<ExecutiveLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/entity/login', credentials);
-            
+
             // Extract the entity type from the response for role-based redirection
             const entityType = response.data.entities?.entity_type;
             let role = 'executive'; // Default role
-            
+
             // Map entity types to roles
-            switch(entityType?.toLowerCase()) {
+            switch (entityType?.toLowerCase()) {
                 case 'editor':
                     role = 'editor';
                     break;
@@ -1420,10 +1592,10 @@ const api = {
                 default:
                     role = 'executive'; // Fallback
             }
-            
+
             // Store the role in local storage for later use
             localStorage.setItem(USER_ROLE_KEY, role);
-            
+
             return response.data;
         } catch (error: any) {
             throw error;
@@ -1433,10 +1605,10 @@ const api = {
     async loginAdmin(credentials: LoginCredentials): Promise<AdminLoginResponse> {
         try {
             const response = await this.axiosInstance.post('/admin/login', credentials);
-            
+
             // The server now returns role details in the admin response
             localStorage.setItem(USER_ROLE_KEY, 'admin');
-            
+
             return response.data;
         } catch (error: any) {
             // Don't transform the error, let the component handle it
@@ -1546,7 +1718,7 @@ const api = {
     // Get all services
     async getAllServices(): Promise<ApiResponse<Service[]>> {
         return this.axiosInstance.get('/common/services/all')
-                .then(response => response.data);
+            .then(response => response.data);
     },
 
     // Get service by ID
@@ -1643,42 +1815,42 @@ const api = {
     // Create new registration
     async createRegistration(data: CreateRegistrationRequest): Promise<ApiResponse<Registration>> {
         try {
-            
+
             if (!data.client_id) {
-              console.error("Missing client_id in registration data!");
+                console.error("Missing client_id in registration data!");
             }
-            
+
             // Don't spread data - explicitly construct the object to ensure all fields are included
             const requestData = {
-              transaction_type: data.transaction_type,
-              transaction_id: data.transaction_id,
-              amount: data.amount,
-              transaction_date: data.transaction_date,
-              additional_info: data.additional_info,
-              entity_id: data.entity_id,
-              client_id: data.client_id, // Ensure client_id is explicitly included
-              registered_by: data.registered_by,
-              prospectus_id: data.prospectus_id,
-              services: data.services,
-              init_amount: data.init_amount,
-              accept_amount: data.accept_amount,
-              discount: data.discount,
-              total_amount: data.total_amount,
-              accept_period: data.accept_period,
-              pub_period: data.pub_period,
-              bank_id: data.bank_id,
-              status: data.status,
-              month: data.month,
-              year: data.year,
-              assigned_to: data.assigned_to,
-              service_and_prices: data.service_and_prices // Ensure service_and_prices is included
+                transaction_type: data.transaction_type,
+                transaction_id: data.transaction_id,
+                amount: data.amount,
+                transaction_date: data.transaction_date,
+                additional_info: data.additional_info,
+                entity_id: data.entity_id,
+                client_id: data.client_id, // Ensure client_id is explicitly included
+                registered_by: data.registered_by,
+                prospectus_id: data.prospectus_id,
+                services: data.services,
+                init_amount: data.init_amount,
+                accept_amount: data.accept_amount,
+                discount: data.discount,
+                total_amount: data.total_amount,
+                accept_period: data.accept_period,
+                pub_period: data.pub_period,
+                bank_id: data.bank_id,
+                status: data.status,
+                month: data.month,
+                year: data.year,
+                assigned_to: data.assigned_to,
+                service_and_prices: data.service_and_prices // Ensure service_and_prices is included
             };
-            
+
             const response = await this.axiosInstance.post('/common/registration/create', requestData);
             return response.data;
-          } catch (error: any) {
+        } catch (error: any) {
             throw this.handleError(error);
-          }
+        }
     },
 
     // Add new method for updating registration
@@ -1689,7 +1861,7 @@ const api = {
             //     id,
             //     data
             // });
-            
+
             const response = await this.axiosInstance.put(`/common/registration/${id}`, data);
             return response.data;
         } catch (error: any) {
@@ -1697,7 +1869,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async approveRegistration(id: number, data: Partial<CreateRegistrationRequest>): Promise<ApiResponse<Registration>> {
         try {
             const response = await this.axiosInstance.put(`/common/registration/approve/${id}`, data);
@@ -1709,13 +1881,13 @@ const api = {
 
     // Add new method to approve quotation review
     async approveQuotationReview(registrationId: number): Promise<ApiResponse<Registration>> {
-      try {
-        const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/pending`);
-        return response.data;
-      } catch (error: any) {
-        console.error('Error approving quotation review:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.put(`/admin/registrations/${registrationId}/pending`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error approving quotation review:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Delete registration by ID
@@ -1747,7 +1919,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getAssignedRegistrationsAuthor(entityId: string): Promise<ApiResponse<AssignedRegistration[]>> {
         try {
             const response = await this.axiosInstance.get(`/authors/assigned-registrations/${entityId}`);
@@ -1761,7 +1933,7 @@ const api = {
     // Department management methods
     async getAllDepartments(): Promise<ApiResponse<Department[]>> {
         return this.axiosInstance.get('/common/departments/all')
-                .then(response => response.data);
+            .then(response => response.data);
     },
 
     async createDepartment(data: CreateDepartmentRequest): Promise<ApiResponse<Department>> {
@@ -1793,7 +1965,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async updateProspectus(id: number, data: Partial<ProspectusCreateRequest>): Promise<ApiResponse<Prospectus>> {
         try {
             const response = await this.axiosInstance.put(`/entity/prospectus/${id}`, data);
@@ -1813,7 +1985,7 @@ const api = {
         }
     },
 
-    async getPermissionsByEntityType(entityType:string): Promise<ApiResponse<Permission[]>> {
+    async getPermissionsByEntityType(entityType: string): Promise<ApiResponse<Permission[]>> {
         try {
             const response = await this.axiosInstance.get(`/admin/permissions/entity-type/${entityType}`);
             return response.data;
@@ -1861,14 +2033,14 @@ const api = {
 
     // Add new method for getting all journal data
     async getAllJournalData(): Promise<ApiResponse<JournalData[]>> {
-      try {
-        // Remove caching, make direct request
-        const response = await this.axiosInstance.get('/editor/journal-data/all');
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching journal data:', error);
-        throw this.handleError(error);
-      }
+        try {
+            // Remove caching, make direct request
+            const response = await this.axiosInstance.get('/editor/journal-data/all');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data:', error);
+            throw this.handleError(error);
+        }
     },
 
     async getJournalById(id: number): Promise<ApiResponse<JournalData>> {
@@ -1894,20 +2066,20 @@ const api = {
 
     // Add new method for updating registration invoice details
     async updateRegistrationInvoice(id: number, data: {
-      init_amount: number;
-      accept_amount: number;
-      discount: number;
-      total_amount: number;
-      bank_id: string;
-      service_and_prices?: Record<string, number>;
+        init_amount: number;
+        accept_amount: number;
+        discount: number;
+        total_amount: number;
+        bank_id: string;
+        service_and_prices?: Record<string, number>;
     }): Promise<ApiResponse<Registration>> {
-      try {
-        const response = await this.axiosInstance.put(`/common/registration/invoice/${id}`, data);
-        return response.data;
-      } catch (error: any) {
-        console.error('Error updating registration invoice:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.put(`/common/registration/invoice/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error updating registration invoice:', error);
+            throw this.handleError(error);
+        }
     },
 
     async deleteJournal(id: number): Promise<ApiResponse<void>> {
@@ -1948,7 +2120,7 @@ const api = {
         try {
             // Try one of these endpoints based on your backend structure:
             const response = await this.axiosInstance.get('/entity/all');
-            
+
             return response.data;
         } catch (error: any) {
             console.error('API getAllExecutives error:', error);
@@ -1959,7 +2131,7 @@ const api = {
     // Add new method for fetching editors
     async getAllEditors(): Promise<ApiResponse<Editor[]>> {
         try {
-            
+
             const response = await this.axiosInstance.get('/entity/editors/all');
             return response.data;
         } catch (error: any) {
@@ -1976,7 +2148,7 @@ const api = {
     // Add new method for fetching editors
     async getAllAuthors(): Promise<ApiResponse<Editor[]>> {
         try {
-            
+
             const response = await this.axiosInstance.get('/entity/author/all');
             return response.data;
         } catch (error: any) {
@@ -1993,7 +2165,7 @@ const api = {
 
     async getAllEditorsAndAuthors(): Promise<ApiResponse<Editor[]>> {
         try {
-            
+
             const response = await this.axiosInstance.get('/entity/editors-authors/all');
             return response.data;
         } catch (error: any) {
@@ -2044,7 +2216,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getAllUnapprovedLeads(): Promise<ApiResponse<Lead[]>> {
         try {
             const response = await this.axiosInstance.get('/leads/unapproved');
@@ -2146,7 +2318,7 @@ const api = {
     async createClient(data: CreateClientRequest): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.post('/clients', data);
-            
+
             return {
                 success: true,
                 data: response.data, // Keep the original nested structure
@@ -2166,12 +2338,12 @@ const api = {
                 email,
                 password
             });
-            
+
             // Store client role
             if (response.data && response.data.token) {
                 localStorage.setItem(USER_ROLE_KEY, 'clients');
             }
-            
+
             return response.data;
         } catch (error: any) {
             console.error('Client login error:', error);
@@ -2211,7 +2383,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getClientRegisteredRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
         try {
             const response = await this.axiosInstance.get(`/clients/${clientId}/registration/registered`);
@@ -2221,7 +2393,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getClientRegistration(clientId: string): Promise<ClientPendingRegistrationResponse> {
         try {
             const response = await this.axiosInstance.get(`/clients/${clientId}/registration/`);
@@ -2237,147 +2409,147 @@ const api = {
     async getAuthorStats(): Promise<ApiResponse<AuthorStats>> {
         // Mock data for now
         const mockStats = {
-          assigned_count: 8,
-          in_progress_count: 3,
-          completed_count: 12,
-          under_review_count: 2,
-          tasks_this_week: 4,
-          tasks_past_due: 1,
+            assigned_count: 8,
+            in_progress_count: 3,
+            completed_count: 12,
+            under_review_count: 2,
+            tasks_this_week: 4,
+            tasks_past_due: 1,
         };
-        
+
         return {
-          success: true,
-          data: mockStats,
-          timestamp: new Date().toISOString(),
-          message: "Author stats retrieved successfully"
+            success: true,
+            data: mockStats,
+            timestamp: new Date().toISOString(),
+            message: "Author stats retrieved successfully"
         };
-      },
-      
-      async getAuthorTasks(): Promise<ApiResponse<AuthorTask[]>> {
+    },
+
+    async getAuthorTasks(): Promise<ApiResponse<AuthorTask[]>> {
         // Mock data for now
         const mockTasks = [
-          {
-            id: 1,
-            title: "Smart City Infrastructure Paper",
-            description: "Research and write a paper on smart city infrastructure implementation challenges and solutions.",
-            journal_name: "Journal of Urban Technology",
-            client_name: "Smart Cities Inc.",
-            assigned_date: "2023-10-15",
-            deadline: "2023-11-15",
-            status: "in_progress" as const,
-            completion_percentage: 65,
-            paper_requirements: "5000-7000 words, APA format, at least 25 citations from reputable sources",
-            research_area: "Urban Technology",
-            word_count: 6500,
-            last_updated: "2023-11-01",
-          },
-          {
-            id: 2,
-            title: "Quantum Computing Applications in Healthcare",
-            description: "Write a comprehensive review of quantum computing applications in healthcare and diagnostics.",
-            journal_name: "Digital Health Research",
-            client_name: "QuantumHealth Research",
-            assigned_date: "2023-10-20",
-            deadline: "2023-11-30",
-            status: "pending" as const,
-            completion_percentage: 0,
-            paper_requirements: "Academic review, 10,000+ words with extensive citations",
-            research_area: "Quantum Computing, Healthcare",
-            last_updated: "2023-10-20",
-          },
-          {
-            id: 3,
-            title: "Sustainable Energy Systems",
-            description: "Create a research paper on innovative sustainable energy systems for developing countries.",
-            journal_name: "Renewable Energy Research",
-            client_name: "GreenEnergy Foundation",
-            assigned_date: "2023-09-05",
-            deadline: "2023-10-20",
-            status: "completed" as const,
-            completion_percentage: 100,
-            document_url: "https://example.com/documents/sustainable-energy-paper-final.pdf",
-            paper_requirements: "Case study approach, focus on practical implementations",
-            research_area: "Renewable Energy",
-            word_count: 8200,
-            last_updated: "2023-10-18",
-          },
-          {
-            id: 4,
-            title: "Blockchain in Financial Inclusion",
-            description: "Research on blockchain technology applications for financial inclusion in underbanked populations.",
-            journal_name: "Financial Technology Review",
-            client_name: "Global Finance Initiative",
-            assigned_date: "2023-10-25",
-            deadline: "2023-12-10",
-            status: "under_review" as const,
-            completion_percentage: 90,
-            document_url: "https://example.com/documents/blockchain-finance-draft.pdf",
-            paper_requirements: "Focus on case studies from Southeast Asia and Africa",
-            research_area: "Blockchain, Financial Technology",
-            word_count: 7800,
-            review_comments: ["Please expand section 3.2 with more examples", "Add recent regulations from 2023"],
-            last_updated: "2023-11-05",
-          },
-          {
-            id: 5,
-            title: "AI Ethics in Automated Decision Systems",
-            description: "Critical analysis of ethical considerations in AI-powered automated decision systems.",
-            journal_name: "AI and Society",
-            client_name: "Ethics in Technology Institute",
-            assigned_date: "2023-11-01",
-            deadline: "2023-12-20",
-            status: "pending" as const,
-            completion_percentage: 0,
-            paper_requirements: "Interdisciplinary approach, combining technical and philosophical perspectives",
-            research_area: "AI Ethics",
-            last_updated: "2023-11-01",
-          }
+            {
+                id: 1,
+                title: "Smart City Infrastructure Paper",
+                description: "Research and write a paper on smart city infrastructure implementation challenges and solutions.",
+                journal_name: "Journal of Urban Technology",
+                client_name: "Smart Cities Inc.",
+                assigned_date: "2023-10-15",
+                deadline: "2023-11-15",
+                status: "in_progress" as const,
+                completion_percentage: 65,
+                paper_requirements: "5000-7000 words, APA format, at least 25 citations from reputable sources",
+                research_area: "Urban Technology",
+                word_count: 6500,
+                last_updated: "2023-11-01",
+            },
+            {
+                id: 2,
+                title: "Quantum Computing Applications in Healthcare",
+                description: "Write a comprehensive review of quantum computing applications in healthcare and diagnostics.",
+                journal_name: "Digital Health Research",
+                client_name: "QuantumHealth Research",
+                assigned_date: "2023-10-20",
+                deadline: "2023-11-30",
+                status: "pending" as const,
+                completion_percentage: 0,
+                paper_requirements: "Academic review, 10,000+ words with extensive citations",
+                research_area: "Quantum Computing, Healthcare",
+                last_updated: "2023-10-20",
+            },
+            {
+                id: 3,
+                title: "Sustainable Energy Systems",
+                description: "Create a research paper on innovative sustainable energy systems for developing countries.",
+                journal_name: "Renewable Energy Research",
+                client_name: "GreenEnergy Foundation",
+                assigned_date: "2023-09-05",
+                deadline: "2023-10-20",
+                status: "completed" as const,
+                completion_percentage: 100,
+                document_url: "https://example.com/documents/sustainable-energy-paper-final.pdf",
+                paper_requirements: "Case study approach, focus on practical implementations",
+                research_area: "Renewable Energy",
+                word_count: 8200,
+                last_updated: "2023-10-18",
+            },
+            {
+                id: 4,
+                title: "Blockchain in Financial Inclusion",
+                description: "Research on blockchain technology applications for financial inclusion in underbanked populations.",
+                journal_name: "Financial Technology Review",
+                client_name: "Global Finance Initiative",
+                assigned_date: "2023-10-25",
+                deadline: "2023-12-10",
+                status: "under_review" as const,
+                completion_percentage: 90,
+                document_url: "https://example.com/documents/blockchain-finance-draft.pdf",
+                paper_requirements: "Focus on case studies from Southeast Asia and Africa",
+                research_area: "Blockchain, Financial Technology",
+                word_count: 7800,
+                review_comments: ["Please expand section 3.2 with more examples", "Add recent regulations from 2023"],
+                last_updated: "2023-11-05",
+            },
+            {
+                id: 5,
+                title: "AI Ethics in Automated Decision Systems",
+                description: "Critical analysis of ethical considerations in AI-powered automated decision systems.",
+                journal_name: "AI and Society",
+                client_name: "Ethics in Technology Institute",
+                assigned_date: "2023-11-01",
+                deadline: "2023-12-20",
+                status: "pending" as const,
+                completion_percentage: 0,
+                paper_requirements: "Interdisciplinary approach, combining technical and philosophical perspectives",
+                research_area: "AI Ethics",
+                last_updated: "2023-11-01",
+            }
         ];
-        
+
         return {
-          success: true,
-          data: mockTasks,
-          timestamp: new Date().toISOString(),
-          message: "Tasks retrieved successfully"
+            success: true,
+            data: mockTasks,
+            timestamp: new Date().toISOString(),
+            message: "Tasks retrieved successfully"
         };
-      },
-      
-      async getTaskById(id: number): Promise<ApiResponse<AuthorTask>> {
+    },
+
+    async getTaskById(id: number): Promise<ApiResponse<AuthorTask>> {
         // Mock implementation
         const allTasks = await this.getAuthorTasks();
         const task = allTasks.data.find(t => t.id === id);
-        
+
         if (!task) {
-          throw new Error(`Task with ID ${id} not found`);
+            throw new Error(`Task with ID ${id} not found`);
         }
-        
+
         return {
-          success: true,
-          data: task,
-          timestamp: new Date().toISOString(),
-          message:"Task retrieved successfully"
+            success: true,
+            data: task,
+            timestamp: new Date().toISOString(),
+            message: "Task retrieved successfully"
         };
-      },
-      
-      async updateTask(id: number, data: AuthorTaskUpdateRequest): Promise<ApiResponse<AuthorTask>> {
+    },
+
+    async updateTask(id: number, data: AuthorTaskUpdateRequest): Promise<ApiResponse<AuthorTask>> {
         // Mock implementation - would normally send to backend
         console.log(`Updating task ${id} with data:`, data);
-        
+
         // For mock purposes, we'll pretend the update was successful and return the task
         const taskResponse = await this.getTaskById(id);
         const updatedTask = {
-          ...taskResponse.data,
-          ...data,
-          last_updated: new Date().toISOString()
+            ...taskResponse.data,
+            ...data,
+            last_updated: new Date().toISOString()
         };
-        
+
         return {
-          success: true,
-          data: updatedTask,
-          timestamp: new Date().toISOString(),
-          message: "Task updated successfully"
+            success: true,
+            data: updatedTask,
+            timestamp: new Date().toISOString(),
+            message: "Task updated successfully"
         };
-      },
+    },
 
     // Add new method for fetching pending registrations
     async getRegistrationForApproval(): Promise<PendingRegistrationsResponse> {
@@ -2433,7 +2605,7 @@ const api = {
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         localStorage.setItem(USER_ROLE_KEY, role);
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
-        
+
         window.dispatchEvent(new Event('auth-change'));
     },
 
@@ -2442,7 +2614,7 @@ const api = {
         localStorage.removeItem(USER_KEY);
         localStorage.removeItem(USER_ROLE_KEY);
         localStorage.removeItem(LOGIN_STATUS_KEY);
-        
+
         // Dispatch a custom event for logout
         window.dispatchEvent(new Event('auth-change'));
     },
@@ -2452,24 +2624,24 @@ const api = {
      * @returns Object containing token and user data
      */
     getStoredAuth() {
-      if (typeof window === 'undefined') return null;
-      
-      try {
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
-        
-        if (!token || !userStr) return null;
-        
-        const user = JSON.parse(userStr);
-        
-        return {
-          token,
-          user
-        };
-      } catch (error) {
-        console.error('Error retrieving stored auth data:', error);
-        return null;
-      }
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+
+            if (!token || !userStr) return null;
+
+            const user = JSON.parse(userStr);
+
+            return {
+                token,
+                user
+            };
+        } catch (error) {
+            console.error('Error retrieving stored auth data:', error);
+            return null;
+        }
     },
 
     handleError(error: any) {
@@ -2506,58 +2678,58 @@ const api = {
 
     // Add new method to get journal data by editor ID
     async getJournalDataByEditor(
-      editorId: string, 
-      options: {
-        page?: number;
-        limit?: number;
-        status?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-        searchTerm?: string;
-      } = {}
+        editorId: string,
+        options: {
+            page?: number;
+            limit?: number;
+            status?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
+            searchTerm?: string;
+        } = {}
     ): Promise<PaginatedJournalResponse> {
-      try {
-        const { 
-          page = 1, 
-          limit = 10, 
-          status, 
-          sortBy = 'created_at', 
-          sortOrder = 'desc',
-          searchTerm = '' 
-        } = options;
-        
-        // Build query params
-        const params = new URLSearchParams();
-        params.append('page', page.toString());
-        params.append('limit', limit.toString());
-        if (status && status !== 'all') params.append('status', status);
-        params.append('sortBy', sortBy);
-        params.append('sortOrder', sortOrder);
-        if (searchTerm) params.append('searchTerm', searchTerm);
-        
-        const response = await this.axiosInstance.get(
-          `/editor/journal-data/editor/${editorId}?${params.toString()}`
-        );
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching journal data by editor:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const {
+                page = 1,
+                limit = 10,
+                status,
+                sortBy = 'created_at',
+                sortOrder = 'desc',
+                searchTerm = ''
+            } = options;
+
+            // Build query params
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            if (status && status !== 'all') params.append('status', status);
+            params.append('sortBy', sortBy);
+            params.append('sortOrder', sortOrder);
+            if (searchTerm) params.append('searchTerm', searchTerm);
+
+            const response = await this.axiosInstance.get(
+                `/editor/journal-data/editor/${editorId}?${params.toString()}`
+            );
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data by editor:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Add this new function to the api object
     async getJournalDataByEditorSimple(editorId: string): Promise<ApiResponse<JournalData[]>> {
-      try {
-        const response = await this.axiosInstance.get(`/editor/journal-data/assigned/${editorId}`);
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching journal data by editor:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.get(`/editor/journal-data/assigned/${editorId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data by editor:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Update this method to handle just the status and optional comments update
-    async updateAuthorStatus(regId: number, data: {status: string, comments?: string}): Promise<ApiResponse<any>> {
+    async updateAuthorStatus(regId: number, data: { status: string, comments?: string }): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.put(`/authors/status/${regId}`, data);
             return response.data;
@@ -2586,7 +2758,7 @@ const api = {
     async submitClientPayment(paymentData: FormData): Promise<ApiResponse<any>> {
         try {
             // Log for debugging purposes
-            
+
             // Log files separately for better visibility
             // const entries = Array.from(paymentData.entries());
             // entries.forEach(pair => {
@@ -2597,7 +2769,7 @@ const api = {
             //         console.log(`${key}: ${value}`);
             //     }
             // });
-            
+
             // Make sure to use the correct content type for multipart/form-data
             const response = await this.axiosInstance.post('/clients/payment/submit', paymentData, {
                 headers: {
@@ -2623,10 +2795,10 @@ const api = {
         }
     },
 
-    async verifyPassword(data: VerifyPasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+    async verifyPassword(data: VerifyPasswordRequest): Promise<ApiResponse<{ success: boolean }>> {
         try {
             const response = await this.axiosInstance.post('/entity/verify-password', data);
-            
+
             // If the request is successful, make sure to return the proper structure
             return {
                 success: true,
@@ -2636,7 +2808,7 @@ const api = {
             };
         } catch (error: any) {
             console.error('Error verifying password:', error);
-            
+
             // Check if the error response matches the expected format for wrong password
             if (error.response?.data?.error === 'Invalid password') {
                 return {
@@ -2646,7 +2818,7 @@ const api = {
                     message: 'Current password is incorrect'
                 };
             }
-            
+
             // Return a generic error for other error types
             return {
                 success: false,
@@ -2657,7 +2829,7 @@ const api = {
         }
     },
 
-    async changePassword(userId: string, data: ChangePasswordRequest): Promise<ApiResponse<{success: boolean}>> {
+    async changePassword(userId: string, data: ChangePasswordRequest): Promise<ApiResponse<{ success: boolean }>> {
         try {
             const response = await this.axiosInstance.put(`/entity/${userId}/change-password`, data);
             return response.data;
@@ -2669,62 +2841,62 @@ const api = {
 
     // Add this method to the api object
     async getJournalDataByExecutive(userId: string): Promise<JournalDataByExecutiveResponse> {
-      try {
-        const response = await this.axiosInstance.post('/entity/journal-data-by-executive', {
-          user_id: userId
-        });
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching journal data by executive:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.post('/entity/journal-data-by-executive', {
+                user_id: userId
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data by executive:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Add the new method to the api object
     async getClientRegistrationWithQuotation(registrationId: number): Promise<ClientRegistrationWithQuotationResponse> {
-      try {
-        const response = await this.axiosInstance.get(`/clients/prosReg/${registrationId}`);
-        
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching registration with quotation:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.get(`/clients/prosReg/${registrationId}`);
+
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching registration with quotation:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Add new method to get combined data
     async getCombinedData(regId: number): Promise<CombinedDataResponse> {
-      try {
-        const response = await this.axiosInstance.post('/clients/combined-data', {
-          reg_id: regId
-        });
-        
-        // Log the combined data structure for debugging
-        console.log('Combined data response structure:', {
-          hasRegistration: !!response.data?.data?.registration,
-          hasQuotations: response.data?.data?.quotations?.length || 0,
-          hasJournalData: response.data?.data?.journalData?.length || 0,
-          hasTransaction: response.data?.data?.transaction?.length || 0,
-          hasProspectus: !!response.data?.data?.prospectus,
-          hasLeads: !!response.data?.data?.leads
-        });
-        
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching combined registration data:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.post('/clients/combined-data', {
+                reg_id: regId
+            });
+
+            // Log the combined data structure for debugging
+            console.log('Combined data response structure:', {
+                hasRegistration: !!response.data?.data?.registration,
+                hasQuotations: response.data?.data?.quotations?.length || 0,
+                hasJournalData: response.data?.data?.journalData?.length || 0,
+                hasTransaction: response.data?.data?.transaction?.length || 0,
+                hasProspectus: !!response.data?.data?.prospectus,
+                hasLeads: !!response.data?.data?.leads
+            });
+
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching combined registration data:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Add this method to the api object
     async getJournalDataByEmail(email: string): Promise<JournalDataByPersonalEmail> {
-      try {
-        const response = await this.axiosInstance.get(`/editor/journal-data/email/${encodeURIComponent(email)}`);
-        return response.data;
-      } catch (error: any) {
-        console.error('Error fetching journal data by email:', error);
-        throw this.handleError(error);
-      }
+        try {
+            const response = await this.axiosInstance.get(`/editor/journal-data/email/${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching journal data by email:', error);
+            throw this.handleError(error);
+        }
     },
 
     // Add new method for quick status update
@@ -2739,7 +2911,7 @@ const api = {
     },
 
     // Add these new methods for analytics
-    
+
     async getEntityPerformance(entityId: string): Promise<ApiResponse<EntityPerformance>> {
         try {
             const response = await this.axiosInstance.get(`/admin/analytics/entity-scorecard/${entityId}`);
@@ -2749,13 +2921,13 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getEntityRevenue(entityId: string, period?: string): Promise<ApiResponse<EntityRevenue>> {
         try {
             const queryParams = new URLSearchParams();
             queryParams.append('entityId', entityId);
             if (period) queryParams.append('period', period);
-            
+
             const response = await this.axiosInstance.get(`/admin/analytics/entity-revenue?${queryParams.toString()}`);
             return response.data;
         } catch (error: any) {
@@ -2763,7 +2935,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getEntityWorkload(entityId: string): Promise<ApiResponse<EntityWorkload>> {
         try {
             const response = await this.axiosInstance.get(`/admin/analytics/entity-workload?entityId=${entityId}`);
@@ -2773,7 +2945,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getClientAcquisitionMetrics(entityId: string): Promise<ApiResponse<ClientAcquisition>> {
         try {
             const response = await this.axiosInstance.get(`/admin/analytics/client-acquisition?entityId=${entityId}`);
@@ -2783,7 +2955,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getSystemEfficiency(): Promise<ApiResponse<SystemEfficiency>> {
         try {
             const response = await this.axiosInstance.get('/admin/analytics/system-efficiency');
@@ -2793,7 +2965,7 @@ const api = {
             throw this.handleError(error);
         }
     },
-    
+
     async getResourceAllocationSuggestions(taskType: string, taskId: string): Promise<ApiResponse<any>> {
         try {
             const response = await this.axiosInstance.get(`/admin/analytics/resource-allocation?taskType=${taskType}&taskId=${taskId}`);
@@ -2826,7 +2998,7 @@ const api = {
     },
 
     // Add new method to get dashboard data
-    async getDashboardData(): Promise<DashboardDataResponse> {
+    async getDashboardData(): Promise<AdminDashboardResponse> {
         try {
             const response = await this.axiosInstance.get('/admin/dashboard');
             return response.data;
@@ -2841,25 +3013,42 @@ const api = {
             throw this.handleError(error);
         }
     },
+
+    // Add new method to get financial data for registrations
+    async getRegistrationFinancialData(): Promise<RegistrationFinancialDataResponse> {
+        try {
+            const response = await this.axiosInstance.get('/admin/financial-data/registrations');
+            return response.data;
+        } catch (error: any) {
+            console.error('Error fetching registration financial data:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config,
+                stack: error.stack
+            });
+            throw this.handleError(error);
+        }
+    },
 };
 
 // Initialize the interceptors
 api.init();
 
-export type { 
-    Service, 
-    CreateServiceRequest, 
+export type {
+    Service,
+    CreateServiceRequest,
     UpdateServiceRequest,
     Executive,
-    BankAccount, 
-    Registration, 
+    BankAccount,
+    Registration,
     CreateRegistrationRequest,
     TransactionInfo,
     Department,
     CreateDepartmentRequest,
     Role,
     CreateRoleRequest,
-    Prospectus,  // Add this export
+    Prospectus,
     ServerRegistration,
     Transaction,
     ExecutiveWithRoleName,
@@ -2879,7 +3068,7 @@ export type {
     TodayFollowupResponse,
     ApproveLeadRequest,
     CreateClientRequest,
-    CreateClientResponse,  
+    CreateClientResponse,
     ClientLoginRequest,
     ClientLoginResponse,
     ClientPendingRegistrationResponse,
@@ -2908,7 +3097,9 @@ export type {
     EntityWorkload,
     ClientAcquisition,
     SystemEfficiency,
-    DashboardData,
-    DashboardDataResponse,
+    AdminDashboardData,
+    AdminDashboardResponse, // Add this export
+    DashboardCounts, 
+    RegistrationFinancialData,
 };
 export default api;
