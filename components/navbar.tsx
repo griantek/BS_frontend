@@ -1,4 +1,12 @@
 "use client"
+
+import { 
+  BellIcon, 
+  ChartPieIcon, 
+  DocumentTextIcon,
+  UserGroupIcon,
+  TableCellsIcon 
+} from "@heroicons/react/24/outline";
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { getUserRole } from '@/utils/authCheck';
@@ -18,7 +26,6 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from 'next/navigation';
-import { BellIcon, ChartPieIcon, UserGroupIcon,TableCellsIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@heroui/badge";
 
 import { siteConfig } from "@/config/site";

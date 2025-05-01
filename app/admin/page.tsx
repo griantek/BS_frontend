@@ -880,7 +880,7 @@ function AdminDashboard() {
               color="primary"
               variant="flat"
               size="sm"
-              onClick={() => router.push('/admin/prospects')}
+              onClick={() => router.push('/admin/records?tab=prospects')}
             >
               Prospects
             </Button>
@@ -888,7 +888,7 @@ function AdminDashboard() {
               color="primary"
               variant="flat"
               size="sm"
-              onClick={() => router.push('/admin/registrations')}
+              onClick={() => router.push('/admin/records?tab=registrations')}
             >
               Registrations
             </Button>
@@ -896,7 +896,7 @@ function AdminDashboard() {
               color="primary"
               variant="flat"
               size="sm"
-              onClick={() => router.push('/admin/journals')}
+              onClick={() => router.push('/admin/records?tab=journals')}
             >
               Journals
             </Button>
@@ -1059,7 +1059,7 @@ function AdminDashboard() {
                 </div>
                 
                 {/* Service Impact Visualization - Using financial metrics */}
-                <div>
+                {/* <div>
                   <h4 className="text-sm font-semibold mb-3">Service Impact on Revenue</h4>
                   
                   <div className="grid grid-cols-3 gap-3 mb-4">
@@ -1093,7 +1093,7 @@ function AdminDashboard() {
                       </CardBody>
                     </Card>
                   </div>
-                </div>
+                </div> */}
               </>
             )}
           </CardBody>

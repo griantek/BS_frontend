@@ -1640,6 +1640,14 @@ const api = {
             throw this.handleError(error);
         }
     },
+    async getAllProspectusWithoutPageNumber(): Promise<ApiResponse<ProspectusResponse>> {
+        try {
+            const response = await this.axiosInstance.get('/entity/prospectus/all');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
 
     async createExecutive(data: CreateExecutiveRequest) {
         try {
@@ -2208,9 +2216,17 @@ const api = {
         }
     },
     // Leads endpoints
-    async getAllLeads(): Promise<ApiResponse<Lead[]>> {
+    async getAllLeadsByUserId(): Promise<ApiResponse<Lead[]>> {
         try {
             const response = await this.axiosInstance.get('/leads');
+            return response.data;
+        } catch (error: any) {
+            throw this.handleError(error);
+        }
+    },
+    async getAllLeads(): Promise<ApiResponse<Lead[]>> {
+        try {
+            const response = await this.axiosInstance.get('/leads/all');
             return response.data;
         } catch (error: any) {
             throw this.handleError(error);

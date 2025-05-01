@@ -80,7 +80,7 @@ const AllLeadsPage = () => {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await api.getAllLeads();
+      const response = await api.getAllLeadsByUserId();
       if (response && response.data) {
         setLeads(response.data);
         setTotalCount(response.data.length);

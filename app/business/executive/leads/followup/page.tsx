@@ -71,7 +71,7 @@ const FollowupsPage = () => {
     try {
       setLoading(true);
       // Using getAllLeads for now - ideally would have a dedicated endpoint for followups
-      const response = await api.getAllLeads();
+      const response = await api.getAllLeadsByUserId();
       if (response && response.data) {
         // Filter to only include leads with followup_date
         const followupLeads = response.data.filter(lead => lead.followup_date);

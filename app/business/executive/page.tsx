@@ -271,7 +271,7 @@ function BusinessDashboard() {
       
       // Fetch all leads and today's followups in parallel
       const [leadsResponse, followupsResponse] = await Promise.all([
-        api.getAllLeads(),
+        api.getAllLeadsByUserId(),
         api.getTodayFollowupLeads()
       ]);
       

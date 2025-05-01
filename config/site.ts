@@ -50,6 +50,11 @@ export const siteConfig = {
       icon: UserGroupIcon
     },
     {
+      label: "Records",
+      href: "/admin/records",
+      icon: DocumentTextIcon
+    },
+    {
       label: "Services",
       href: "/admin/services",
       icon: WrenchScrewdriverIcon

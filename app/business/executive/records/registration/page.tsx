@@ -782,7 +782,7 @@ function RegistrationPage() {
                     </TableCell>
                   </TableRow>
                 )
-              )}
+              ) as any}
             </TableBody>
           </Table>
         </CardBody>
