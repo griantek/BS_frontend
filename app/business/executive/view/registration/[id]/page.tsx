@@ -650,6 +650,28 @@ function RegistrationContent({ regId }: { regId: string }) {
     fetchData();
   }, [router, regId]);
 
+  const handleDelete = async () => {
+    if (!registrationData) return;
+    
+    try {
+      setIsDeleting(true);
+      const response = await api.deleteRegistration(registrationData.id);
+      
+      if (response.success) {
+        toast.success("Registration deleted successfully");
+        router.push("/business/executive/records/registration");
+      } else {
+        toast.error("Failed to delete registration");
+      }
+    } catch (error) {
+      console.error("Error deleting registration:", error);
+      toast.error("Failed to delete registration");
+    } finally {
+      setIsDeleting(false);
+      onDeleteModalClose();
+    }
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (!registrationData) return <div>No data found</div>;
 
@@ -1113,7 +1135,10 @@ function RegistrationContent({ regId }: { regId: string }) {
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold">Registration Details</h1>
               <p className="text-small text-default-500">
-                ID: {registrationData.prospectus.reg_id}
+                ID: #{registrationData.id}
+              </p>
+              <p className="text-small text-default-500">
+                REG ID: {registrationData.prospectus.reg_id}
               </p>
             </div>
             <div className="flex gap-3">
@@ -1129,6 +1154,16 @@ function RegistrationContent({ regId }: { regId: string }) {
                   }
                 >
                   Edit Registration
+                </Button>
+              )}
+              {/* Add Delete button */}
+              {permissions.canDeleteRegistration && (
+                <Button
+                  color="danger"
+                  variant="flat"
+                  onPress={onDeleteModalOpen}
+                >
+                  Delete Registration
                 </Button>
               )}
             </div>
@@ -1542,7 +1577,7 @@ function RegistrationContent({ regId }: { regId: string }) {
             </Button>
             <Button
               color="danger"
-              // onPress={handleDelete}
+              onPress={handleDelete}
               isLoading={isDeleting}
             >
               Delete Registration
