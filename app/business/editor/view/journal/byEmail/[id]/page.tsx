@@ -195,7 +195,15 @@ function JournalByEmailContent({ id }: { id: string }) {
               <h1 className="text-2xl font-bold">Journals for Email</h1>
               <p className="text-small text-default-500">{email}</p>
             </div>
-            <Chip size="lg" color="primary">{journals.length} Journals</Chip>
+            <div className="flex items-center gap-2">
+              <Chip size="lg" color="secondary" variant="flat">{journals.length} Journals</Chip>
+              <Button 
+                color="primary"
+                onClick={() => router.push(`/business/editor/view/journal/byEmail/${id}/add`)}
+              >
+                Add New Journal
+              </Button>
+            </div>
           </CardHeader>
         </Card>
 
